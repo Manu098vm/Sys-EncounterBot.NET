@@ -42,6 +42,7 @@ namespace SysBot.Pokemon
                 EncounterMode.VerticalLine => WalkInLine(token),
                 EncounterMode.HorizontalLine => WalkInLine(token),
                 EncounterMode.Eternatus => DoEternatusEncounter(token),
+                EncounterMode.Regis => DoRegiEncounter(token),
                 EncounterMode.LegendaryDogs => DoDogEncounter(token),
                 _ => WalkInLine(token),
             };
@@ -104,7 +105,42 @@ namespace SysBot.Pokemon
 
                 Connection.Log("Resetting Eternatus by restarting the game");
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                await StartGame(Hub.Config, token).ConfigureAwait(false); 
+                await StartGame(Hub.Config, token).ConfigureAwait(false);
+            }
+        }
+
+        private async Task DoRegiEncounter(CancellationToken token)
+        {
+            Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
+            while (!token.IsCancellationRequested)
+            {
+                Log("Looking for a titan...");
+
+                // Click through all the menus untill the encounter.
+                while (!await IsInBattle(token).ConfigureAwait(false))
+                    await Click(A, 1_000, token).ConfigureAwait(false);
+
+                Log("Encounter started! Checking details...");
+                var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                if (pk == null)
+                {
+                    Log("Not Wild Offset. Restarting loop.");
+
+                    // Flee and continue looping.
+                    while (await IsInBattle(token).ConfigureAwait(false))
+                        await FleeToOverworld(token).ConfigureAwait(false);
+                    continue;
+                }
+
+                // Offsets are flickery so make sure we see it 3 times.
+                for (int i = 0; i < 3; i++)
+                    await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
+
+                if (await HandleEncounter(pk, false, token).ConfigureAwait(false))
+                    return;
+
+                Log("Restarting game...");
+                await CloseGame(Hub.Config, token).ConfigureAwait(false);
             }
         }
 
