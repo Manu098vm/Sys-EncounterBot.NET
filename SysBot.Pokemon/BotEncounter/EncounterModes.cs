@@ -18,7 +18,12 @@
         Eternatus,
 
         /// <summary>
-        /// Bot will soft reset for Regis. Do not use for Regigigas.
+        /// Bot will soft reset Regigigas
+        /// </summary>
+        Regigigas,
+
+        /// <summary>
+        /// Bot will soft reset for Regis
         /// </summary>
         Regis,
 
@@ -26,5 +31,10 @@
         /// Bot will soft reset the Legendary Dogs
         /// </summary>
         LegendaryDogs,
+
+        /// <summary>
+        /// Bot will soft reset the Swords of Justice Trio
+        /// </summary>
+        SwordsJustice,
     }
 }
