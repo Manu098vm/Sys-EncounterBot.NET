@@ -46,7 +46,7 @@ namespace SysBot.Pokemon
                 EncounterMode.Regis => DoRegiEncounter(token),
                 EncounterMode.LegendaryDogs => DoDogEncounter(token),
                 EncounterMode.SwordsJustice => DoJusticeEncounter(token),
-                EncounterMode.LGPE => DoLGPEEncounter(token),
+                //EncounterMode.LGPE => DoLGPEEncounter(token),
                 _ => WalkInLine(token),
             };
             await task.ConfigureAwait(false);
@@ -229,6 +229,7 @@ namespace SysBot.Pokemon
         {
             while (!token.IsCancellationRequested)
             {
+                // Waiting to be in the overworld
                 while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
                     await Task.Delay(2_000, token).ConfigureAwait(false);
 
@@ -244,6 +245,7 @@ namespace SysBot.Pokemon
                     i++;
                 }
 
+                //Read Pokémon Information
                 Log("Encounter started! Checking details...");
                 var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
                 if (pk == null)
@@ -263,7 +265,7 @@ namespace SysBot.Pokemon
                 if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
                     return;
 
-                // Flee
+                // Run awai if not the wanted encounter
                 while (await IsInBattle(token).ConfigureAwait(false))
                     await FleeToOverworld(token).ConfigureAwait(false);
             }

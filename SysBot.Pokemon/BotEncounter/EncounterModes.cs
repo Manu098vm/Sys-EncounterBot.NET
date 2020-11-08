@@ -37,6 +37,6 @@
         /// </summary>
         SwordsJustice,
 
-        LGPE,
+        //LGPE,
     }
 }
