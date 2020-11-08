@@ -46,6 +46,7 @@ namespace SysBot.Pokemon
                 EncounterMode.Regis => DoRegiEncounter(token),
                 EncounterMode.LegendaryDogs => DoDogEncounter(token),
                 EncounterMode.SwordsJustice => DoJusticeEncounter(token),
+                EncounterMode.LGPE => DoLGPEEncounter(token),
                 _ => WalkInLine(token),
             };
             await task.ConfigureAwait(false);
@@ -162,7 +163,7 @@ namespace SysBot.Pokemon
                 }
 
                 // Offsets are flickery so make sure we see it 3 times.
-                for (int i = 0; i < 3; i++)
+                                for (int i = 0; i < 3; i++)
                     await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
 
                 if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
@@ -226,20 +227,21 @@ namespace SysBot.Pokemon
 
         private async Task DoJusticeEncounter(CancellationToken token)
         {
-            Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
-            bool log;
             while (!token.IsCancellationRequested)
             {
-                Log("Position saved. Rebooting game...");
-                await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                await StartGame(Hub.Config, token).ConfigureAwait(false);
+                while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                    await Task.Delay(2_000, token).ConfigureAwait(false);
 
-                log = true;
+                // Enter and exit Pokecamp in order to respawn the Pokemon
+                await PokeCamp(token);
 
+                //Check position
+                int i = 0;
                 while (!await IsInBattle(token).ConfigureAwait(false))
                 {
-                    if (log) Log("Position could be wrong. Try to move a bit and save again.");
-                    log = false;
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                    if (i==5) Log("Position could be wrong or Pokécamp option is not the first available in the menu.\n");
+                    i++;
                 }
 
                 Log("Encounter started! Checking details...");
@@ -254,12 +256,25 @@ namespace SysBot.Pokemon
                     continue;
                 }
 
-                // Offsets are flickery so make sure we see it 3 times.
-                for (int i = 0; i < 3; i++)
+                    // Offsets are flickery so make sure we see it 3 times.
+                    for (i = 0; i < 3; i++)
                     await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
 
                 if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
                     return;
+
+                // Flee
+                while (await IsInBattle(token).ConfigureAwait(false))
+                    await FleeToOverworld(token).ConfigureAwait(false);
+            }
+        }
+
+        private async Task DoLGPEEncounter(CancellationToken token)
+        {
+            Log("Inside the LGPE bot");
+            while (!token.IsCancellationRequested)
+            {
+                Log("");
             }
         }
 

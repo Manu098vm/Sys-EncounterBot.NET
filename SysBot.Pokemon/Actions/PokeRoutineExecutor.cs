@@ -318,11 +318,12 @@ namespace SysBot.Pokemon
             for (int i = 0; i < 5; i++)
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
-            while (!await IsOnOverworld(config, token).ConfigureAwait(false) && !await IsInBattle(token).ConfigureAwait(false))
-                await Task.Delay(0_500, token).ConfigureAwait(false);
+            while (!await IsOnOverworld(config, token).ConfigureAwait(false))
+                await Task.Delay(2_000, token).ConfigureAwait(false);
 
             Log("Back in the overworld!");
         }
+
 
         public async Task<bool> CheckIfSearchingForLinkTradePartner(CancellationToken token)
         {
@@ -446,6 +447,17 @@ namespace SysBot.Pokemon
                 ConsoleLanguageParameter.Korean => OverworldOffsetKorean,
                 _ => OverworldOffset,
             };
+        }
+
+        public async Task PokeCamp(CancellationToken token)
+        {
+            // Open Poke Camp and return to the overworld
+            Log("Opening Camp...");
+            await Click(X, 1_000, token).ConfigureAwait(false);
+            await Click(A, 0_600, token).ConfigureAwait(false);
+            await Click(B, 6_600, token).ConfigureAwait(false);
+            await Click(B, 1_000, token).ConfigureAwait(false);
+            await Click(A, 1_600, token).ConfigureAwait(false);
         }
     }
 }

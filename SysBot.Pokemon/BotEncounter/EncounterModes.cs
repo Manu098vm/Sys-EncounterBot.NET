@@ -36,5 +36,7 @@
         /// Bot will soft reset the Swords of Justice Trio
         /// </summary>
         SwordsJustice,
+
+        LGPE,
     }
 }
