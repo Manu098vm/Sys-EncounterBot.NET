@@ -37,6 +37,11 @@
         /// </summary>
         SwordsJustice,
 
+        /// <summary>
+        /// Bot will soft reset the Swords of Justice Trio
+        /// </summary>
+        GalarianArticuno,
+
         //LGPE,
     }
 }

@@ -46,6 +46,7 @@ namespace SysBot.Pokemon
                 EncounterMode.Regis => DoRegiEncounter(token),
                 EncounterMode.LegendaryDogs => DoDogEncounter(token),
                 EncounterMode.SwordsJustice => DoJusticeEncounter(token),
+                EncounterMode.GalarianArticuno => DoGArticunoEncounter(token),
                 //EncounterMode.LGPE => DoLGPEEncounter(token),
                 _ => WalkInLine(token),
             };
@@ -227,21 +228,34 @@ namespace SysBot.Pokemon
 
         private async Task DoJusticeEncounter(CancellationToken token)
         {
+            Log("For a better experience, ldn-mitm sysmodule is suggested to be installed.");
+            bool reset = false;
             while (!token.IsCancellationRequested)
             {
                 // Waiting to be in the overworld
                 while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                    await Task.Delay(2_000, token).ConfigureAwait(false);
+                    await Task.Delay(0_500, token).ConfigureAwait(false);
 
                 // Enter and exit Pokecamp in order to respawn the Pokemon
                 await PokeCamp(token);
 
                 //Check position
                 int i = 0;
-                while (!await IsInBattle(token).ConfigureAwait(false))
+                while (!await IsInBattle(token).ConfigureAwait(false) && !reset)
                 {
-                    await Task.Delay(1_000, token).ConfigureAwait(false);
-                    if (i==5) Log("Position could be wrong or Pokécamp option is not the first available in the menu.\n");
+                    await Task.Delay(0_500, token).ConfigureAwait(false);
+                    if (i == 15)
+                    {
+                        Log("Position could be wrong or Pokécamp option is not the first available in the menu.\nTrying to reset the game.");
+                        reset = true;
+                    }
+                    if (reset == true)
+                    {
+                        reset = false;
+                        i = 0;
+                        await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                        await StartGame(Hub.Config, token).ConfigureAwait(false);
+                    }
                     i++;
                 }
 
@@ -260,14 +274,56 @@ namespace SysBot.Pokemon
 
                     // Offsets are flickery so make sure we see it 3 times.
                     for (i = 0; i < 3; i++)
+                        await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
+
+                if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
+                    return;
+
+                // Run away if not the wanted encounter
+                while (await IsInBattle(token).ConfigureAwait(false))
+                {
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                    await FleeToOverworld(token).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private async Task DoGArticunoEncounter(CancellationToken token)
+        {
+            Log("PLEASE NOTE THAT THIS BOT IS NOT FULLY FUNCTIONAL. ONLY AVAILABLE FOR TESTING PURPOSES.");
+            while (!token.IsCancellationRequested)
+            {
+                //Waiting for Articuno Battle
+                int i = 0;
+                while (await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false) == null)
+                {
+                    await Task.Delay(0_500, token).ConfigureAwait(false);
+                    if (i == 5) Log("The Pokémon is flew away. Sorry.");
+                    i++;
+                }
+
+                //Read Pokémon Information
+                Log("Encounter Articuno started! Checking details...");
+                var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                if (pk == null)
+                    Log("Not right Offset.");
+
+                // Offsets are flickery so make sure we see it 3 times.
+                for (i = 0; i < 3; i++)
                     await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
 
                 if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
                     return;
 
                 // Run awai if not the wanted encounter
-                while (await IsInBattle(token).ConfigureAwait(false))
-                    await FleeToOverworld(token).ConfigureAwait(false);
+                await FleeToOverworld(token).ConfigureAwait(false);
+
+                // Waiting to be in the overworld
+                while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                    await Click(A, 1_000, token).ConfigureAwait(false);
+
+                // Enter and exit Pokecamp in order to respawn the Pokemon
+                await PokeCamp(token);
             }
         }
 
@@ -362,6 +418,7 @@ namespace SysBot.Pokemon
         private async Task FleeToOverworld(CancellationToken token)
         {
             // This routine will always escape a battle.
+            await Task.Delay(1_000, token).ConfigureAwait(false);
             await Click(DUP, 0_400, token).ConfigureAwait(false);
             await Click(A, 0_400, token).ConfigureAwait(false);
             await Click(B, 0_400, token).ConfigureAwait(false);
