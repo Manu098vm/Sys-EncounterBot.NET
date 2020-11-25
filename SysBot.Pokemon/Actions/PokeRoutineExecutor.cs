@@ -452,20 +452,11 @@ namespace SysBot.Pokemon
         public async Task PokeCamp(PokeTradeHubConfig config, CancellationToken token)
         {
             // Open Poke Camp and return to the overworld
-            try
-            {
-                Log("Opening Camp...");
-                await Click(X, 2_500, token).ConfigureAwait(false);
-                await Click(A, 9_000, token).ConfigureAwait(false);
-                await Click(B, 2_000, token).ConfigureAwait(false);
-                await Click(A, 2_000, token).ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                Log(e + "Exception Caught. Trying to restart.");
-                await CloseGame(config, token).ConfigureAwait(false);
-                await StartGame(config, token).ConfigureAwait(false);
-            }
+            Log("Opening Camp...");
+            await Click(X, 2_500, token).ConfigureAwait(false);
+            await Click(A, 9_000, token).ConfigureAwait(false);
+            await Click(B, 2_000, token).ConfigureAwait(false);
+            await Click(A, 2_000, token).ConfigureAwait(false);
         }
     }
 }

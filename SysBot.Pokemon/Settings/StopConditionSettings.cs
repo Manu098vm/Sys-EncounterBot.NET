@@ -102,11 +102,14 @@ namespace SysBot.Pokemon
 
         private static bool HasMark(IRibbonIndex pk, MarkIndex target, bool specific)
         {
-            for (var mark = RibbonIndex.MarkLunchtime; mark <= RibbonIndex.MarkSlump; mark++)
-            {
-                if ((!specific && pk.GetRibbon((int)mark)) || (specific && pk.GetRibbon((int)mark) && mark.Equals(target)))
-                    return true;
+            if (!specific) {
+                for (var mark = RibbonIndex.MarkLunchtime; mark <= RibbonIndex.MarkSlump; mark++)
+                    if ((!specific && pk.GetRibbon((int)mark)) || (specific && pk.GetRibbon((int)mark) && mark.Equals(target)))
+                        return true;
             }
+            else if (specific && pk.GetRibbon((int)target))
+                return true;
+
             return false;
         }
     }
