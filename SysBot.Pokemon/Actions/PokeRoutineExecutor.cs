@@ -318,11 +318,8 @@ namespace SysBot.Pokemon
             for (int i = 0; i < 5; i++)
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
-            while (!await IsOnOverworld(config, token).ConfigureAwait(false) && !await IsInBattle(token))
-            {
+            while (!(await IsOnOverworld(config, token).ConfigureAwait(false) || await IsInBattle(token)))
                 await Task.Delay(2_000, token).ConfigureAwait(false);
-                await Click(A, 1_000, token).ConfigureAwait(false);
-            }
 
             Log("Back in the overworld!");
         }
@@ -452,14 +449,23 @@ namespace SysBot.Pokemon
             };
         }
 
-        public async Task PokeCamp(CancellationToken token)
+        public async Task PokeCamp(PokeTradeHubConfig config, CancellationToken token)
         {
             // Open Poke Camp and return to the overworld
-            Log("Opening Camp...");
-            await Click(X, 1_500, token).ConfigureAwait(false);
-            await Click(A, 8_000, token).ConfigureAwait(false);
-            await Click(B, 2_000, token).ConfigureAwait(false);
-            await Click(A, 1_000, token).ConfigureAwait(false);
+            try
+            {
+                Log("Opening Camp...");
+                await Click(X, 2_500, token).ConfigureAwait(false);
+                await Click(A, 9_000, token).ConfigureAwait(false);
+                await Click(B, 2_000, token).ConfigureAwait(false);
+                await Click(A, 2_000, token).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Log(e + "Exception Caught. Trying to restart.");
+                await CloseGame(config, token).ConfigureAwait(false);
+                await StartGame(config, token).ConfigureAwait(false);
+            }
         }
     }
 }

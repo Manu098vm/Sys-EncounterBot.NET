@@ -164,7 +164,7 @@ namespace SysBot.Pokemon
                 }
 
                 // Offsets are flickery so make sure we see it 3 times.
-                                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 3; i++)
                     await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
 
                 if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
@@ -237,7 +237,7 @@ namespace SysBot.Pokemon
                     await Task.Delay(0_500, token).ConfigureAwait(false);
 
                 // Enter and exit Pokecamp in order to respawn the Pokemon
-                await PokeCamp(token);
+                await PokeCamp(Hub.Config, token);
 
                 //Check position
                 int i = 0;
@@ -255,6 +255,7 @@ namespace SysBot.Pokemon
                         i = 0;
                         await CloseGame(Hub.Config, token).ConfigureAwait(false);
                         await StartGame(Hub.Config, token).ConfigureAwait(false);
+                        Log("Continue looping");
                     }
                     i++;
                 }
@@ -272,9 +273,9 @@ namespace SysBot.Pokemon
                     continue;
                 }
 
-                    // Offsets are flickery so make sure we see it 3 times.
-                    for (i = 0; i < 3; i++)
-                        await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
+                // Offsets are flickery so make sure we see it 3 times.
+                for (i = 0; i < 3; i++)
+                    await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
 
                 if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
                     return;
@@ -285,6 +286,9 @@ namespace SysBot.Pokemon
                     await Task.Delay(1_000, token).ConfigureAwait(false);
                     await FleeToOverworld(token).ConfigureAwait(false);
                 }
+
+                // Extra delay to be sure we're fully out of the battle.
+                await Task.Delay(0_250, token).ConfigureAwait(false);
             }
         }
 
@@ -323,7 +327,7 @@ namespace SysBot.Pokemon
                     await Click(A, 1_000, token).ConfigureAwait(false);
 
                 // Enter and exit Pokecamp in order to respawn the Pokemon
-                await PokeCamp(token);
+                await PokeCamp(Hub.Config, token);
             }
         }
 
@@ -386,7 +390,7 @@ namespace SysBot.Pokemon
         private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)
         {
             encounterCount++;
-            Log($"Encounter: {encounterCount}{Environment.NewLine}{ShowdownSet.GetShowdownText(pk)}{Environment.NewLine}");
+            Log($"Encounter: {encounterCount}{Environment.NewLine}{Environment.NewLine}{ShowdownSet.GetShowdownText(pk)}{Environment.NewLine}{getRibbonsList(pk)}{Environment.NewLine}");
             if (legends)
                 Counts.AddCompletedLegends();
             else
@@ -407,6 +411,19 @@ namespace SysBot.Pokemon
             }
 
             return false;
+        }
+
+        private string getRibbonsList(PK8 pk)
+        {
+            string ribbonsList = "Ribbons: ";
+            for (var mark = RibbonIndex.MarkLunchtime; mark <= RibbonIndex.MarkSlump; mark++)
+                if (pk.GetRibbon((int)mark))
+                    ribbonsList += mark;
+
+            if (ribbonsList.Equals("Ribbons: "))
+                ribbonsList += "[]";
+
+            return ribbonsList;
         }
 
         private async Task ResetStick(CancellationToken token)

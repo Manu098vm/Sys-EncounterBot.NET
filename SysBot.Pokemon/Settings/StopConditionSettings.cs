@@ -21,8 +21,8 @@ namespace SysBot.Pokemon
         [Category(StopConditions), Description("Selects the shiny type to stop on.")]
         public TargetShinyType ShinyTarget { get; set; } = TargetShinyType.DisableOption;
 
-        [Category(StopConditions), Description("Stop only on Pokémon that have a mark.")]
-        public bool MarkOnly { get; set; } = false;
+        [Category(StopConditions), Description("If set to \"Any\", the bot will target a Pokémon that has any of the Marks listed. Select a certain Mark if you're hunting for it specifically. No restrictions if set to \"None\".")]
+        public MarkIndex MarkTarget { get; set; } = MarkIndex.None;
 
         [Category(StopConditions), Description("Holds Capture button to record a 30 second clip when a matching Pokémon is found by EncounterBot or Fossilbot.")]
         public bool CaptureVideoClip { get; set; }
@@ -42,8 +42,10 @@ namespace SysBot.Pokemon
             if (settings.TargetNature != Nature.Random && settings.TargetNature != (Nature)pk.Nature)
                 return false;
 
-            if (settings.MarkOnly && !HasMark(pk))
-                return false;
+            //If target is Any Mark then do the standard routine otherwise check for a specific Marker
+            if ((settings.MarkTarget == MarkIndex.Any && !HasMark(pk, settings.MarkTarget, false)) || 
+                (settings.MarkTarget != MarkIndex.None && settings.MarkTarget != MarkIndex.Any && !HasMark(pk, settings.MarkTarget, true)))
+                 return false;
 
             if (settings.ShinyTarget != TargetShinyType.DisableOption)
             {
@@ -98,11 +100,11 @@ namespace SysBot.Pokemon
             return targetIVs;
         }
 
-        private static bool HasMark(IRibbonIndex pk)
+        private static bool HasMark(IRibbonIndex pk, MarkIndex target, bool specific)
         {
             for (var mark = RibbonIndex.MarkLunchtime; mark <= RibbonIndex.MarkSlump; mark++)
             {
-                if (pk.GetRibbon((int)mark))
+                if ((!specific && pk.GetRibbon((int)mark)) || (specific && pk.GetRibbon((int)mark) && mark.Equals(target)))
                     return true;
             }
             return false;
@@ -116,5 +118,56 @@ namespace SysBot.Pokemon
         AnyShiny,       // Match any shiny regardless of type
         StarOnly,       // Match star shiny only
         SquareOnly,     // Match square shiny only
+    }
+
+    public enum MarkIndex
+    {
+        None = 0,
+        Any = 1,
+        MarkLunchtime = 53,
+        MarkSleepyTime = 54,
+        MarkDusk = 55,
+        MarkDawn = 56,
+        MarkCloudy = 57,
+        MarkRainy = 58,
+        MarkStormy = 59,
+        MarkSnowy = 60,
+        MarkBlizzard = 61,
+        MarkDry = 62,
+        MarkSandstorm = 63,
+        MarkMisty = 64,
+        MarkDestiny = 65,
+        MarkFishing = 66,
+        MarkCurry = 67,
+        MarkUncommon = 68,
+        MarkRare = 69,
+        MarkRowdy = 70,
+        MarkAbsentMinded = 71,
+        MarkJittery = 72,
+        MarkExcited = 73,
+        MarkCharismatic = 74,
+        MarkCalmness = 75,
+        MarkIntense = 76,
+        MarkZonedOut = 77,
+        MarkJoyful = 78,
+        MarkAngry = 79,
+        MarkSmiley = 80,
+        MarkTeary = 81,
+        MarkUpbeat = 82,
+        MarkPeeved = 83,
+        MarkIntellectual = 84,
+        MarkFerocious = 85,
+        MarkCrafty = 86,
+        MarkScowling = 87,
+        MarkKindly = 88,
+        MarkFlustered = 89,
+        MarkPumpedUp = 90,
+        MarkZeroEnergy = 91,
+        MarkPrideful = 92,
+        MarkUnsure = 93,
+        MarkHumble = 94,
+        MarkThorny = 95,
+        MarkVigor = 96,
+        MarkSlump = 97
     }
 }
