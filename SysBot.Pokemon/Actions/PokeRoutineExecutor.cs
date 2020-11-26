@@ -315,11 +315,8 @@ namespace SysBot.Pokemon
             // Switch Logo lag, skip cutscene, game load screen
             await Task.Delay(13_000 + config.Timings.ExtraTimeLoadGame, token).ConfigureAwait(false);
 
-            for (int i = 0; i < 5; i++)
-                await Click(A, 1_000, token).ConfigureAwait(false);
-
             while (!(await IsOnOverworld(config, token).ConfigureAwait(false) || await IsInBattle(token)))
-                await Task.Delay(2_000, token).ConfigureAwait(false);
+                await Click(A, 2_000, token).ConfigureAwait(false);
 
             Log("Back in the overworld!");
         }
