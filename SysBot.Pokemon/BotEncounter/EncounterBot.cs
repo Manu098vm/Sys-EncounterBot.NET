@@ -222,41 +222,23 @@ namespace SysBot.Pokemon
 
         private async Task DoJusticeEncounter(CancellationToken token)
         {
-            Log("For a better experience, ldn-mitm sysmodule is suggested to be installed.");
-            bool reset = false;
+            Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
             while (!token.IsCancellationRequested)
             {
-                Log("Start");
-                // Enter and exit Pokecamp in order to respawn the Pokemon
-                await PokeCamp(Hub.Config, token);
+                Log("Restarting game...");
+                await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                await StartGame(Hub.Config, token).ConfigureAwait(false);
 
-                //Check position
-                int i = 0;
-                while (!await IsInBattle(token).ConfigureAwait(false) && !reset)
-                {
-                    await Task.Delay(0_500, token).ConfigureAwait(false);
-                    if (i == 15)
-                    {
-                        Log("Position could be wrong or Pokécamp option is not the first available in the menu.\nTrying to reset the game.");
-                        reset = true;
-                    }
-                    if (reset == true)
-                    {
-                        reset = false;
-                        i = 0;
-                        await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                        await StartGame(Hub.Config, token).ConfigureAwait(false);
-                        Log("Continue looping");
-                    }
-                    i++;
-                }
+                Log("Looking for a Legendary...");
+                // Click through all the menus untill the encounter.
+                while (!await IsInBattle(token).ConfigureAwait(false))
+                    await Click(A, 1_000, token).ConfigureAwait(false);
 
-                //Read Pokémon Information
                 Log("Encounter started! Checking details...");
                 var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
                 if (pk == null)
                 {
-                    Log("Not right Offset. Restarting loop.");
+                    Log("Not Wild Offset. Restarting loop.");
 
                     // Flee and continue looping.
                     while (await IsInBattle(token).ConfigureAwait(false))
@@ -265,30 +247,11 @@ namespace SysBot.Pokemon
                 }
 
                 // Offsets are flickery so make sure we see it 3 times.
-                for (i = 0; i < 3; i++)
+                for (int i = 0; i < 3; i++)
                     await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
 
-                Log("Before Handle");
                 if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
                     return;
-                Log("After Handle");
-
-                // Run away if not the wanted encounter
-                while (!await IsOnOverworld(Hub.Config,token).ConfigureAwait(false))
-                {
-                    Log("IsInBattleLoop1");
-                    await Task.Delay(1_500, token).ConfigureAwait(false);
-                    await FleeToOverworld(token).ConfigureAwait(false);
-                    await Task.Delay(1_500, token).ConfigureAwait(false);
-                    Log("IsInBattleLoop2");
-                    continue;
-                }
-                Log("After IsInBattle");
-
-                // Extra delay to be sure we're fully out of the battle.
-                await Task.Delay(1_250, token).ConfigureAwait(false);
-
-                Log("End");
             }
         }
 
@@ -409,7 +372,7 @@ namespace SysBot.Pokemon
                 }
                 return true;
             }
-
+            Log("Ended Handle");
             return false;
         }
 
