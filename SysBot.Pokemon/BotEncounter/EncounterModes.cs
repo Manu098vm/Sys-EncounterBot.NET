@@ -38,10 +38,8 @@
         SwordsJustice,
 
         /// <summary>
-        /// Bot will soft reset the Swords of Justice Trio
+        /// Bot will soft reset Spiritomb
         /// </summary>
-        GalarianArticuno,
-
-        //LGPE,
+        Spiritomb,
     }
 }

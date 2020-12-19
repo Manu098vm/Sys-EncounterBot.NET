@@ -45,9 +45,9 @@ namespace SysBot.Pokemon
                 EncounterMode.Regigigas => DoRegigigasEncounter(token),
                 EncounterMode.Regis => DoRegiEncounter(token),
                 EncounterMode.LegendaryDogs => DoDogEncounter(token),
-                EncounterMode.SwordsJustice => DoJusticeEncounter(token),
-                EncounterMode.GalarianArticuno => DoGArticunoEncounter(token),
-                //EncounterMode.LGPE => DoLGPEEncounter(token),
+                //SoJ and Spirittomb uses the same routine
+                EncounterMode.SwordsJustice => DoJusticeEncounter(token,"Sword of Justice"),
+                EncounterMode.Spiritomb => DoJusticeEncounter(token,"Spiritomb"),
                 _ => WalkInLine(token),
             };
             await task.ConfigureAwait(false);
@@ -155,8 +155,6 @@ namespace SysBot.Pokemon
                 var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
                 if (pk == null)
                 {
-                    Log("Not Wild Offset. Restarting loop.");
-
                     // Flee and continue looping.
                     while (await IsInBattle(token).ConfigureAwait(false))
                         await FleeToOverworld(token).ConfigureAwait(false);
@@ -220,7 +218,7 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task DoJusticeEncounter(CancellationToken token)
+        private async Task DoJusticeEncounter(CancellationToken token, String name)
         {
             Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
             while (!token.IsCancellationRequested)
@@ -229,7 +227,7 @@ namespace SysBot.Pokemon
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
 
-                Log("Looking for a Legendary...");
+                Log("Looking for a " + name);
                 // Click through all the menus untill the encounter.
                 while (!await IsInBattle(token).ConfigureAwait(false))
                     await Click(A, 1_000, token).ConfigureAwait(false);
@@ -238,8 +236,6 @@ namespace SysBot.Pokemon
                 var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
                 if (pk == null)
                 {
-                    Log("Not Wild Offset. Restarting loop.");
-
                     // Flee and continue looping.
                     while (await IsInBattle(token).ConfigureAwait(false))
                         await FleeToOverworld(token).ConfigureAwait(false);
@@ -254,55 +250,6 @@ namespace SysBot.Pokemon
                     return;
             }
         }
-
-        private async Task DoGArticunoEncounter(CancellationToken token)
-        {
-            Log("PLEASE NOTE THAT THIS BOT IS NOT FULLY FUNCTIONAL. ONLY AVAILABLE FOR TESTING PURPOSES.");
-            while (!token.IsCancellationRequested)
-            {
-                //Waiting for Articuno Battle
-                int i = 0;
-                while (await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false) == null)
-                {
-                    await Task.Delay(0_500, token).ConfigureAwait(false);
-                    if (i == 5) Log("The Pokémon is flew away. Sorry.");
-                    i++;
-                }
-
-                //Read Pokémon Information
-                Log("Articuno Encounter started! Checking details...");
-                var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
-                if (pk == null)
-                    Log("Not right Offset.");
-
-                // Offsets are flickery so make sure we see it 3 times.
-                for (i = 0; i < 3; i++)
-                    await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
-
-                if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
-                    return;
-
-                // Run away if not the wanted encounter
-                await FleeToOverworld(token).ConfigureAwait(false);
-
-                // Waiting to be in the overworld
-                while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                    await Click(A, 1_000, token).ConfigureAwait(false);
-
-                // Enter and exit Pokecamp in order to respawn the Pokemon
-                await PokeCamp(Hub.Config, token);
-            }
-        }
-
-        private async Task DoLGPEEncounter(CancellationToken token)
-        {
-            Log("Inside the LGPE bot");
-            while (!token.IsCancellationRequested)
-            {
-                Log("");
-            }
-        }
-
 
         private async Task<int> StepUntilEncounter(CancellationToken token)
         {
