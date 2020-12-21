@@ -300,7 +300,15 @@ namespace SysBot.Pokemon
         private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)
         {
             encounterCount++;
-            Log($"Encounter: {encounterCount}{Environment.NewLine}{Environment.NewLine}{ShowdownSet.GetShowdownText(pk)}{Environment.NewLine}{getRibbonsList(pk)}{Environment.NewLine}");
+
+            //Star/Square Shiny Recognition
+            var showdowntext = ShowdownSet.GetShowdownText(pk);
+            if (pk.IsShiny && pk.ShinyXor == 0)
+                showdowntext.Replace("Shiny: Yes", "Shiny: Square");
+            else if(pk.IsShiny)
+                showdowntext.Replace("Shiny: Yes", "Shiny: Star");
+
+            Log($"Encounter: {encounterCount}{Environment.NewLine}{Environment.NewLine}{showdowntext}{Environment.NewLine}{getRibbonsList(pk)}{Environment.NewLine}{Environment.NewLine}");
             if (legends)
                 Counts.AddCompletedLegends();
             else
@@ -319,7 +327,6 @@ namespace SysBot.Pokemon
                 }
                 return true;
             }
-            Log("Ended Handle");
             return false;
         }
 
