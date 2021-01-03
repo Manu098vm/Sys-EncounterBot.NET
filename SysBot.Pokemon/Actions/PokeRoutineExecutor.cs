@@ -401,6 +401,22 @@ namespace SysBot.Pokemon
             return data[0] == (Version == GameVersion.SH ? 0x40 : 0x41);
         }
 
+        public async Task<bool> IsInLairWait(CancellationToken token)
+        {
+            //CHECK LANGUAGE! [only tested italian]
+            if (BitConverter.GetBytes(CurrentScreen_LairMenu).SequenceEqual(await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false)))
+                return true;
+            else return false;
+        }
+
+        public async Task<bool> IsInLairEndList(CancellationToken token)
+        {
+            //CHECK LANGUAGE! [only tested italian]
+            if (BitConverter.GetBytes(CurrentScreen_LairEndList).SequenceEqual(await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false)))
+                return true;
+            else return false;
+        }
+
         public async Task<bool> IsInBox(CancellationToken token)
         {
             var data = await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false);
@@ -453,16 +469,6 @@ namespace SysBot.Pokemon
                 ConsoleLanguageParameter.Korean => OverworldOffsetKorean,
                 _ => OverworldOffset,
             };
-        }
-
-        public async Task PokeCamp(PokeTradeHubConfig config, CancellationToken token)
-        {
-            // Open Poke Camp and return to the overworld
-            Log("Opening Camp...");
-            await Click(X, 2_500, token).ConfigureAwait(false);
-            await Click(A, 9_000, token).ConfigureAwait(false);
-            await Click(B, 2_000, token).ConfigureAwait(false);
-            await Click(A, 2_000, token).ConfigureAwait(false);
         }
     }
 }

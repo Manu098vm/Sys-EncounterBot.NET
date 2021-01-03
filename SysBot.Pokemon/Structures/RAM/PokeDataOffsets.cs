@@ -8,9 +8,11 @@ namespace SysBot.Pokemon
         public const uint CurrentBoxOffset = 0x450C680E;
         public const uint TrainerDataOffset = 0x45068F18;
         public const uint SoftBanUnixTimespanOffset = 0x450C89E8;
-        public const uint IsConnectedOffset = 0x30c7cca8;
+        public const uint IsConnectedOffset = 0x30C7CCA8;
         public const uint TextSpeedOffset = 0x450690A0;
         public const uint ItemTreasureAddress = 0x45068970;
+        public const uint demageOutputOffset = 0x007E37F0;
+        public const uint LairSpeciesSelector = 0x50B12278;
 
         // Raid Offsets
         // The dex number of the Pokémon the host currently has chosen. 
@@ -96,6 +98,10 @@ namespace SysBot.Pokemon
 
         //public const uint CurrentScreen_YMenu = 0xFFFF7983;
         public const uint CurrentScreen_RaidParty = 0xFF1461DB;
+
+        public const uint CurrentScreen_LairMenu = 0xFFAC2CC4;
+
+        public const uint CurrentScreen_LairEndList = 0xFFF4F5FF;
         #endregion
 
         public static uint GetTrainerNameOffset(TradeMethod tradeMethod)

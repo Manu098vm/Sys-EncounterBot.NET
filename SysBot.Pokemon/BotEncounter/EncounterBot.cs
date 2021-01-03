@@ -1,5 +1,6 @@
 ﻿using PKHeX.Core;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
@@ -45,9 +46,11 @@ namespace SysBot.Pokemon
                 EncounterMode.Regigigas => DoRegigigasEncounter(token),
                 EncounterMode.Regis => DoRegiEncounter(token),
                 EncounterMode.LegendaryDogs => DoDogEncounter(token),
+                EncounterMode.StatsLiveChecking => LiveStatsChecking(token),
                 //SoJ and Spirittomb uses the same routine
                 EncounterMode.SwordsJustice => DoJusticeEncounter(token,"Sword of Justice"),
                 EncounterMode.Spiritomb => DoJusticeEncounter(token,"Spiritomb"),
+                EncounterMode.DynamaxAdventure => DoDynamaxAdventure(token),
                 _ => WalkInLine(token),
             };
             await task.ConfigureAwait(false);
@@ -218,6 +221,30 @@ namespace SysBot.Pokemon
             }
         }
 
+        private async Task LiveStatsChecking(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                while (await IsInBattle(token).ConfigureAwait(false))
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+
+                while (!await IsInBattle(token).ConfigureAwait(false))
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+
+                Log("Encounter started! Checking details...");
+                var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+
+                // Offsets are flickery so make sure we see it 3 times.
+                for (int i = 0; i < 3; i++)
+                    await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
+
+                if (pk == null)
+                    Log("Pokémon Check error!");
+                else
+                    await HandleEncounter(pk, false, token).ConfigureAwait(false);
+            }
+        }
+
         private async Task DoJusticeEncounter(CancellationToken token, String name)
         {
             Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
@@ -248,6 +275,116 @@ namespace SysBot.Pokemon
 
                 if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
                     return;
+            }
+        }
+
+        private async Task DoDynamaxAdventure(CancellationToken token)
+        {
+            Log("EXPERIMENTAL!!!!!");
+            //Initialization
+            string mon = Hub.Config.StopConditions.StopOnSpecies.ToString();
+            ushort searchmon = (ushort)Enum.Parse(typeof(LairSpecies), "Articuno");
+            byte[] demageStandardState = BitConverter.GetBytes(0x7900E808);
+            byte[] demageAlteredState = BitConverter.GetBytes(0x7900E81F);
+            byte[] demageTemporalState;
+            ulong mainbase = await Connection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
+            int lostCount = 0;
+
+            //Set Lair Species to Hunt
+            if (Enum.IsDefined(typeof(LairSpecies), mon))
+                searchmon = (ushort)Enum.Parse(typeof(LairSpecies), mon);
+            else
+            {
+                Log(mon + " is not an available Species as Lair Boss. StopConditions settings will be reloaded to Articuno as Default. If you want to hunt another Pokémon, please Stop the bot and check your settings.");
+                Hub.Config.StopConditions.StopOnSpecies = (Species)144;
+            }
+            await Connection.WriteBytesAsync(BitConverter.GetBytes(searchmon), LairSpeciesSelector, token);
+            Log(mon + " Lair Boss ready to be hunted.");
+
+            while (!token.IsCancellationRequested)
+            {
+                //Talk to the Lady
+                while (!(await IsInLairWait(token).ConfigureAwait(false)))
+                    await Click(A, 1_000, token).ConfigureAwait(false);
+
+                //Select Solo Adventure
+                await Click(DDOWN, 0_800, token).ConfigureAwait(false);
+                await Click(A, 0_800, token).ConfigureAwait(false);
+
+                //MAIN LOOP
+                int raidCount = 1;
+                bool inBattle = false;
+                bool lost = false;
+                while (!(await IsInLairEndList(token).ConfigureAwait(false) || lost))
+                {
+                    if (!await IsInBattle(token).ConfigureAwait(false) && inBattle)
+                    {
+                        inBattle = false;
+                    }
+                    else if (await IsInBattle(token).ConfigureAwait(false) && !inBattle)
+                    {
+                        //Allows 1HKO
+                        demageTemporalState = await Connection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
+                        if (demageStandardState.SequenceEqual(demageTemporalState))
+                        {
+                            await Connection.WriteBytesAbsoluteAsync(demageAlteredState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
+                            Log("Entered battle, 1HKO Enabled.");
+                        }
+                        Log("Raid Battle: " + raidCount);
+                        inBattle = true;
+                        raidCount++;
+                    }
+                    else if (!await IsInBattle(token).ConfigureAwait(false) && !inBattle)
+                    {
+                        //Disable 1HKO
+                        demageTemporalState = await Connection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
+                        if (demageAlteredState.SequenceEqual(demageTemporalState))
+                        {
+                            await Connection.WriteBytesAbsoluteAsync(demageStandardState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
+                            Log("Out of battle, 1HKO Disabled.");
+                        }
+                    }
+                    else if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                    {
+                        lost = true;
+                        lostCount++;
+                        Log("Lost Count: " + lostCount);
+                    }
+                }
+
+                //Disable 1HKO
+                demageTemporalState = await Connection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
+                if (demageAlteredState.SequenceEqual(demageTemporalState))
+                {
+                    await Connection.WriteBytesAbsoluteAsync(demageStandardState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
+                    Log("End Loop, 1HKO Disabled.");
+                }
+
+                var pk1 = await ReadUntilPresent(0xAF286538, 2_000, 0_200, token).ConfigureAwait(false);
+                var pk2 = await ReadUntilPresent(0xAF2867C8, 2_000, 0_200, token).ConfigureAwait(false);
+                var pk3 = await ReadUntilPresent(0xAF286A58, 2_000, 0_200, token).ConfigureAwait(false);
+                var pk4 = await ReadUntilPresent(0xAF286CE8, 2_000, 0_200, token).ConfigureAwait(false);
+                int found = 0;
+                if (pk1 != null && pk1.IsShiny)
+                    found = 1;
+                if (pk2 != null && pk2.IsShiny)
+                    found = 2;
+                if (pk3 != null && pk3.IsShiny)
+                    found = 3;
+                if (pk4 != null && pk4.IsShiny)
+                    found = 4;
+                if (found > 0)
+                {
+                    Log("Shiny!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    for (int y = 0; y < found; y++)
+                        await Click(DDOWN, 0_800, token).ConfigureAwait(false);
+                }
+                else
+                {
+                    Log("No result found, starting again");
+                    await Click(B, 1_000, token).ConfigureAwait(false);
+                    await Click(A, 0_800, token).ConfigureAwait(false);
+                }
             }
         }
 
@@ -304,11 +441,11 @@ namespace SysBot.Pokemon
             //Star/Square Shiny Recognition
             var showdowntext = ShowdownSet.GetShowdownText(pk);
             if (pk.IsShiny && pk.ShinyXor == 0)
-                showdowntext.Replace("Shiny: Yes", "Shiny: Square");
+                showdowntext = showdowntext.Replace("Yes", "Square");
             else if(pk.IsShiny)
-                showdowntext.Replace("Shiny: Yes", "Shiny: Star");
+                showdowntext = showdowntext.Replace("Yes", "Star");
 
-            Log($"Encounter: {encounterCount}{Environment.NewLine}{Environment.NewLine}{showdowntext}{Environment.NewLine}{getRibbonsList(pk)}{Environment.NewLine}{Environment.NewLine}");
+            Log($"Encounter: {encounterCount}{Environment.NewLine}{Environment.NewLine}{showdowntext}{Environment.NewLine}{GetRibbonsList(pk)}{Environment.NewLine}");
             if (legends)
                 Counts.AddCompletedLegends();
             else
@@ -330,7 +467,7 @@ namespace SysBot.Pokemon
             return false;
         }
 
-        private string getRibbonsList(PK8 pk)
+        private string GetRibbonsList(PK8 pk)
         {
             string ribbonsList = "Ribbons: ";
             for (var mark = MarkIndex.MarkLunchtime; mark <= MarkIndex.MarkSlump; mark++)
@@ -361,10 +498,61 @@ namespace SysBot.Pokemon
                 await Click(B, 0_400, token).ConfigureAwait(false);
                 await Click(B, 0_400, token).ConfigureAwait(false);
                 Log("End flee");
-            } catch (Exception e)
+            } catch (Exception)
             {
                 Log("Stuck in there!");
             }
+        }
+
+        public enum LairSpecies : ushort
+        {
+            Articuno = 144,
+            Zapdos = 145,
+            Moltres = 146,
+            Mewtwo = 150,
+            Raikou = 243,
+            Entei = 244,
+            Suicune = 245,
+            Lugia = 249,
+            HoOh = 250,
+            Latias = 380,
+            Latios = 381,
+            Kyogre = 382,
+            Groudon = 383,
+            Rayquaza = 384,
+            Uxie = 480,
+            Mesprit = 481,
+            Azelf = 482,
+            Dialga = 483,
+            Palkia = 484,
+            Heatran = 485,
+            Giratina = 487,
+            Cresselia = 488,
+            Tornadus = 641,
+            Thundurus = 642,
+            Landorus = 645,
+            Reshiram = 643,
+            Zekrom = 644,
+            Kyurem = 646,
+            Xerneas = 716,
+            Yveltal = 717,
+            Zygarde = 718,
+            TapuKoko = 785,
+            TapuLele = 786,
+            TapuBulu = 787,
+            TapuFIni = 788,
+            Solgaleo = 791,
+            Lunala = 792,
+            Nihilego = 793,
+            Buzzwole = 794,
+            Pheromosa = 795,
+            Xurkitree = 796,
+            Celesteela = 797,
+            Kartana = 798,
+            Guzzlord = 799,
+            Necrozma = 800,
+            Stakataka = 805,
+            Blacephalon = 806
         }
     }
 }
