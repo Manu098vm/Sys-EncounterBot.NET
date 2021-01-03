@@ -309,7 +309,7 @@ namespace SysBot.Pokemon
 
                 //Select Solo Adventure
                 await Click(DDOWN, 0_800, token).ConfigureAwait(false);
-                await Click(A, 0_800, token).ConfigureAwait(false);
+                await Click(A, 1_000, token).ConfigureAwait(false);
 
                 //MAIN LOOP
                 int raidCount = 1;
@@ -317,6 +317,7 @@ namespace SysBot.Pokemon
                 bool lost = false;
                 while (!(await IsInLairEndList(token).ConfigureAwait(false) || lost))
                 {
+                    await Click(A, 1_000, token).ConfigureAwait(false);
                     if (!await IsInBattle(token).ConfigureAwait(false) && inBattle)
                     {
                         inBattle = false;
