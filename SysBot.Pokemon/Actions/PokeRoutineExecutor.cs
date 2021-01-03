@@ -412,16 +412,18 @@ namespace SysBot.Pokemon
 
         public async Task<bool> IsInLairEndList(CancellationToken token, int time)
         {
-            //Start byte and end byte are always FF. The same scenario applies when a raid battles end, so in orded to be sure to be in the EndList, we need to check the bytes for at least 3 times/seconds.
+            Log(BitConverter.ToString(await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false)));
+
+            //Start byte and end byte are always FF. The same scenario applies when a raid battles end, so in orded to be sure to be in the EndList, we need to check the bytes for at least 4 times
             byte currentScreen1 = (await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false))[0];
             byte currentScreen2 = (await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false))[1];
             byte currentScreen3 = (await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false))[2];
             byte currentScreen4 = (await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false))[3];
             byte compare = 0xFF;
             //Log(currentScreen1 + " " + currentScreen4 + " " + compare);
-            if ((currentScreen1 == currentScreen4) && (currentScreen1 == compare))
+            if ((currentScreen1 == currentScreen4) && (currentScreen1 == compare) && (currentScreen2 != compare && currentScreen3 != compare))
             {
-                Log("Values match.");
+                Log("EndList values match " + time);
                 if(time >= 3)
                     return true;
                 else
@@ -431,10 +433,7 @@ namespace SysBot.Pokemon
                 }
             }
             else
-            {
-                Log("Values do not match.");
                 return false;
-            }
         }
 
         public async Task<bool> IsInBox(CancellationToken token)

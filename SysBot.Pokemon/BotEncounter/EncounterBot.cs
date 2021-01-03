@@ -288,7 +288,7 @@ namespace SysBot.Pokemon
             byte[] demageAlteredState = BitConverter.GetBytes(0x7900E81F);
             byte[] demageTemporalState;
             ulong mainbase = await Connection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
-            int lostCount = 0;
+            bool wasVideoClipActive = Hub.Config.StopConditions.CaptureVideoClip;
 
             //Set Lair Species to Hunt
             if (Enum.IsDefined(typeof(LairSpecies), mon))
@@ -303,16 +303,27 @@ namespace SysBot.Pokemon
 
             while (!token.IsCancellationRequested)
             {
-                /*Log("Current Screen: " + BitConverter.ToString(await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false)));
-                Log("Current Screen INT: " + BitConverter.ToInt32(await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false), 0));
-                Log((await IsInLairEndList(token).ConfigureAwait(false)).ToString());*/
+                //Capture video clip is menaged internally
+                if (Hub.Config.StopConditions.CaptureVideoClip == true)
+                    Hub.Config.StopConditions.CaptureVideoClip = false;
+
+                //Edgecase note: If in a Raid Battle, sometimes the isInLairWait return a wrong statement. The Edgecase is handled here, as result the raidcount for the current streak is broken.
+                /*Log("OOOO SONO QUI");
+                if (await IsInBattle(token).ConfigureAwait(false))
+                    Log("OOOOO SONO DENTRO ALL'IF 1");
+                else
+                    Log("OOOO SONO DENTRO ALL'IF 2");*/
+
                 //Talk to the Lady
-                while (!(await IsInLairWait(token).ConfigureAwait(false)))
+                while (!(await IsInLairWait(token).ConfigureAwait(false) || await IsInBattle(token).ConfigureAwait(false)))
                     await Click(A, 1_000, token).ConfigureAwait(false);
 
                 //Select Solo Adventure
-                await Click(DDOWN, 0_800, token).ConfigureAwait(false);
-                await Click(A, 1_000, token).ConfigureAwait(false);
+                if (!await IsInBattle(token).ConfigureAwait(false))
+                {
+                    await Click(DDOWN, 0_800, token).ConfigureAwait(false);
+                    await Click(A, 1_000, token).ConfigureAwait(false);
+                }
 
                 //MAIN LOOP
                 int raidCount = 1;
@@ -320,12 +331,9 @@ namespace SysBot.Pokemon
                 bool lost = false;
                 while (!(await IsInLairEndList(token, 0).ConfigureAwait(false) || lost))
                 {
-                    //Log("Current Screen: " + BitConverter.ToInt32(await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false),0));
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     if (!await IsInBattle(token).ConfigureAwait(false) && inBattle)
-                    {
                         inBattle = false;
-                    }
                     else if (await IsInBattle(token).ConfigureAwait(false) && !inBattle)
                     {
                         //Allows 1HKO
@@ -352,8 +360,7 @@ namespace SysBot.Pokemon
                     else if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
                     {
                         lost = true;
-                        lostCount++;
-                        Log("Lost Count: " + lostCount);
+                        Log("Lost at first raid.");
                     }
                 }
 
@@ -365,30 +372,49 @@ namespace SysBot.Pokemon
                     Log("End Loop, 1HKO Disabled.");
                 }
 
-                var pk1 = await ReadUntilPresent(0xAF286538, 2_000, 0_200, token).ConfigureAwait(false);
-                var pk2 = await ReadUntilPresent(0xAF2867C8, 2_000, 0_200, token).ConfigureAwait(false);
-                var pk3 = await ReadUntilPresent(0xAF286A58, 2_000, 0_200, token).ConfigureAwait(false);
-                var pk4 = await ReadUntilPresent(0xAF286CE8, 2_000, 0_200, token).ConfigureAwait(false);
+                //Fucking offsets are different every time the game is rebooted or significant actions are made during gameplay.
+                var pk1 = await ReadUntilPresent(0xAF29AA40, 2_000, 0_200, token).ConfigureAwait(false);
+                var pk2 = await ReadUntilPresent(0xAF29AC70, 2_000, 0_200, token).ConfigureAwait(false);
+                var pk3 = await ReadUntilPresent(0xAF29AEC8, 2_000, 0_200, token).ConfigureAwait(false);
+                var pk4 = await ReadUntilPresent(0xAF29B158, 2_000, 0_200, token).ConfigureAwait(false);
+
                 int found = 0;
-                if (pk1 != null && pk1.IsShiny)
-                    found = 1;
-                if (pk2 != null && pk2.IsShiny)
-                    found = 2;
-                if (pk3 != null && pk3.IsShiny)
-                    found = 3;
-                if (pk4 != null && pk4.IsShiny)
-                    found = 4;
+                //Log(pk1.Species + " " + pk2.Species + " " + pk3.Species + " " + pk4.Species);
+                if (pk1 != null) {
+                    if(await HandleEncounter(pk1, true, token).ConfigureAwait(false))
+                        found = 1;
+                }
+                if (pk2 != null)
+                {
+                    if (await HandleEncounter(pk2, true, token).ConfigureAwait(false))
+                        found = 2;
+                }
+                if (pk3 != null)
+                {
+                    if (await HandleEncounter(pk3, true, token).ConfigureAwait(false))
+                        found = 3;
+                }
+                if (pk4 != null)
+                {
+                    if (await HandleEncounter(pk4, true, token).ConfigureAwait(false))
+                        found = 4;
+                }
                 if (found > 0)
                 {
                     Log("Shiny!!!!!!!!!!!!!!!!!!!!!!!!!");
-                    for (int y = 0; y < found; y++)
-                        await Click(DDOWN, 0_800, token).ConfigureAwait(false);
+                    for (int y = 1; y < found; y++)
+                        await Click(DDOWN, 1_000, token).ConfigureAwait(false);
+                    await Click(A, 0_800, token).ConfigureAwait(false);
+                    await Click(DDOWN, 0_800, token).ConfigureAwait(false);
+                    await Click(A, 0_800, token).ConfigureAwait(false);
+                    await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
+                    if (wasVideoClipActive == true)
+                        Hub.Config.StopConditions.CaptureVideoClip = true;
                 }
                 else
                 {
                     Log("No result found, starting again");
                     await Click(B, 1_000, token).ConfigureAwait(false);
-                    await Click(A, 0_800, token).ConfigureAwait(false);
                     while(!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
                         await Click(A, 0_800, token).ConfigureAwait(false);
                 }
