@@ -303,6 +303,9 @@ namespace SysBot.Pokemon
 
             while (!token.IsCancellationRequested)
             {
+                /*Log("Current Screen: " + BitConverter.ToString(await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false)));
+                Log("Current Screen INT: " + BitConverter.ToInt32(await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false), 0));
+                Log((await IsInLairEndList(token).ConfigureAwait(false)).ToString());*/
                 //Talk to the Lady
                 while (!(await IsInLairWait(token).ConfigureAwait(false)))
                     await Click(A, 1_000, token).ConfigureAwait(false);
@@ -315,8 +318,9 @@ namespace SysBot.Pokemon
                 int raidCount = 1;
                 bool inBattle = false;
                 bool lost = false;
-                while (!(await IsInLairEndList(token).ConfigureAwait(false) || lost))
+                while (!(await IsInLairEndList(token, 0).ConfigureAwait(false) || lost))
                 {
+                    //Log("Current Screen: " + BitConverter.ToInt32(await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false),0));
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     if (!await IsInBattle(token).ConfigureAwait(false) && inBattle)
                     {
@@ -385,6 +389,8 @@ namespace SysBot.Pokemon
                     Log("No result found, starting again");
                     await Click(B, 1_000, token).ConfigureAwait(false);
                     await Click(A, 0_800, token).ConfigureAwait(false);
+                    while(!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                        await Click(A, 0_800, token).ConfigureAwait(false);
                 }
             }
         }

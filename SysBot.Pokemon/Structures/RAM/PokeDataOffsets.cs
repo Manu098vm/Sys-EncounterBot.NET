@@ -101,7 +101,9 @@ namespace SysBot.Pokemon
 
         public const uint CurrentScreen_LairMenu = 0xFFAC2CC4;
 
-        public const uint CurrentScreen_LairEndList = 0xFFF4F5FF;
+        public const uint CurrentScreen_LairEndList1 = 0xFF0000FF;
+        public const uint CurrentScreen_LairEndList2 = 0xFFF5F5FF;
+
         #endregion
 
         public static uint GetTrainerNameOffset(TradeMethod tradeMethod)

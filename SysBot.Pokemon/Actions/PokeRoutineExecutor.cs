@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Collections;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsets;
@@ -409,12 +410,31 @@ namespace SysBot.Pokemon
             else return false;
         }
 
-        public async Task<bool> IsInLairEndList(CancellationToken token)
+        public async Task<bool> IsInLairEndList(CancellationToken token, int time)
         {
-            //CHECK LANGUAGE! [only tested italian]
-            if (BitConverter.GetBytes(CurrentScreen_LairEndList).SequenceEqual(await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false)))
-                return true;
-            else return false;
+            //Start byte and end byte are always FF. The same scenario applies when a raid battles end, so in orded to be sure to be in the EndList, we need to check the bytes for at least 3 times/seconds.
+            byte currentScreen1 = (await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false))[0];
+            byte currentScreen2 = (await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false))[1];
+            byte currentScreen3 = (await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false))[2];
+            byte currentScreen4 = (await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false))[3];
+            byte compare = 0xFF;
+            //Log(currentScreen1 + " " + currentScreen4 + " " + compare);
+            if ((currentScreen1 == currentScreen4) && (currentScreen1 == compare))
+            {
+                Log("Values match.");
+                if(time >= 3)
+                    return true;
+                else
+                {
+                    await Task.Delay(1_350, token).ConfigureAwait(false);
+                    return await IsInLairEndList(token, time + 1);
+                }
+            }
+            else
+            {
+                Log("Values do not match.");
+                return false;
+            }
         }
 
         public async Task<bool> IsInBox(CancellationToken token)
