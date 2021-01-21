@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SysBot.Pokemon
 {
-    public abstract class PokeBotRunner : BotRunner<PokeBotConfig>
+    public abstract class PokeBotRunner : BotRunner<PokeBotState>
     {
         public readonly PokeTradeHub<PK8> Hub;
 
@@ -16,19 +16,19 @@ namespace SysBot.Pokemon
 
         protected virtual void AddIntegrations() { }
 
-        public override void Add(SwitchRoutineExecutor<PokeBotConfig> bot)
+        public override void Add(RoutineExecutor<PokeBotState> bot)
         {
             base.Add(bot);
             if (bot is PokeTradeBot b)
                 Hub.Bots.Add(b);
         }
 
-        public override bool Remove(string ip, bool callStop)
+        public override bool Remove(IConsoleBotConfig cfg, bool callStop)
         {
-            var bot = Bots.Find(z => z.Bot.Connection.IP == ip)?.Bot;
+            var bot = GetBot(cfg)?.Bot;
             if (bot is PokeTradeBot b)
                 Hub.Bots.Remove(b);
-            return base.Remove(ip, callStop);
+            return base.Remove(cfg, callStop);
         }
 
         public override void StartAll()
@@ -89,37 +89,22 @@ namespace SysBot.Pokemon
                 LogUtil.LogError("Nothing to distribute for Empty Trade Queues!", "Hub");
         }
 
-        public PokeRoutineExecutor CreateBotFromConfig(PokeBotConfig cfg)
+        public PokeRoutineExecutor CreateBotFromConfig(PokeBotState cfg) => cfg.NextRoutineType switch
         {
-            switch (cfg.NextRoutineType)
-            {
-                case PokeRoutineType.Idle:
-                case PokeRoutineType.SurpriseTrade:
-                case PokeRoutineType.FlexTrade:
-                case PokeRoutineType.LinkTrade:
-                case PokeRoutineType.Clone:
-                case PokeRoutineType.Dump:
-                case PokeRoutineType.SeedCheck:
-                    return new PokeTradeBot(Hub, cfg);
+            PokeRoutineType.FlexTrade or PokeRoutineType.Idle
+                or PokeRoutineType.SurpriseTrade
+                or PokeRoutineType.LinkTrade
+                or PokeRoutineType.Clone
+                or PokeRoutineType.Dump
+                or PokeRoutineType.SeedCheck
+                => new PokeTradeBot(Hub, cfg),
 
-                case PokeRoutineType.EggFetch:
-                    return new EggBot(cfg, Hub);
-
-                case PokeRoutineType.FossilBot:
-                    return new FossilBot(cfg, Hub);
-
-                case PokeRoutineType.RaidBot:
-                    return new RaidBot(cfg, Hub);
-
-                case PokeRoutineType.EncounterBot:
-                    return new EncounterBot(cfg, Hub);
-
-                case PokeRoutineType.RemoteControl:
-                    return new RemoteControlBot(cfg);
-
-                default:
-                    throw new ArgumentException(nameof(cfg.NextRoutineType));
-            }
-        }
+            PokeRoutineType.EggFetch => new EggBot(cfg, Hub),
+            PokeRoutineType.FossilBot => new FossilBot(cfg, Hub),
+            PokeRoutineType.RaidBot => new RaidBot(cfg, Hub),
+            PokeRoutineType.EncounterBot => new EncounterBot(cfg, Hub),
+            PokeRoutineType.RemoteControl => new RemoteControlBot(cfg),
+            _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
+        };
     }
 }

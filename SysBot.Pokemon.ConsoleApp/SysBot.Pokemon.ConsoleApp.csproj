@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.1;net47</TargetFrameworks>
-    <LangVersion>8</LangVersion>
+    <TargetFrameworks>net5.0;net47</TargetFrameworks>
+    <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
     <Platforms>x64;x86</Platforms>
     <StartupObject>SysBot.Pokemon.ConsoleApp.Program</StartupObject>

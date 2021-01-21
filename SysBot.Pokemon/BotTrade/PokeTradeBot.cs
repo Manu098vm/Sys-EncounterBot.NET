@@ -30,7 +30,7 @@ namespace SysBot.Pokemon
         /// </summary>
         public int FailedBarrier { get; private set; }
 
-        public PokeTradeBot(PokeTradeHub<PK8> hub, PokeBotConfig cfg) : base(cfg)
+        public PokeTradeBot(PokeTradeHub<PK8> hub, PokeBotState cfg) : base(cfg)
         {
             Hub = hub;
             DumpSetting = hub.Config.Folder;
@@ -39,7 +39,7 @@ namespace SysBot.Pokemon
         private const int InjectBox = 0;
         private const int InjectSlot = 0;
 
-        protected override async Task MainLoop(CancellationToken token)
+        public override async Task MainLoop(CancellationToken token)
         {
             Log("Identifying trainer data of the host console.");
             var sav = await IdentifyTrainer(token).ConfigureAwait(false);
@@ -290,9 +290,9 @@ namespace SysBot.Pokemon
                     poke.SendNotification(this, clone, "Here's what you showed me!");
 
                 var la = new LegalityAnalysis(clone);
-                if (!la.Valid && Hub.Config.Legality.VerifyLegality)
+                if (!la.Valid)
                 {
-                    Log($"Clone request has detected an invalid Pokémon: {(Species)clone.Species}");
+                    Log($"Clone request (from {poke.Trainer.TrainerName}) has detected an invalid Pokémon: {(Species)clone.Species}.");
                     if (DumpSetting.Dump)
                         DumpPokemon(DumpSetting.DumpFolder, "hacked", pk);
 

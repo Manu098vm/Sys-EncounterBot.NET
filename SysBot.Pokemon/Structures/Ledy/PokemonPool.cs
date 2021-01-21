@@ -51,7 +51,7 @@ namespace SysBot.Pokemon
             return LoadFolder(Settings.Folder.DistributeFolder);
         }
 
-        public readonly Dictionary<string, LedyRequest<T>> Files = new Dictionary<string, LedyRequest<T>>();
+        public readonly Dictionary<string, LedyRequest<T>> Files = new();
 
         public bool LoadFolder(string path)
         {
@@ -69,10 +69,14 @@ namespace SysBot.Pokemon
             {
                 var data = File.ReadAllBytes(file);
                 var pkm = PKMConverter.GetPKMfromBytes(data);
-                if (!(pkm is T dest))
+                if (pkm is null)
+                    continue;
+                if (pkm is not T)
+                    pkm = PKMConverter.ConvertToType(pkm, typeof(T), out _);
+                if (pkm is not T dest)
                     continue;
 
-                if (dest.Species == 0 || !(dest is PK8 pk8))
+                if (dest.Species == 0 || dest is not PK8 pk8)
                 {
                     LogUtil.LogInfo("SKIPPED: Provided pk8 is not valid: " + dest.FileName, nameof(PokemonPool<T>));
                     continue;
@@ -85,7 +89,7 @@ namespace SysBot.Pokemon
                 }
 
                 var la = new LegalityAnalysis(pk8);
-                if (!la.Valid && Settings.Legality.VerifyLegality)
+                if (!la.Valid)
                 {
                     var reason = la.Report();
                     LogUtil.LogInfo($"SKIPPED: Provided pk8 is not legal: {dest.FileName} -- {reason}", nameof(PokemonPool<T>));
@@ -120,6 +124,7 @@ namespace SysBot.Pokemon
             // Anti-spam: Same trainer names.
             if (Files.Count != 1 && Files.Select(z => z.Value.RequestInfo.OT_Name).Distinct().Count() == 1)
             {
+                LogUtil.LogInfo("Provided pool to distribute has the same OT for all loaded. Pool is not valid; please distribute from a variety of trainers.", nameof(PokemonPool<T>));
                 surpriseBlocked = Count;
                 Files.Clear();
             }
@@ -133,7 +138,7 @@ namespace SysBot.Pokemon
         private static bool DisallowSurpriseTrade(PKM pk, IEncounterable enc)
         {
             // Anti-spam
-            if (pk.IsNicknamed && !(enc is EncounterTrade t && t.IsNicknamed) && pk.Nickname.Length > 6)
+            if (pk.IsNicknamed && !(enc is EncounterTrade {IsNicknamed: true}) && pk.Nickname.Length > 6)
                 return true;
             return DisallowSurpriseTrade(pk);
         }
@@ -157,15 +162,11 @@ namespace SysBot.Pokemon
 
         private static bool IsSpammyString(string name)
         {
+            if (name.IndexOf('.') >= 0 || name.IndexOf('\\') >= 0 || name.IndexOf('/') >= 0)
+                return true;
+
             if (name.Length <= 6)
                 return false;
-
-            bool isUri = Uri.IsWellFormedUriString(name, UriKind.RelativeOrAbsolute);
-            if (isUri)
-                return true;
-
-            if (name.IndexOf('.') >= 0)
-                return true;
 
             return name.IndexOf("pkm", StringComparison.OrdinalIgnoreCase) >= 0;
         }

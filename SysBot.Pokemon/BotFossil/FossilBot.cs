@@ -14,7 +14,7 @@ namespace SysBot.Pokemon
         private readonly IDumper DumpSetting;
         private readonly int[] DesiredIVs;
 
-        public FossilBot(PokeBotConfig cfg, PokeTradeHub<PK8> hub) : base(cfg)
+        public FossilBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
             Counts = Hub.Counts;
@@ -27,9 +27,9 @@ namespace SysBot.Pokemon
         private const int InjectBox = 0;
         private const int InjectSlot = 0;
 
-        private static readonly PK8 Blank = new PK8();
+        private static readonly PK8 Blank = new();
 
-        protected override async Task MainLoop(CancellationToken token)
+        public override async Task MainLoop(CancellationToken token)
         {
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
@@ -96,7 +96,7 @@ namespace SysBot.Pokemon
                 {
                     if (Hub.Config.StopConditions.CaptureVideoClip)
                     {
-                        await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo).ConfigureAwait(false);
+                        await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
                         await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
                     }
 

@@ -12,9 +12,9 @@ using static SysBot.Pokemon.PokeDataOffsets;
 
 namespace SysBot.Pokemon
 {
-    public abstract class PokeRoutineExecutor : SwitchRoutineExecutor<PokeBotConfig>
+    public abstract class PokeRoutineExecutor : SwitchRoutineExecutor<PokeBotState>
     {
-        protected PokeRoutineExecutor(PokeBotConfig cfg) : base(cfg) { }
+        protected PokeRoutineExecutor(PokeBotState cfg) : base(cfg) { }
 
         public LanguageID GameLang { get; private set; }
         public GameVersion Version { get; private set; }
@@ -124,8 +124,8 @@ namespace SysBot.Pokemon
             GameLang = (LanguageID)sav.Language;
             Version = sav.Version;
             InGameName = sav.OT;
-            Connection.Name = $"{InGameName}-{sav.DisplayTID:000000}";
-            Log($"{Connection.IP} identified as {Connection.Name}, using {GameLang}.");
+            Connection.Label = $"{InGameName}-{sav.DisplayTID:000000}";
+            Log($"{Connection.Name} identified as {Connection.Label}, using {GameLang}.");
 
             if (await GetTextSpeed(token).ConfigureAwait(false) != TextSpeedOption.Fast)
                 Log("Text speed should be set to FAST. Stop the bot and fix this if you encounter problems.");
@@ -141,6 +141,7 @@ namespace SysBot.Pokemon
             Directory.CreateDirectory(dir);
             var fn = Path.Combine(dir, Util.CleanFileName(pk.FileName));
             File.WriteAllBytes(fn, pk.DecryptedPartyData);
+            LogUtil.LogInfo($"Saved file: {fn}", "Dump");
         }
 
         /// <summary>
