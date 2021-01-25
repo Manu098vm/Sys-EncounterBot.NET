@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using SysBot.Base;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
@@ -50,6 +51,7 @@ namespace SysBot.Pokemon
                 //SoJ and Spirittomb uses the same routine
                 EncounterMode.SwordsJustice => DoJusticeEncounter(token,"Sword of Justice"),
                 EncounterMode.Spiritomb => DoJusticeEncounter(token,"Spiritomb"),
+                EncounterMode.Keldeo => DoKeldeoEncounter(token),
                 EncounterMode.DynamaxAdventure => DoDynamaxAdventure(token),
                 _ => WalkInLine(token),
             };
@@ -278,6 +280,41 @@ namespace SysBot.Pokemon
             }
         }
 
+        private async Task DoKeldeoEncounter(CancellationToken token)
+        {
+            Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
+            Log("CONFIGURE AND TEST PROPERLY THE STICK SETTINGS; NOT WORKING AS OF NOW!");
+            while (!token.IsCancellationRequested)
+            {
+                await ResetStick(token);
+                while (!await IsInBattle(token).ConfigureAwait(false))
+                    //CONFIGURE AND TEST PROPERLY THE STICK SETTINGS; NOT WORKING AS OF NOW!
+                    await SetStick(LEFT, 0, -30_000, -30_000, token).ConfigureAwait(false);
+                await ResetStick(token);
+
+                Log("Encounter started! Checking details...");
+                var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                if (pk == null)
+                {
+                    // Flee and continue looping.
+                    while (await IsInBattle(token).ConfigureAwait(false))
+                        await FleeToOverworld(token).ConfigureAwait(false);
+                    continue;
+                }
+
+                // Offsets are flickery so make sure we see it 3 times.
+                for (int i = 0; i < 3; i++)
+                    await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
+
+                if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
+                    return;
+
+                Log("Restarting game...");
+                await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                await StartGame(Hub.Config, token).ConfigureAwait(false);
+            }
+        }
+
         private async Task DoDynamaxAdventure(CancellationToken token)
         {
             Log("EXPERIMENTAL!!!!!");
@@ -287,7 +324,7 @@ namespace SysBot.Pokemon
             byte[] demageStandardState = BitConverter.GetBytes(0x7900E808);
             byte[] demageAlteredState = BitConverter.GetBytes(0x7900E81F);
             byte[] demageTemporalState;
-            ulong mainbase = await Connection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
+            ulong mainbase = await SwitchConnection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
             bool wasVideoClipActive = Hub.Config.StopConditions.CaptureVideoClip;
 
             //Set Lair Species to Hunt
@@ -308,11 +345,11 @@ namespace SysBot.Pokemon
                     Hub.Config.StopConditions.CaptureVideoClip = false;
 
                 //Edgecase note: If in a Raid Battle, sometimes the isInLairWait return a wrong statement. The Edgecase is handled here, as result the raidcount for the current streak is broken.
-                /*Log("OOOO SONO QUI");
+                Log("OOOO SONO QUI");
                 if (await IsInBattle(token).ConfigureAwait(false))
                     Log("OOOOO SONO DENTRO ALL'IF 1");
                 else
-                    Log("OOOO SONO DENTRO ALL'IF 2");*/
+                    Log("OOOO SONO DENTRO ALL'IF 2");
 
                 //Talk to the Lady
                 while (!(await IsInLairWait(token).ConfigureAwait(false) || await IsInBattle(token).ConfigureAwait(false)))
@@ -337,10 +374,10 @@ namespace SysBot.Pokemon
                     else if (await IsInBattle(token).ConfigureAwait(false) && !inBattle)
                     {
                         //Allows 1HKO
-                        demageTemporalState = await Connection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
+                        demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
                         if (demageStandardState.SequenceEqual(demageTemporalState))
                         {
-                            await Connection.WriteBytesAbsoluteAsync(demageAlteredState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
+                            await SwitchConnection.WriteBytesAbsoluteAsync(demageAlteredState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
                             Log("Entered battle, 1HKO Enabled.");
                         }
                         Log("Raid Battle: " + raidCount);
@@ -350,10 +387,10 @@ namespace SysBot.Pokemon
                     else if (!await IsInBattle(token).ConfigureAwait(false) && !inBattle)
                     {
                         //Disable 1HKO
-                        demageTemporalState = await Connection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
+                        demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
                         if (demageAlteredState.SequenceEqual(demageTemporalState))
                         {
-                            await Connection.WriteBytesAbsoluteAsync(demageStandardState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
+                            await SwitchConnection.WriteBytesAbsoluteAsync(demageStandardState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
                             Log("Out of battle, 1HKO Disabled.");
                         }
                     }
@@ -365,10 +402,10 @@ namespace SysBot.Pokemon
                 }
 
                 //Disable 1HKO
-                demageTemporalState = await Connection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
+                demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
                 if (demageAlteredState.SequenceEqual(demageTemporalState))
                 {
-                    await Connection.WriteBytesAbsoluteAsync(demageStandardState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
+                    await SwitchConnection.WriteBytesAbsoluteAsync(demageStandardState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
                     Log("End Loop, 1HKO Disabled.");
                 }
 

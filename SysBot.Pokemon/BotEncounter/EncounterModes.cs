@@ -38,6 +38,11 @@
         SwordsJustice,
 
         /// <summary>
+        /// Bot will soft reset the Swords of Justice Trio
+        /// </summary>
+        Keldeo,
+
+        /// <summary>
         /// Bot will soft reset Spiritomb
         /// </summary>
         Spiritomb,
