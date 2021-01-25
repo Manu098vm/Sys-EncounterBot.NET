@@ -283,13 +283,15 @@ namespace SysBot.Pokemon
         private async Task DoKeldeoEncounter(CancellationToken token)
         {
             Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
-            Log("CONFIGURE AND TEST PROPERLY THE STICK SETTINGS; NOT WORKING AS OF NOW!");
+            int tries = 0;
             while (!token.IsCancellationRequested)
             {
                 await ResetStick(token);
-                while (!await IsInBattle(token).ConfigureAwait(false))
-                    //CONFIGURE AND TEST PROPERLY THE STICK SETTINGS; NOT WORKING AS OF NOW!
-                    await SetStick(LEFT, 0, -30_000, -30_000, token).ConfigureAwait(false);
+                await SetStick(LEFT, 0, 30_000, 1_000, token).ConfigureAwait(false);
+                while (!await IsInBattle(token).ConfigureAwait(false) && tries < 10)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                    
+                    
                 await ResetStick(token);
 
                 Log("Encounter started! Checking details...");
