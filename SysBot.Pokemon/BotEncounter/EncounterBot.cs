@@ -286,30 +286,44 @@ namespace SysBot.Pokemon
             int tries = 0;
             while (!token.IsCancellationRequested)
             {
-                await ResetStick(token);
+                await ResetStick(token).ConfigureAwait(false);
                 await SetStick(LEFT, 0, 30_000, 1_000, token).ConfigureAwait(false);
-                while (!await IsInBattle(token).ConfigureAwait(false) && tries < 10)
-                    await Task.Delay(1_000, token).ConfigureAwait(false);
-                    
-                    
-                await ResetStick(token);
-
-                Log("Encounter started! Checking details...");
-                var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
-                if (pk == null)
+                while (!await IsInBattle(token).ConfigureAwait(false) && tries < 15)
                 {
-                    // Flee and continue looping.
-                    while (await IsInBattle(token).ConfigureAwait(false))
-                        await FleeToOverworld(token).ConfigureAwait(false);
-                    continue;
+                    await Click(LSTICK, 0_000, token);
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                    tries++;
                 }
+                    
+                    
+                await ResetStick(token).ConfigureAwait(false);
 
-                // Offsets are flickery so make sure we see it 3 times.
-                for (int i = 0; i < 3; i++)
-                    await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
+                if (await IsInBattle(token).ConfigureAwait(false))
+                {
+                    tries = 0;
+                    Log("Encounter started! Checking details...");
+                    var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                    if (pk == null)
+                    {
+                        // Flee and continue looping.
+                        while (await IsInBattle(token).ConfigureAwait(false))
+                            await FleeToOverworld(token).ConfigureAwait(false);
+                        continue;
+                    }
 
-                if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
-                    return;
+                    // Offsets are flickery so make sure we see it 3 times.
+                    for (int i = 0; i < 3; i++)
+                        await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
+
+                    if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
+                        return;
+
+                }
+                else if(tries >= 15)
+                {
+                    Log("The starting position is probably wrong. If you see this message more than one time consider change your starting position and save the game again.");
+                    tries = 0;
+                }
 
                 Log("Restarting game...");
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
