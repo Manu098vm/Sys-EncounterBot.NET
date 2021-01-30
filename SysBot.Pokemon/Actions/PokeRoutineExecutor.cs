@@ -36,6 +36,12 @@ namespace SysBot.Pokemon
             return new PK8(data);
         }
 
+        public async Task<PK8> ReadPokemon(ulong offset, CancellationToken token, int size = BoxFormatSlotSize)
+        {
+            var data = await SwitchConnection.ReadBytesAbsoluteAsync(offset, size, token).ConfigureAwait(false);
+            return new PK8(data);
+        }
+
         public async Task<PK8> ReadSurpriseTradePokemon(CancellationToken token)
         {
             var data = await Connection.ReadBytesAsync(SurpriseTradePartnerPokemonOffset, BoxFormatSlotSize, token).ConfigureAwait(false);
@@ -74,6 +80,19 @@ namespace SysBot.Pokemon
         }
 
         public async Task<PK8?> ReadUntilPresent(uint offset, int waitms, int waitInterval, CancellationToken token, int size = BoxFormatSlotSize)
+        {
+            int msWaited = 0;
+            while (msWaited < waitms)
+            {
+                var pk = await ReadPokemon(offset, token, size).ConfigureAwait(false);
+                if (pk.Species != 0 && pk.ChecksumValid)
+                    return pk;
+                await Task.Delay(waitInterval, token).ConfigureAwait(false);
+                msWaited += waitInterval;
+            }
+            return null;
+        }
+        public async Task<PK8?> ReadUntilPresent(ulong offset, int waitms, int waitInterval, CancellationToken token, int size = BoxFormatSlotSize)
         {
             int msWaited = 0;
             while (msWaited < waitms)

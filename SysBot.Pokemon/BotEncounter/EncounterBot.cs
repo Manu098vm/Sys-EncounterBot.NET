@@ -328,9 +328,52 @@ namespace SysBot.Pokemon
                 Log("Restarting game...");
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
+                //ISwitchConnectionAsync SwitchConnection, String pointer
             }
         }
 
+        //Code from LiveHex
+        private async Task<ulong> ParsePointer(String pointer, CancellationToken token)
+        {
+            var ptr = pointer;
+            uint finadd = 0;
+            if (!ptr.EndsWith("]"))
+                finadd = Util.GetHexValue(ptr.Split('+').Last());
+            var jumps = ptr.Replace("main", "").Replace("[", "").Replace("]", "").Split(new[] { "+" }, StringSplitOptions.RemoveEmptyEntries);
+            if (jumps.Length == 0)
+            {
+                Log("Invalid Pointer");
+                return 0;
+            }
+
+            var initaddress = Util.GetHexValue(jumps[0].Trim());
+            ulong address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesMainAsync(initaddress, 0x8, token).ConfigureAwait(false),0);
+            foreach (var j in jumps)
+            {
+                var val = Util.GetHexValue(j.Trim());
+                if (val == initaddress)
+                    continue;
+                if (val == finadd)
+                {
+                    address += val;
+                    break;
+                }
+                address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(address + val, 0x8, token).ConfigureAwait(false), 0);
+            }
+            return address;
+        }
+        private async Task ProvaProva(CancellationToken token)
+        {
+            Log("HI!");
+            var pk1 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+58]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
+            var pk2 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+60]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
+            var pk3 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+68]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
+            var pk4 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+70]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
+            Log(pk1.Species.ToString());
+            Log(pk2.Species.ToString());
+            Log(pk3.Species.ToString());
+            Log(pk4.Species.ToString());
+        }
         private async Task DoDynamaxAdventure(CancellationToken token)
         {
             Log("EXPERIMENTAL!!!!!");
@@ -384,11 +427,14 @@ namespace SysBot.Pokemon
                 bool lost = false;
                 while (!(await IsInLairEndList(token, 0).ConfigureAwait(false) || lost))
                 {
-                    await Click(A, 1_000, token).ConfigureAwait(false);
                     if (!await IsInBattle(token).ConfigureAwait(false) && inBattle)
+                    {
+                        await Click(A, 1_000, token).ConfigureAwait(false);
                         inBattle = false;
+                    }
                     else if (await IsInBattle(token).ConfigureAwait(false) && !inBattle)
                     {
+                        await Click(A, 1_000, token).ConfigureAwait(false);
                         //Allows 1HKO
                         demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
                         if (demageStandardState.SequenceEqual(demageTemporalState))
@@ -412,6 +458,7 @@ namespace SysBot.Pokemon
                     }
                     else if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
                     {
+                        await Click(A, 1_000, token).ConfigureAwait(false);
                         lost = true;
                         Log("Lost at first raid.");
                     }
@@ -425,11 +472,11 @@ namespace SysBot.Pokemon
                     Log("End Loop, 1HKO Disabled.");
                 }
 
-                //Fucking offsets are different every time the game is rebooted or significant actions are made during gameplay.
-                var pk1 = await ReadUntilPresent(0xAF29AA40, 2_000, 0_200, token).ConfigureAwait(false);
-                var pk2 = await ReadUntilPresent(0xAF29AC70, 2_000, 0_200, token).ConfigureAwait(false);
-                var pk3 = await ReadUntilPresent(0xAF29AEC8, 2_000, 0_200, token).ConfigureAwait(false);
-                var pk4 = await ReadUntilPresent(0xAF29B158, 2_000, 0_200, token).ConfigureAwait(false);
+                //Pinters working!
+                var pk1 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+58]+D0",token), 2_000, 0_200, token).ConfigureAwait(false);
+                var pk2 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+60]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
+                var pk3 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+68]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
+                var pk4 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+70]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
 
                 int found = 0;
                 //Log(pk1.Species + " " + pk2.Species + " " + pk3.Species + " " + pk4.Species);
@@ -467,9 +514,10 @@ namespace SysBot.Pokemon
                 else
                 {
                     Log("No result found, starting again");
-                    await Click(B, 1_000, token).ConfigureAwait(false);
-                    while(!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                        await Click(A, 0_800, token).ConfigureAwait(false);
+                    //await Click(B, 1_000, token).ConfigureAwait(false);
+                    while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                        await Task.Delay(1_000).ConfigureAwait(false);
+                            //await Click(A, 0_800, token).ConfigureAwait(false);
                 }
             }
         }
