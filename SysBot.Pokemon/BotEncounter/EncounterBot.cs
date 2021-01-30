@@ -378,7 +378,7 @@ namespace SysBot.Pokemon
                 bool lost = false;
                 while (!(await IsInLairEndList(token).ConfigureAwait(false) || lost))
                 {
-                    if (!await IsInLairEndList(token).ConfigureAwait(false)) await Click(A, 1_000, token).ConfigureAwait(false);
+                    await Click(A, 1_000, token).ConfigureAwait(false);
                     if (!await IsInBattle(token).ConfigureAwait(false) && inBattle)
                         inBattle = false;
                     else if (await IsInBattle(token).ConfigureAwait(false) && !inBattle)
@@ -388,7 +388,7 @@ namespace SysBot.Pokemon
                         if (demageStandardState.SequenceEqual(demageTemporalState))
                         {
                             await SwitchConnection.WriteBytesAbsoluteAsync(demageAlteredState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
-                            Log("Entered battle, 1HKO Enabled.");
+                            //Log("Entered battle.");
                         }
                         Log("Raid Battle: " + raidCount);
                         inBattle = true;
@@ -401,7 +401,7 @@ namespace SysBot.Pokemon
                         if (demageAlteredState.SequenceEqual(demageTemporalState))
                         {
                             await SwitchConnection.WriteBytesAbsoluteAsync(demageStandardState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
-                            Log("Out of battle, 1HKO Disabled.");
+                            //Log("Out of battle, 1HKO Disabled.");
                         }
                     }
                     else if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
@@ -416,7 +416,7 @@ namespace SysBot.Pokemon
                 if (demageAlteredState.SequenceEqual(demageTemporalState))
                 {
                     await SwitchConnection.WriteBytesAbsoluteAsync(demageStandardState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
-                    Log("End Loop, 1HKO Disabled.");
+                    Log("Exited loop.");
                 }
 
                 //Fucking offsets are different every time the game is rebooted or significant actions are made during gameplay.
@@ -428,17 +428,20 @@ namespace SysBot.Pokemon
                 int found = 0;
                 //Log(pk1.Species + " " + pk2.Species + " " + pk3.Species + " " + pk4.Species);
                 if (pk1 != null) {
-                    if(await HandleEncounter(pk1, true, token).ConfigureAwait(false))
+                    await HandleEncounter(pk1, false, token).ConfigureAwait(false);
+                    if(pk1.IsShiny)
                         found = 1;
                 }
                 if (pk2 != null)
                 {
-                    if (await HandleEncounter(pk2, true, token).ConfigureAwait(false))
+                    await HandleEncounter(pk2, false, token).ConfigureAwait(false);
+                    if(pk2.IsShiny)
                         found = 2;
                 }
                 if (pk3 != null)
                 {
-                    if (await HandleEncounter(pk3, true, token).ConfigureAwait(false))
+                    await HandleEncounter(pk3, false, token).ConfigureAwait(false);
+                    if(pk3.IsShiny)
                         found = 3;
                 }
                 if (pk4 != null)
@@ -446,6 +449,7 @@ namespace SysBot.Pokemon
                     if (await HandleEncounter(pk4, true, token).ConfigureAwait(false))
                         found = 4;
                 }
+
                 if (found > 0)
                 {
                     Log("Shiny!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -461,10 +465,13 @@ namespace SysBot.Pokemon
                 else
                 {
                     Log("No result found, starting again");
-                    await Click(B, 1_000, token).ConfigureAwait(false);
+                    await Task.Delay(1_500, token).ConfigureAwait(false);
+                    if (!lost) { 
+                        await Click(B, 1_000, token).ConfigureAwait(false);
+                        await Click(B, 1_000, token).ConfigureAwait(false);
+                    }
                     while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                        await Task.Delay(1_000).ConfigureAwait(false);
-                            await Click(A, 0_800, token).ConfigureAwait(false);
+                           await Click(A, 0_800, token).ConfigureAwait(false);
                 }
             }
         }
