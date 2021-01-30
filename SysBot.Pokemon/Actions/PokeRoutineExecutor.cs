@@ -430,28 +430,43 @@ namespace SysBot.Pokemon
             else return false;
         }
 
-        public async Task<bool> IsInLairEndList(CancellationToken token, int time)
+        //Code from LiveHex
+        public async Task<ulong> ParsePointer(String pointer, CancellationToken token)
         {
-            Log(BitConverter.ToString(await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false)));
-
-            //Start byte and end byte are always FF. The same scenario applies when a raid battles end, so in orded to be sure to be in the EndList, we need to check the bytes for at least 4 times
-            byte currentScreen1 = (await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false))[0];
-            byte currentScreen2 = (await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false))[1];
-            byte currentScreen3 = (await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false))[2];
-            byte currentScreen4 = (await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false))[3];
-            byte compare = 0xFF;
-            //Log(currentScreen1 + " " + currentScreen4 + " " + compare);
-            if ((currentScreen1 == currentScreen4) && (currentScreen1 == compare) && (currentScreen2 != compare && currentScreen3 != compare))
+            var ptr = pointer;
+            uint finadd = 0;
+            if (!ptr.EndsWith("]"))
+                finadd = Util.GetHexValue(ptr.Split('+').Last());
+            var jumps = ptr.Replace("main", "").Replace("[", "").Replace("]", "").Split(new[] { "+" }, StringSplitOptions.RemoveEmptyEntries);
+            if (jumps.Length == 0)
             {
-                Log("EndList values match " + time);
-                if(time >= 3)
-                    return true;
-                else
-                {
-                    await Task.Delay(1_350, token).ConfigureAwait(false);
-                    return await IsInLairEndList(token, time + 1);
-                }
+                Log("Invalid Pointer");
+                return 0;
             }
+
+            var initaddress = Util.GetHexValue(jumps[0].Trim());
+            ulong address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesMainAsync(initaddress, 0x8, token).ConfigureAwait(false), 0);
+            foreach (var j in jumps)
+            {
+                var val = Util.GetHexValue(j.Trim());
+                if (val == initaddress)
+                    continue;
+                if (val == finadd)
+                {
+                    address += val;
+                    break;
+                }
+                address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(address + val, 0x8, token).ConfigureAwait(false), 0);
+            }
+            return address;
+        }
+
+        public async Task<bool> IsInLairEndList(CancellationToken token)
+        {
+            //Should be faster and more precise than the previous method!
+            var pk1 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+B8]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
+            if (pk1 != null)
+                return true;
             else
                 return false;
         }
