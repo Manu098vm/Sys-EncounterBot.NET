@@ -3,7 +3,8 @@
 
 ## Support Discord:
 
-For support on setting up your own instance of Sys-EncounterBot.NET, this fork is not maintained by the PKHeX Dev server, feel free to [join my Discord](https://discord.gg/WFbcUd6U8d) for assistance!
+For support on setting up your own instance of Sys-EncounterBot.NET, feel free to [join my Discord](https://discord.gg/WFbcUd6U8d) for assistance!
+This fork is not maintained by the PKHeX Dev server.
 
 [sys-botbase](https://github.com/olliz0r/sys-botbase) client for remote control automation of Nintendo Switch consoles.
 

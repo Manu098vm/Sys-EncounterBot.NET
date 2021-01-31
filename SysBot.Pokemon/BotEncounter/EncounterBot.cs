@@ -432,7 +432,11 @@ namespace SysBot.Pokemon
                             await SwitchConnection.WriteBytesAbsoluteAsync(demageAlteredState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
                             //Log("Entered battle.");
                         }
-                        Log("Raid Battle: " + raidCount);
+                        var pk = await ReadUntilPresent(RaidPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                        if (pk != null)
+                            Log("Raid Battle " + raidCount + ": " + pk.Species.ToString() + " " + pk.Nickname);
+                        else
+                            Log("Raid Battle " + raidCount);
                         inBattle = true;
                         raidCount++;
                     }
