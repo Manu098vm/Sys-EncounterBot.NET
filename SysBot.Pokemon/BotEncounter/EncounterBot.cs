@@ -332,6 +332,38 @@ namespace SysBot.Pokemon
             }
         }
 
+        private async Task ProvaProva(CancellationToken token)
+        {
+            Log("DETECTION TEST!");
+            var pk1 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+58]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
+            var pk2 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+60]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
+            var pk3 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+68]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
+            var pk4 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+70]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
+            if(pk1 != null)
+            {
+                Log(pk1.Species.ToString());
+            }
+            if (pk2 != null)
+            {
+                Log(pk2.Species.ToString());
+            }
+            if (pk3 != null)
+            {
+                Log(pk3.Species.ToString());
+            }
+            if (pk4 != null)
+            {
+                Log(pk4.Species.ToString());
+            }
+            if (await IsInLairEndList(token).ConfigureAwait(false) == true)
+            {
+                Log("RAID COMPLETATO!");
+            } else
+            {
+                Log("RAID NON COMPLETATO!");
+            }
+        }
+
         private async Task DoDynamaxAdventure(CancellationToken token)
         {
             Log("EXPERIMENTAL!!!!!");
@@ -344,7 +376,9 @@ namespace SysBot.Pokemon
             ulong mainbase = await SwitchConnection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
             bool wasVideoClipActive = Hub.Config.StopConditions.CaptureVideoClip;
 
-            //Set Lair Species to Hunt
+            //Set Lair Species to Hunt (CHECK IF IT WORKS ON SHIELD AND/OR DIFFERENT LANGUAGES!)
+            /*Not working on Eng Shield (Save converted from Italian Sword): 
+             * Lair Boss is not set BUT when the adventure is completed the Sticker in the YComm says "I defeated [SET POKEMON] on a Dynamax Adventure!"*/
             if (Enum.IsDefined(typeof(LairSpecies), mon))
                 searchmon = (ushort)Enum.Parse(typeof(LairSpecies), mon);
             else
@@ -419,7 +453,7 @@ namespace SysBot.Pokemon
                     Log("Exited loop.");
                 }
 
-                //Fucking offsets are different every time the game is rebooted or significant actions are made during gameplay.
+                //Pointers should work for both Sword and Shield any region, but need LOT MORE tests!
                 var pk1 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+58]+D0",token), 2_000, 0_200, token).ConfigureAwait(false);
                 var pk2 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+60]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
                 var pk3 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+68]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
@@ -453,9 +487,10 @@ namespace SysBot.Pokemon
                 if (found > 0)
                 {
                     Log("Shiny!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    await Task.Delay(1_500, token).ConfigureAwait(false);
                     for (int y = 1; y < found; y++)
                         await Click(DDOWN, 1_000, token).ConfigureAwait(false);
-                    await Click(A, 0_800, token).ConfigureAwait(false);
+                    await Click(A, 1_200, token).ConfigureAwait(false);
                     await Click(DDOWN, 0_800, token).ConfigureAwait(false);
                     await Click(A, 0_800, token).ConfigureAwait(false);
                     await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
@@ -467,7 +502,7 @@ namespace SysBot.Pokemon
                     Log("No result found, starting again");
                     await Task.Delay(1_500, token).ConfigureAwait(false);
                     if (!lost) { 
-                        await Click(B, 1_000, token).ConfigureAwait(false);
+                        //await Click(B, 1_000, token).ConfigureAwait(false);
                         await Click(B, 1_000, token).ConfigureAwait(false);
                     }
                     while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))

@@ -3,7 +3,7 @@
 
 ## Support Discord:
 
-For support on setting up your own instance of SysBot.NET, feel free to join the discord! (Beware of un-official discords who claim to be official)
+For support on setting up your own instance of Sys-EncounterBot.NET, this fork is not maintained by the PKHeX Dev server, feel free to join my Discord for assistance!
 
 [<img src="https://canary.discordapp.com/api/guilds/401014193211441153/widget.png?style=banner2">](https://discord.gg/tDMvSRv)
 
