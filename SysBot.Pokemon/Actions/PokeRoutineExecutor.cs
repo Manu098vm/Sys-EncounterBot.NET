@@ -464,11 +464,59 @@ namespace SysBot.Pokemon
         public async Task<bool> IsInLairEndList(CancellationToken token)
         {
             //Should be faster and more precise than the previous method!
-            var pk1 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+B8]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
-            if (pk1 != null)
+            //Seems that sometimes it fails. Need to understand why.
+            var pk1 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+100]", token), token, 344).ConfigureAwait(false);
+            if (pk1 != null && pk1.Species != 0 && pk1.ChecksumValid)
+            {
+                Log("First check");
                 return true;
+            }
             else
-                return false;
+            {
+                pk1 = await ReadPokemon(await ParsePointer("[[[[main+2977BC0]+1B0]+68]+100]", token), token, 344).ConfigureAwait(false);
+                if (pk1 != null && pk1.Species != 0 && pk1.ChecksumValid)
+                {
+                    Log("Second check");
+                    return true;
+                }
+                else
+                {
+                    pk1 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+58]+D0", token), token, 344).ConfigureAwait(false);
+                    if (pk1 != null && pk1.Species != 0 && pk1.ChecksumValid)
+                    {
+                        Log("Third check");
+                        return true;
+                    }
+                    else
+                    {
+                        pk1 = await ReadPokemon(await ParsePointer("[[[[main+2977BC0]+1B0]+68]+58]+D0", token), token, 344).ConfigureAwait(false);
+                        if (pk1 != null && pk1.Species != 0 && pk1.ChecksumValid)
+                        {
+                            Log("Fourth check");
+                            return true;
+                        } 
+                        else
+                        {
+                            pk1 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+B8]+D0", token), token, 344).ConfigureAwait(false);
+                            if (pk1 != null && pk1.Species != 0 && pk1.ChecksumValid)
+                            {
+                                Log("Fifth check");
+                                return true;
+                            } else
+                            {
+                                pk1 = await ReadPokemon(await ParsePointer("[[[[main+2977BC0]+1B0]+68]+B8]+D0", token), token, 344).ConfigureAwait(false);
+                                if (pk1 != null && pk1.Species != 0 && pk1.ChecksumValid)
+                                {
+                                    Log("Sixth check");
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Log("No result found. Adventure not ended.");
+            return false;
         }
 
         public async Task<bool> IsInBox(CancellationToken token)

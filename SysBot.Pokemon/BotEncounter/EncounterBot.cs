@@ -53,6 +53,7 @@ namespace SysBot.Pokemon
                 EncounterMode.Spiritomb => DoJusticeEncounter(token,"Spiritomb"),
                 EncounterMode.Keldeo => DoKeldeoEncounter(token),
                 EncounterMode.DynamaxAdventure => DoDynamaxAdventure(token),
+                //EncounterMode.DynamaxAdventure => ProvaProva(token),
                 _ => WalkInLine(token),
             };
             await task.ConfigureAwait(false);
@@ -335,33 +336,40 @@ namespace SysBot.Pokemon
         private async Task ProvaProva(CancellationToken token)
         {
             Log("DETECTION TEST!");
-            var pk1 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+58]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
-            var pk2 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+60]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
-            var pk3 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+68]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
-            var pk4 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+70]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
-            if(pk1 != null)
-            {
-                Log(pk1.Species.ToString());
-            }
-            if (pk2 != null)
-            {
-                Log(pk2.Species.ToString());
-            }
-            if (pk3 != null)
-            {
-                Log(pk3.Species.ToString());
-            }
-            if (pk4 != null)
-            {
-                Log(pk4.Species.ToString());
-            }
+
+            ulong mainbase = await SwitchConnection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
+            byte[] demageAlteredState = BitConverter.GetBytes(0x7900E81F);
+            await SwitchConnection.WriteBytesAbsoluteAsync(demageAlteredState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
+
             if (await IsInLairEndList(token).ConfigureAwait(false) == true)
             {
                 Log("RAID COMPLETATO!");
-            } else
+                var pk1 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+58]+D0", token), token, 344).ConfigureAwait(false);
+                var pk2 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+60]+D0", token), token, 344).ConfigureAwait(false);
+                var pk3 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+68]+D0", token), token, 344).ConfigureAwait(false);
+                var pk4 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+70]+D0", token), token, 344).ConfigureAwait(false);
+                if (pk1 != null)
+                {
+                    Log(pk1.Species.ToString());
+                }
+                if (pk2 != null)
+                {
+                    Log(pk2.Species.ToString());
+                }
+                if (pk3 != null)
+                {
+                    Log(pk3.Species.ToString());
+                }
+                if (pk4 != null)
+                {
+                    Log(pk4.Species.ToString());
+                }
+            }
+            else
             {
                 Log("RAID NON COMPLETATO!");
             }
+            
         }
 
         private async Task DoDynamaxAdventure(CancellationToken token)
@@ -410,7 +418,7 @@ namespace SysBot.Pokemon
                 int raidCount = 1;
                 bool inBattle = false;
                 bool lost = false;
-                while (!(await IsInLairEndList(token).ConfigureAwait(false) || lost))
+                while (!(await IsInLairEndList(token) || lost))
                 {
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     if (!await IsInBattle(token).ConfigureAwait(false) && inBattle)
