@@ -515,7 +515,7 @@ namespace SysBot.Pokemon
                     }
                 }
             }
-            Log("No result found. Adventure not ended.");
+            //Log("No result found. Adventure not ended.");
             return false;
         }
 

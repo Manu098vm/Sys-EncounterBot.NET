@@ -505,9 +505,17 @@ namespace SysBot.Pokemon
                     await Click(A, 1_200, token).ConfigureAwait(false);
                     await Click(DDOWN, 0_800, token).ConfigureAwait(false);
                     await Click(A, 0_800, token).ConfigureAwait(false);
-                    await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
+                    await PressAndHold(CAPTURE, 2_000, 5_000, token).ConfigureAwait(false);
                     if (wasVideoClipActive == true)
                         Hub.Config.StopConditions.CaptureVideoClip = true;
+                    if (found == 4)
+                        return;
+                    else
+                    {
+                        await Click(B, 1_500, token).ConfigureAwait(false);
+                        while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                            await Click(A, 0_800, token).ConfigureAwait(false);
+                    }
                 }
                 else
                 {
