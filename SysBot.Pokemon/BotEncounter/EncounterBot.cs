@@ -418,10 +418,18 @@ namespace SysBot.Pokemon
                 int raidCount = 1;
                 bool inBattle = false;
                 bool lost = false;
+                int waited = 0;
                 while (!(await IsInLairEndList(token) || lost))
                 {
                     await Click(A, 1_000, token).ConfigureAwait(false);
-                    if (!await IsInBattle(token).ConfigureAwait(false) && inBattle)
+                    //IsInOverworld seems to be non working?
+                    if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                    {
+                        lost = true;
+                        //Also if the pg was in the overworld, this line was never printed, and the bot continued to loop.
+                        Log("Lost at first raid.");
+                    }
+                    else if (!await IsInBattle(token).ConfigureAwait(false) && inBattle)
                         inBattle = false;
                     else if (await IsInBattle(token).ConfigureAwait(false) && !inBattle)
                     {
@@ -449,11 +457,6 @@ namespace SysBot.Pokemon
                             await SwitchConnection.WriteBytesAbsoluteAsync(demageStandardState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
                             //Log("Out of battle, 1HKO Disabled.");
                         }
-                    }
-                    else if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                    {
-                        lost = true;
-                        Log("Lost at first raid.");
                     }
                 }
 
@@ -504,14 +507,15 @@ namespace SysBot.Pokemon
                         await Click(DDOWN, 1_000, token).ConfigureAwait(false);
                     await Click(A, 1_200, token).ConfigureAwait(false);
                     await Click(DDOWN, 0_800, token).ConfigureAwait(false);
-                    await Click(A, 0_800, token).ConfigureAwait(false);
-                    await PressAndHold(CAPTURE, 2_000, 5_000, token).ConfigureAwait(false);
+                    await Click(A, 2_300, token).ConfigureAwait(false);
+                    await PressAndHold(CAPTURE, 2_000, 10_000, token).ConfigureAwait(false);
                     if (wasVideoClipActive == true)
                         Hub.Config.StopConditions.CaptureVideoClip = true;
                     if (found == 4)
                         return;
                     else
                     {
+                        await Task.Delay(1_500, token).ConfigureAwait(false);
                         await Click(B, 1_500, token).ConfigureAwait(false);
                         while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
                             await Click(A, 0_800, token).ConfigureAwait(false);
