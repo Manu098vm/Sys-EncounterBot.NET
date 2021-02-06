@@ -611,6 +611,7 @@ namespace SysBot.Pokemon
         private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)
         {
             encounterCount++;
+<<<<<<< HEAD
 
             //Star/Square Shiny Recognition
             var showdowntext = ShowdownSet.GetShowdownText(pk);
@@ -620,6 +621,9 @@ namespace SysBot.Pokemon
                 showdowntext = showdowntext.Replace("Yes", "Star");
 
             Log($"Encounter: {encounterCount}{Environment.NewLine}{Environment.NewLine}{showdowntext}{Environment.NewLine}{GetRibbonsList(pk)}{Environment.NewLine}");
+=======
+            Log($"Encounter: {encounterCount}{Environment.NewLine}{ShowdownParsing.GetShowdownText(pk)}{Environment.NewLine}");
+>>>>>>> upstream/master
             if (legends)
                 Counts.AddCompletedLegends();
             else
