@@ -478,6 +478,8 @@ namespace SysBot.Pokemon
                 var pk3 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+68]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
                 var pk4 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+70]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
 
+                Log("CIAOOOOOOOOOOOOOOOO");
+
                 //Check for shinies, check all the StopConditions for the Legendary
                 int found = 0;
                 if (pk1 != null) {
