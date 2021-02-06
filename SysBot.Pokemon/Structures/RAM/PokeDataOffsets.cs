@@ -84,6 +84,7 @@ namespace SysBot.Pokemon
 
         // Original screen detection offset.
         public const uint CurrentScreenOffset = 0x6B30FA00;
+        public const uint CurrentLairScreenOffset = 0x6B30FAC0;
 
         // Value goes between either of these; not game or area specific.
         public const uint CurrentScreen_Overworld1 = 0xFFFF5127;

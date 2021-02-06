@@ -425,7 +425,7 @@ namespace SysBot.Pokemon
         public async Task<bool> IsInLairWait(CancellationToken token)
         {
             //CHECK LANGUAGE! [only tested italian]
-            if (BitConverter.GetBytes(CurrentScreen_LairMenu).SequenceEqual(await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false)))
+            if (BitConverter.GetBytes(CurrentScreen_LairMenu).SequenceEqual(await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token).ConfigureAwait(false)))
                 return true;
             else return false;
         }

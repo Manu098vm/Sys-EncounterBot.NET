@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using SysBot.Base;
+using System.Text;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
@@ -52,7 +52,7 @@ namespace SysBot.Pokemon
                 EncounterMode.SwordsJustice => DoJusticeEncounter(token,"Sword of Justice"),
                 EncounterMode.Spiritomb => DoJusticeEncounter(token,"Spiritomb"),
                 EncounterMode.Keldeo => DoKeldeoEncounter(token),
-                EncounterMode.DynamaxAdventure => TEST(token),
+                EncounterMode.DynamaxAdventure => DoDynamaxAdventure(token),
                 //EncounterMode.DynamaxAdventure => ProvaProva(token),
                 _ => WalkInLine(token),
             };
@@ -337,36 +337,6 @@ namespace SysBot.Pokemon
         {
             Log("DETECTION TEST!");
 
-            //Initialization
-            string mon = Hub.Config.StopConditions.StopOnSpecies.ToString();
-            ushort searchmon = (ushort)Enum.Parse(typeof(LairSpecies), "Articuno");
-            byte[] demageStandardState = BitConverter.GetBytes(0x7900E808);
-            byte[] demageAlteredState = BitConverter.GetBytes(0x7900E81F);
-            //byte[] demageTemporalState;
-            ulong mainbase = await SwitchConnection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
-            bool wasVideoClipActive = Hub.Config.StopConditions.CaptureVideoClip;
-
-            //Set Lair Species to Hunt (CHECK IF IT WORKS ON SHIELD AND/OR DIFFERENT LANGUAGES!)
-            /*Not working on Eng Shield (Save converted from Italian Sword): 
-             * Lair Boss is not set BUT when the adventure is completed the Sticker in the YComm says "I defeated [SET POKEMON] on a Dynamax Adventure!"*/
-            if (Enum.IsDefined(typeof(LairSpecies), mon))
-                searchmon = (ushort)Enum.Parse(typeof(LairSpecies), mon);
-            else
-            {
-                Log(mon + " is not an available Species as Lair Boss. StopConditions settings will be reloaded to None as Default. If you want to hunt another Pokémon, please Stop the bot and check your settings.");
-                Hub.Config.StopConditions.StopOnSpecies = (Species)0;
-                mon = Hub.Config.StopConditions.StopOnSpecies.ToString();
-            }
-            if (Hub.Config.StopConditions.StopOnSpecies != (Species)0)
-                await Connection.WriteBytesAsync(BitConverter.GetBytes(searchmon), LairSpeciesSelector, token);
-            Log(mon + " Lair Boss ready to be hunted.");
-
-            await Connection.ReadBytesAsync(LairSpeciesSelector, 4, token).ConfigureAwait(false);
-
-            //ulong mainbase = await SwitchConnection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
-            //byte[] demageAlteredState = BitConverter.GetBytes(0x7900E81F);
-            //await SwitchConnection.WriteBytesAbsoluteAsync(demageAlteredState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
-
             if (await IsInLairEndList(token).ConfigureAwait(false) == true)
             {
                 Log("RAID COMPLETED!");
@@ -400,30 +370,46 @@ namespace SysBot.Pokemon
 
         private async Task DoDynamaxAdventure(CancellationToken token)
         {
-            Log("EXPERIMENTAL!!!!!");
             //Initialization
+            int adventureCompleted = 0;
             string mon = Hub.Config.StopConditions.StopOnSpecies.ToString();
-            ushort searchmon = (ushort)Enum.Parse(typeof(LairSpecies), "Articuno");
             byte[] demageStandardState = BitConverter.GetBytes(0x7900E808);
             byte[] demageAlteredState = BitConverter.GetBytes(0x7900E81F);
             byte[] demageTemporalState;
             ulong mainbase = await SwitchConnection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
             bool wasVideoClipActive = Hub.Config.StopConditions.CaptureVideoClip;
 
-            //Set Lair Species to Hunt (CHECK IF IT WORKS ON SHIELD AND/OR DIFFERENT LANGUAGES!)
-            /*Not working on Eng Shield (Save converted from Italian Sword): 
-             * Lair Boss is not set BUT when the adventure is completed the Sticker in the YComm says "I defeated [SET POKEMON] on a Dynamax Adventure!"*/
+            //Check/set target parameters
+            ushort searchmon;
             if (Enum.IsDefined(typeof(LairSpecies), mon))
                 searchmon = (ushort)Enum.Parse(typeof(LairSpecies), mon);
             else
+                searchmon = 0;
+
+            byte[] current = await Connection.ReadBytesAsync(LairSpeciesSelector, 2, token).ConfigureAwait(false);
+            byte[] wanted = BitConverter.GetBytes(searchmon);
+            Log("Current Lair Boss bytes: " + String.Join(" ", current));
+            if (mon != "None" && current != wanted && !Enum.IsDefined(typeof(LairSpecies), mon))
             {
-                Log(mon + " is not an available Species as Lair Boss. StopConditions settings will be reloaded to None as Default. If you want to hunt another Pokémon, please Stop the bot and check your settings.");
-                Hub.Config.StopConditions.StopOnSpecies = (Species)0;
-                mon = Hub.Config.StopConditions.StopOnSpecies.ToString();
+                Log(mon + " is not an available Lair Boss species. Check your configurations and restart the bot.");
+                return;
             }
-            if(Hub.Config.StopConditions.StopOnSpecies != (Species)0)
-                await Connection.WriteBytesAsync(BitConverter.GetBytes(searchmon), LairSpeciesSelector, token);
-            Log(mon + " Lair Boss ready to be hunted.");
+            else if (mon != "None" && current != wanted && Enum.IsDefined(typeof(LairSpecies), mon))
+            {
+                await Connection.WriteBytesAsync(wanted, LairSpeciesSelector, token);
+                Log(String.Join(" ", await Connection.ReadBytesAsync(LairSpeciesSelector, 2, token).ConfigureAwait(false)) + " (" + mon + ") ready to be hunted.");
+            }
+            else if (mon == "None")
+            {
+                Log("(Any) Legendary ready to be hunted.");
+            }
+
+            //Check ShinyXOR
+            if (Hub.Config.StopConditions.ShinyTarget.ToString() == "SquareOnly")
+            {
+                Log("Lair Pokémon cannot be Square Shiny! Forced XOR=1. Check your settings and restart the bot.");
+                return;
+            }
 
             while (!token.IsCancellationRequested)
             {
@@ -432,15 +418,12 @@ namespace SysBot.Pokemon
                     Hub.Config.StopConditions.CaptureVideoClip = false;
 
                 //Talk to the Lady
-                while (!(await IsInLairWait(token).ConfigureAwait(false) || await IsInBattle(token).ConfigureAwait(false)))
+                while (!await IsInLairWait(token).ConfigureAwait(false))
                     await Click(A, 1_000, token).ConfigureAwait(false);
 
                 //Select Solo Adventure
-                if (!await IsInBattle(token).ConfigureAwait(false))
-                {
-                    await Click(DDOWN, 0_800, token).ConfigureAwait(false);
-                    await Click(A, 1_000, token).ConfigureAwait(false);
-                }
+                await Click(DDOWN, 0_800, token).ConfigureAwait(false);
+                await Click(A, 1_000, token).ConfigureAwait(false);
 
                 //MAIN LOOP
                 int raidCount = 1;
@@ -463,15 +446,14 @@ namespace SysBot.Pokemon
                         //Allows 1HKO
                         demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
                         if (demageStandardState.SequenceEqual(demageTemporalState))
-                        {
                             await SwitchConnection.WriteBytesAbsoluteAsync(demageAlteredState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
-                            //Log("Entered battle.");
-                        }
+
                         var pk = await ReadUntilPresent(RaidPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
                         if (pk != null)
                             Log("Raid Battle " + raidCount + ": " + pk.Species.ToString() + " " + pk.Nickname);
                         else
                             Log("Raid Battle " + raidCount);
+
                         inBattle = true;
                         raidCount++;
                     }
@@ -480,29 +462,24 @@ namespace SysBot.Pokemon
                         //Disable 1HKO
                         demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
                         if (demageAlteredState.SequenceEqual(demageTemporalState))
-                        {
                             await SwitchConnection.WriteBytesAbsoluteAsync(demageStandardState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
-                            //Log("Out of battle, 1HKO Disabled.");
-                        }
                     }
                 }
 
-                //Disable 1HKO
-                demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
-                if (demageAlteredState.SequenceEqual(demageTemporalState))
-                {
-                    await SwitchConnection.WriteBytesAbsoluteAsync(demageStandardState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
-                    Log("Exited loop.");
-                }
+                if(!lost) adventureCompleted++;
+                if (raidCount < 4)
+                    Log("Lost at battle n. " + raidCount + ", adventure n. " + adventureCompleted + ".");
+                else
+                    Log("Adventure n. " + adventureCompleted + " completed.");
 
-                //Pointers should work for both Sword and Shield any region, but need LOT MORE tests!
+                //Read data from dynamic pointers
                 var pk1 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+58]+D0",token), 2_000, 0_200, token).ConfigureAwait(false);
                 var pk2 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+60]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
                 var pk3 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+68]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
                 var pk4 = await ReadUntilPresent(await ParsePointer("[[[[main+28F4060]+1B0]+68]+70]+D0", token), 2_000, 0_200, token).ConfigureAwait(false);
 
+                //Check for shinies, check all the StopConditions for the Legendary
                 int found = 0;
-                //Log(pk1.Species + " " + pk2.Species + " " + pk3.Species + " " + pk4.Species);
                 if (pk1 != null) {
                     await HandleEncounter(pk1, false, token).ConfigureAwait(false);
                     if(pk1.IsShiny)
@@ -526,9 +503,10 @@ namespace SysBot.Pokemon
                         found = 4;
                 }
 
+                //Ending routine
                 if (found > 0)
                 {
-                    Log("Shiny!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    Log("A Shiny Pokémon has been found!");
                     await Task.Delay(1_500, token).ConfigureAwait(false);
                     for (int y = 1; y < found; y++)
                         await Click(DDOWN, 1_000, token).ConfigureAwait(false);
@@ -552,10 +530,8 @@ namespace SysBot.Pokemon
                 {
                     Log("No result found, starting again");
                     await Task.Delay(1_500, token).ConfigureAwait(false);
-                    if (!lost) { 
-                        //await Click(B, 1_000, token).ConfigureAwait(false);
+                    if (!lost)
                         await Click(B, 1_000, token).ConfigureAwait(false);
-                    }
                     while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
                            await Click(A, 0_800, token).ConfigureAwait(false);
                 }
@@ -611,19 +587,15 @@ namespace SysBot.Pokemon
         private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)
         {
             encounterCount++;
-<<<<<<< HEAD
 
             //Star/Square Shiny Recognition
-            var showdowntext = ShowdownSet.GetShowdownText(pk);
+            var showdowntext = ShowdownParsing.GetShowdownText(pk);
             if (pk.IsShiny && pk.ShinyXor == 0)
                 showdowntext = showdowntext.Replace("Yes", "Square");
             else if(pk.IsShiny)
                 showdowntext = showdowntext.Replace("Yes", "Star");
 
             Log($"Encounter: {encounterCount}{Environment.NewLine}{Environment.NewLine}{showdowntext}{Environment.NewLine}{GetRibbonsList(pk)}{Environment.NewLine}");
-=======
-            Log($"Encounter: {encounterCount}{Environment.NewLine}{ShowdownParsing.GetShowdownText(pk)}{Environment.NewLine}");
->>>>>>> upstream/master
             if (legends)
                 Counts.AddCompletedLegends();
             else
