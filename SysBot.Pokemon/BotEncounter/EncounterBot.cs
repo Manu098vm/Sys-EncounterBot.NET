@@ -52,7 +52,7 @@ namespace SysBot.Pokemon
                 EncounterMode.SwordsJustice => DoJusticeEncounter(token,"Sword of Justice"),
                 EncounterMode.Spiritomb => DoJusticeEncounter(token,"Spiritomb"),
                 EncounterMode.Keldeo => DoKeldeoEncounter(token),
-                EncounterMode.DynamaxAdventure => DoDynamaxAdventure(token),
+                EncounterMode.DynamaxAdventure => TEST(token),
                 //EncounterMode.DynamaxAdventure => ProvaProva(token),
                 _ => WalkInLine(token),
             };
@@ -333,17 +333,43 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task ProvaProva(CancellationToken token)
+        private async Task TEST(CancellationToken token)
         {
             Log("DETECTION TEST!");
 
-            ulong mainbase = await SwitchConnection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
+            //Initialization
+            string mon = Hub.Config.StopConditions.StopOnSpecies.ToString();
+            ushort searchmon = (ushort)Enum.Parse(typeof(LairSpecies), "Articuno");
+            byte[] demageStandardState = BitConverter.GetBytes(0x7900E808);
             byte[] demageAlteredState = BitConverter.GetBytes(0x7900E81F);
-            await SwitchConnection.WriteBytesAbsoluteAsync(demageAlteredState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
+            //byte[] demageTemporalState;
+            ulong mainbase = await SwitchConnection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
+            bool wasVideoClipActive = Hub.Config.StopConditions.CaptureVideoClip;
+
+            //Set Lair Species to Hunt (CHECK IF IT WORKS ON SHIELD AND/OR DIFFERENT LANGUAGES!)
+            /*Not working on Eng Shield (Save converted from Italian Sword): 
+             * Lair Boss is not set BUT when the adventure is completed the Sticker in the YComm says "I defeated [SET POKEMON] on a Dynamax Adventure!"*/
+            if (Enum.IsDefined(typeof(LairSpecies), mon))
+                searchmon = (ushort)Enum.Parse(typeof(LairSpecies), mon);
+            else
+            {
+                Log(mon + " is not an available Species as Lair Boss. StopConditions settings will be reloaded to None as Default. If you want to hunt another Pokémon, please Stop the bot and check your settings.");
+                Hub.Config.StopConditions.StopOnSpecies = (Species)0;
+                mon = Hub.Config.StopConditions.StopOnSpecies.ToString();
+            }
+            if (Hub.Config.StopConditions.StopOnSpecies != (Species)0)
+                await Connection.WriteBytesAsync(BitConverter.GetBytes(searchmon), LairSpeciesSelector, token);
+            Log(mon + " Lair Boss ready to be hunted.");
+
+            await Connection.ReadBytesAsync(LairSpeciesSelector, 4, token).ConfigureAwait(false);
+
+            //ulong mainbase = await SwitchConnection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
+            //byte[] demageAlteredState = BitConverter.GetBytes(0x7900E81F);
+            //await SwitchConnection.WriteBytesAbsoluteAsync(demageAlteredState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
 
             if (await IsInLairEndList(token).ConfigureAwait(false) == true)
             {
-                Log("RAID COMPLETATO!");
+                Log("RAID COMPLETED!");
                 var pk1 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+58]+D0", token), token, 344).ConfigureAwait(false);
                 var pk2 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+60]+D0", token), token, 344).ConfigureAwait(false);
                 var pk3 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+68]+D0", token), token, 344).ConfigureAwait(false);
@@ -367,7 +393,7 @@ namespace SysBot.Pokemon
             }
             else
             {
-                Log("RAID NON COMPLETATO!");
+                Log("RAID NOT COMPLETED!");
             }
             
         }
@@ -391,10 +417,12 @@ namespace SysBot.Pokemon
                 searchmon = (ushort)Enum.Parse(typeof(LairSpecies), mon);
             else
             {
-                Log(mon + " is not an available Species as Lair Boss. StopConditions settings will be reloaded to Articuno as Default. If you want to hunt another Pokémon, please Stop the bot and check your settings.");
-                Hub.Config.StopConditions.StopOnSpecies = (Species)144;
+                Log(mon + " is not an available Species as Lair Boss. StopConditions settings will be reloaded to None as Default. If you want to hunt another Pokémon, please Stop the bot and check your settings.");
+                Hub.Config.StopConditions.StopOnSpecies = (Species)0;
+                mon = Hub.Config.StopConditions.StopOnSpecies.ToString();
             }
-            await Connection.WriteBytesAsync(BitConverter.GetBytes(searchmon), LairSpeciesSelector, token);
+            if(Hub.Config.StopConditions.StopOnSpecies != (Species)0)
+                await Connection.WriteBytesAsync(BitConverter.GetBytes(searchmon), LairSpeciesSelector, token);
             Log(mon + " Lair Boss ready to be hunted.");
 
             while (!token.IsCancellationRequested)
@@ -418,7 +446,6 @@ namespace SysBot.Pokemon
                 int raidCount = 1;
                 bool inBattle = false;
                 bool lost = false;
-                int waited = 0;
                 while (!(await IsInLairEndList(token) || lost))
                 {
                     await Click(A, 1_000, token).ConfigureAwait(false);
@@ -687,7 +714,7 @@ namespace SysBot.Pokemon
             TapuKoko = 785,
             TapuLele = 786,
             TapuBulu = 787,
-            TapuFIni = 788,
+            TapuFini = 788,
             Solgaleo = 791,
             Lunala = 792,
             Nihilego = 793,
