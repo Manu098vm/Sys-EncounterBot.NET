@@ -424,99 +424,33 @@ namespace SysBot.Pokemon
 
         public async Task<bool> IsInLairWait(CancellationToken token)
         {
-            //CHECK LANGUAGE! [only tested italian]
-            if (BitConverter.GetBytes(CurrentScreen_LairMenu).SequenceEqual(await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token).ConfigureAwait(false)))
+            byte[] menu = BitConverter.GetBytes(CurrentScreen_LairMenu);
+            byte[] docked = await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token).ConfigureAwait(false);
+            byte[] handheld = await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token);
+            if (menu.SequenceEqual(docked) || menu.SequenceEqual(handheld))
                 return true;
             else return false;
         }
 
-        //Code from LiveHex
-        public async Task<ulong> ParsePointer(String pointer, CancellationToken token)
+        public async Task<int> IsInLairEndList(CancellationToken token)
         {
-            var ptr = pointer;
-            uint finadd = 0;
-            if (!ptr.EndsWith("]"))
-                finadd = Util.GetHexValue(ptr.Split('+').Last());
-            var jumps = ptr.Replace("main", "").Replace("[", "").Replace("]", "").Split(new[] { "+" }, StringSplitOptions.RemoveEmptyEntries);
-            if (jumps.Length == 0)
+            //Checking all the lair rewards pointers, if one contains a Pokémon, it means the adventure is ended.
+            //Returns the pointer id used.
+            /*Legenda:
+             * 0 = No rewards, adventure not started/ended or lost at the first raid.
+             * 1 = First pointer used
+             * 2 = Second pointer used
+             * ecc. check Structures/RAM/PokeDataOffsets
+             * */
+            int i = 0;
+            foreach(string pointer in dynamaxRewards)
             {
-                Log("Invalid Pointer");
-                return 0;
+                i++;
+                var pkm = await ReadPokemon(await ParsePointer(pointer, token), token, 344).ConfigureAwait(false);
+                if (pkm != null && pkm.Species != 0 && pkm.ChecksumValid)
+                    return i;
             }
-
-            var initaddress = Util.GetHexValue(jumps[0].Trim());
-            ulong address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesMainAsync(initaddress, 0x8, token).ConfigureAwait(false), 0);
-            foreach (var j in jumps)
-            {
-                var val = Util.GetHexValue(j.Trim());
-                if (val == initaddress)
-                    continue;
-                if (val == finadd)
-                {
-                    address += val;
-                    break;
-                }
-                address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(address + val, 0x8, token).ConfigureAwait(false), 0);
-            }
-            return address;
-        }
-
-        public async Task<bool> IsInLairEndList(CancellationToken token)
-        {
-            //Should be faster and more precise than the previous method!
-            //Seems that sometimes it fails. Need to understand why.
-            var pk1 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+100]", token), token, 344).ConfigureAwait(false);
-            if (pk1 != null && pk1.Species != 0 && pk1.ChecksumValid)
-            {
-                Log("First check");
-                return true;
-            }
-            else
-            {
-                pk1 = await ReadPokemon(await ParsePointer("[[[[main+2977BC0]+1B0]+68]+100]", token), token, 344).ConfigureAwait(false);
-                if (pk1 != null && pk1.Species != 0 && pk1.ChecksumValid)
-                {
-                    Log("Second check");
-                    return true;
-                }
-                else
-                {
-                    pk1 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+58]+D0", token), token, 344).ConfigureAwait(false);
-                    if (pk1 != null && pk1.Species != 0 && pk1.ChecksumValid)
-                    {
-                        Log("Third check");
-                        return true;
-                    }
-                    else
-                    {
-                        pk1 = await ReadPokemon(await ParsePointer("[[[[main+2977BC0]+1B0]+68]+58]+D0", token), token, 344).ConfigureAwait(false);
-                        if (pk1 != null && pk1.Species != 0 && pk1.ChecksumValid)
-                        {
-                            Log("Fourth check");
-                            return true;
-                        } 
-                        else
-                        {
-                            pk1 = await ReadPokemon(await ParsePointer("[[[[main+28F4060]+1B0]+68]+B8]+D0", token), token, 344).ConfigureAwait(false);
-                            if (pk1 != null && pk1.Species != 0 && pk1.ChecksumValid)
-                            {
-                                Log("Fifth check");
-                                return true;
-                            } else
-                            {
-                                pk1 = await ReadPokemon(await ParsePointer("[[[[main+2977BC0]+1B0]+68]+B8]+D0", token), token, 344).ConfigureAwait(false);
-                                if (pk1 != null && pk1.Species != 0 && pk1.ChecksumValid)
-                                {
-                                    Log("Sixth check");
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            //Log("No result found. Adventure not ended.");
-            return false;
+            return 0;
         }
 
         public async Task<bool> IsInBox(CancellationToken token)
@@ -555,6 +489,37 @@ namespace SysBot.Pokemon
             var textSpeedByte = await Connection.ReadBytesAsync(TextSpeedOffset, 1, token).ConfigureAwait(false);
             var data = new[] { (byte)((textSpeedByte[0] & 0xFC) | (int)speed) };
             await Connection.WriteBytesAsync(data, TextSpeedOffset, token).ConfigureAwait(false);
+        }
+
+        //Pointer parser, code from ALM
+        public async Task<ulong> ParsePointer(String pointer, CancellationToken token)
+        {
+            var ptr = pointer;
+            uint finadd = 0;
+            if (!ptr.EndsWith("]"))
+                finadd = Util.GetHexValue(ptr.Split('+').Last());
+            var jumps = ptr.Replace("main", "").Replace("[", "").Replace("]", "").Split(new[] { "+" }, StringSplitOptions.RemoveEmptyEntries);
+            if (jumps.Length == 0)
+            {
+                Log("Invalid Pointer");
+                return 0;
+            }
+
+            var initaddress = Util.GetHexValue(jumps[0].Trim());
+            ulong address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesMainAsync(initaddress, 0x8, token).ConfigureAwait(false), 0);
+            foreach (var j in jumps)
+            {
+                var val = Util.GetHexValue(j.Trim());
+                if (val == initaddress)
+                    continue;
+                if (val == finadd)
+                {
+                    address += val;
+                    break;
+                }
+                address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(address + val, 0x8, token).ConfigureAwait(false), 0);
+            }
+            return address;
         }
 
         public static uint GetOverworldOffset(ConsoleLanguageParameter value)

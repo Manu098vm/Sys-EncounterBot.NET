@@ -15,6 +15,7 @@
         EggFetch,
         FossilBot,
         RaidBot,
+        DynamaxAdventure,
         EncounterBot,
 
         RemoteControl,

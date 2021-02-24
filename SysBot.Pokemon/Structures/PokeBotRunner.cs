@@ -102,6 +102,7 @@ namespace SysBot.Pokemon
             PokeRoutineType.EggFetch => new EggBot(cfg, Hub),
             PokeRoutineType.FossilBot => new FossilBot(cfg, Hub),
             PokeRoutineType.RaidBot => new RaidBot(cfg, Hub),
+            PokeRoutineType.DynamaxAdventure => new DynamaxAdventureBot(cfg, Hub),
             PokeRoutineType.EncounterBot => new EncounterBot(cfg, Hub),
             PokeRoutineType.RemoteControl => new RemoteControlBot(cfg),
             _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
