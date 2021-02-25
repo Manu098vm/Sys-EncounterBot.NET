@@ -164,21 +164,23 @@ namespace SysBot.Pokemon
                     }
                 }
 
+                //Check for shinies, check all the StopConditions for the Legendary
+                int[] found = await IsAdventureHuntFound(await IsInLairEndList(token), token).ConfigureAwait(false);
+
                 if (!lost) adventureCompleted++;
-                if (raidCount < 5)
-                    Log("Lost at battle n. " + (raidCount - 1)  + ", adventure n. " + adventureCompleted + ".");
+                if (found[1] == 0)
+                    Log("Lost at battle n. 4, adventure n. " + adventureCompleted + ".");
+                else if (raidCount < 5)
+                    Log("Lost at battle n. " + (raidCount - 1) + ", adventure n. " + adventureCompleted + ".");
                 else
                     Log("Adventure n. " + adventureCompleted + " completed.");
 
-                //Check for shinies, check all the StopConditions for the Legendary
-                int found = await IsAdventureHuntFound(await IsInLairEndList(token), token).ConfigureAwait(false);
-
                 //Ending routine
-                if (found > 0)
+                if (found[0] > 0)
                 {
                     Log("A Shiny Pokémon has been found!");
                     await Task.Delay(1_500, token).ConfigureAwait(false);
-                    for (int i = 1; i < found; i++)
+                    for (int i = 1; i < found[0]; i++)
                         await Click(DDOWN, 1_000, token).ConfigureAwait(false);
                     await Click(A, 1_200, token).ConfigureAwait(false);
                     await Click(DDOWN, 0_800, token).ConfigureAwait(false);
@@ -186,7 +188,7 @@ namespace SysBot.Pokemon
                     await PressAndHold(CAPTURE, 2_000, 10_000, token).ConfigureAwait(false);
                     if (wasVideoClipActive == true)
                         Hub.Config.StopConditions.CaptureVideoClip = true;
-                    if (found == 4)
+                    if (found[0] == 4)
                         return;
                     else
                     {
@@ -206,6 +208,45 @@ namespace SysBot.Pokemon
                         await Click(A, 0_800, token).ConfigureAwait(false);
                 }
             }
+        }
+
+        private async Task<int[]> IsAdventureHuntFound(int pointer_id, CancellationToken token)
+        {
+            List<string> pointers = new List<string>();
+            int[] found = { 0, 0 };
+            int i = 0;
+
+            //Set pointer1 
+            if (pointer_id == 0)
+                Log("Pointers search returned 0. No rewards found. If you see this message more than one time, it is suggested to reboot your console in order to continue to use the Bot properly and prevent RAM shifting.");
+            else
+            {
+                while (i < dynamaxRewards.Length)
+                {
+                    if ((pointer_id % 2 != 0 && i % 2 == 0) || (pointer_id % 2 == 0 && i % 2 != 0))
+                        pointers.Add(dynamaxRewards[i]);
+                    i++;
+                }
+            }
+
+            if (pointer_id == 3 || pointer_id == 4)
+                pointers.RemoveAt(0);
+
+            //Read data from dynamic pointers
+            if (pointer_id != 0)
+            {
+                i = 1;
+                foreach (string pointer in pointers)
+                {
+                    if (i == 4) found[1] = 1;
+                    var pkm = await ReadUntilPresent(await ParsePointer(pointer, token), 2_000, 0_200, token).ConfigureAwait(false);
+                    if (pkm != null)
+                        if ((await HandleEncounter(pkm, i == 4, token).ConfigureAwait(false) == true) || (i < 4 && pkm.IsShiny))
+                            found[0] = i;
+                    i++;
+                }
+            }
+            return found;
         }
 
         private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)
@@ -245,44 +286,6 @@ namespace SysBot.Pokemon
         {
             // If aborting the sequence, we might have the stick set at some position. Clear it just in case.
             await SetStick(LEFT, 0, 0, 0_500, token).ConfigureAwait(false); // reset
-        }
-
-        private async Task<int> IsAdventureHuntFound(int pointer_id, CancellationToken token)
-        {
-            List<string> pointers = new List<string>();
-            int found = 0;
-            int i = 0;
-
-            //Set pointer1 
-            if (pointer_id == 0)
-                Log("Pointers search returned 0. No rewards found. To continue to use the Bot properly and prevent RAM shifting, it is suggested to reboot your console.");
-            else
-            {
-                while (i < dynamaxRewards.Length)
-                {
-                    if ((pointer_id % 2 != 0 && i % 2 == 0) || (pointer_id % 2 == 0 && i % 2 != 0)) 
-                        pointers.Add(dynamaxRewards[i]);
-                    i++;
-                }
-            }
-
-            if (pointer_id == 3 || pointer_id == 4)
-                pointers.RemoveAt(0);
-
-            //Read data from dynamic pointers
-            if (pointer_id != 0)
-            {
-                i = 1;
-                foreach(string pointer in pointers)
-                {
-                    var pkm = await ReadUntilPresent(await ParsePointer(pointer, token), 2_000, 0_200, token).ConfigureAwait(false);
-                    if(pkm != null)
-                        if(( await HandleEncounter(pkm, i == 4, token).ConfigureAwait(false) == true ) || ( i < 4 && pkm.IsShiny ))
-                            found = i;
-                    i++;
-                }
-            }
-            return found;
         }
 
         public enum LairSpecies : ushort
