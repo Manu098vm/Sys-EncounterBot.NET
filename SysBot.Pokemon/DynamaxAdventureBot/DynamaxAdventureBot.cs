@@ -216,6 +216,8 @@ namespace SysBot.Pokemon
             int[] found = { 0, 0 };
             int i = 0;
 
+            Log("Entered check with pointer id: " + pointer_id);
+
             //Set pointer1 
             if (pointer_id == 0)
                 Log("Pointers search returned 0. No rewards found. If you see this message more than one time, it is suggested to reboot your console in order to continue to use the Bot properly and prevent RAM shifting.");
@@ -231,6 +233,8 @@ namespace SysBot.Pokemon
 
             if (pointer_id == 3 || pointer_id == 4)
                 pointers.RemoveAt(0);
+            else
+                pointers.RemoveAt(1);
 
             //Read data from dynamic pointers
             if (pointer_id != 0)
