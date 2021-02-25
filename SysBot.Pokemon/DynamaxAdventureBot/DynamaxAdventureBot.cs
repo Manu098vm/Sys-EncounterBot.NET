@@ -58,18 +58,27 @@ namespace SysBot.Pokemon
 
             //Check/set target parameters
             ushort searchmon;
-            bool caneditspecies = false;
+            uint pathoffset = LairSpeciesSelector;
+            bool caneditspecies = true;
             if (Enum.IsDefined(typeof(LairSpecies), mon))
                 searchmon = (ushort)Enum.Parse(typeof(LairSpecies), mon);
             else
                 searchmon = 0;
 
-            byte[] current = await Connection.ReadBytesAsync(LairSpeciesSelector, 2, token).ConfigureAwait(false);
-            byte[] wanted = BitConverter.GetBytes(searchmon);
+            //Check what's the right offset for the first lair path
+            byte[] current_try1 = await Connection.ReadBytesAsync(LairSpeciesSelector, 2, token).ConfigureAwait(false);
+            byte[] current_try2 = await Connection.ReadBytesAsync(LairSpeciesSelector2, 2, token).ConfigureAwait(false);
 
-            //In some instances, the boss path offset is different. Do not inject a boss path anything if that's the case.
-            if (Enum.IsDefined(typeof(LairSpecies), (ushort)BitConverter.ToInt16(current, 0)))
-                caneditspecies = true;
+            //In some instances, the boss path offset is different. If that's the case, do not inject a boss path and leave the "current" bytes to Bulbasaur. It will be ignored as it's not a pokémon available in the Lairs.
+            if (Enum.IsDefined(typeof(LairSpecies), (ushort)BitConverter.ToInt16(current_try1, 0)))
+                pathoffset = LairSpeciesSelector;
+            else if (Enum.IsDefined(typeof(LairSpecies), (ushort)BitConverter.ToInt16(current_try2, 0)))
+                pathoffset = LairSpeciesSelector2;
+            else
+                caneditspecies = false;
+
+            byte[] current = await Connection.ReadBytesAsync(pathoffset, 2, token).ConfigureAwait(false);
+            byte[] wanted = BitConverter.GetBytes(searchmon);
 
             if (mon != "None" && current != wanted && !Enum.IsDefined(typeof(LairSpecies), mon))
             {
@@ -78,8 +87,17 @@ namespace SysBot.Pokemon
             }
             else if (mon != "None" && current != wanted && Enum.IsDefined(typeof(LairSpecies), mon))
             {
-                if (caneditspecies) await Connection.WriteBytesAsync(wanted, LairSpeciesSelector, token);
-                Log( mon + " ready to be hunted.");
+                if (caneditspecies)
+                {
+                    await Connection.WriteBytesAsync(wanted, pathoffset, token);
+                    Log(mon + " ready to be hunted.");
+                }
+                else {
+                    Log("________________________________");
+                    Log("ATTENTION!");
+                    Log(mon + " may not be your first path pokemon. Ignore this message if the Pokémon on the Stop Condition matches the Pokémon on your current Lair Path.");
+                    Log("________________________________");
+                }
             }
             else if (mon == "None")
             {
@@ -117,7 +135,6 @@ namespace SysBot.Pokemon
                     if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
                     {
                         lost = true;
-                        //Also if the pg was in the overworld, this line was never printed, and the bot continued to loop.
                         Log("Lost at first raid.");
                     }
                     else if (!await IsInBattle(token).ConfigureAwait(false) && inBattle)
@@ -234,29 +251,28 @@ namespace SysBot.Pokemon
         {
             List<string> pointers = new List<string>();
             int found = 0;
+            int i = 0;
 
             //Set pointer1 
-            if(pointer_id == 0)
+            if (pointer_id == 0)
                 Log("Pointers search returned 0. No rewards found. To continue to use the Bot properly and prevent RAM shifting, it is suggested to reboot your console.");
-            else if (pointer_id % 2 != 0)
-            {
-                pointers.Add((pointer_id == 3) ? reward1_3 : reward1_1);
-                pointers.Add(reward2_1);
-                pointers.Add(reward3_1);
-                pointers.Add(reward4_1);
-            }
             else
             {
-                pointers.Add((pointer_id == 4) ? reward1_4 : reward1_2);
-                pointers.Add(reward2_2);
-                pointers.Add(reward3_2);
-                pointers.Add(reward4_2);
+                while (i < dynamaxRewards.Length)
+                {
+                    if ((pointer_id % 2 != 0 && i % 2 == 0) || (pointer_id % 2 == 0 && i % 2 != 0)) 
+                        pointers.Add(dynamaxRewards[i]);
+                    i++;
+                }
             }
+
+            if (pointer_id == 3 || pointer_id == 4)
+                pointers.RemoveAt(0);
 
             //Read data from dynamic pointers
             if (pointer_id != 0)
             {
-                int i = 1;
+                i = 1;
                 foreach(string pointer in pointers)
                 {
                     var pkm = await ReadUntilPresent(await ParsePointer(pointer, token), 2_000, 0_200, token).ConfigureAwait(false);

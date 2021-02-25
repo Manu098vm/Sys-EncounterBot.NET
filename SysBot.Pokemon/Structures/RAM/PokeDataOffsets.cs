@@ -12,7 +12,8 @@ namespace SysBot.Pokemon
         public const uint TextSpeedOffset = 0x450690A0;
         public const uint ItemTreasureAddress = 0x45068970;
         public const uint demageOutputOffset = 0x007E37F0;
-        public const uint LairSpeciesSelector = 0x50B12278;
+        public const uint LairSpeciesSelector = 0x50B129A0;
+        public const uint LairSpeciesSelector2 = 0x50B12278;
 
         // Raid Offsets
         // The dex number of the Pokémon the host currently has chosen. 
@@ -113,7 +114,7 @@ namespace SysBot.Pokemon
         public const string reward3_2 = "[[[[main+2977BC0]+1B0]+68]+68]+D0";
         public const string reward4_1 = "[[[[main+28F4060]+1B0]+68]+70]+D0";
         public const string reward4_2 = "[[[[main+2977BC0]+1B0]+68]+70]+D0";
-        public static readonly string[] dynamaxRewards = { reward1_1, reward1_2, reward1_3, reward1_4, reward2_1, reward2_2, reward3_1, reward3_2, reward4_1 };
+        public static readonly string[] dynamaxRewards = { reward1_1, reward1_2, reward1_3, reward1_4, reward2_1, reward2_2, reward3_1, reward3_2, reward4_1, reward4_2 };
 
         #endregion
 
