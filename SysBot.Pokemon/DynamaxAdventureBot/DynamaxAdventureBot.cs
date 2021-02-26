@@ -229,27 +229,33 @@ namespace SysBot.Pokemon
                         pointers.Add(dynamaxRewards[i]);
                     i++;
                 }
-            }
 
-            if (pointer_id == 3 || pointer_id == 4)
-                pointers.RemoveAt(0);
-            else
-                pointers.RemoveAt(1);
+                if (pointer_id == 3 || pointer_id == 4)
+                    pointers.RemoveAt(0);
+                else
+                    pointers.RemoveAt(1);
 
-            //Read data from dynamic pointers
-            if (pointer_id != 0)
-            {
+                Log("Pointer list: ");
+                foreach (string pointer in pointers)
+                    Log(pointer);
+
+                //Read data from dynamic pointers
                 i = 1;
                 foreach (string pointer in pointers)
                 {
                     if (i == 4) found[1] = 1;
                     var pkm = await ReadUntilPresent(await ParsePointer(pointer, token), 2_000, 0_200, token).ConfigureAwait(false);
                     if (pkm != null)
+                    {
                         if ((await HandleEncounter(pkm, i == 4, token).ConfigureAwait(false) == true) || (i < 4 && pkm.IsShiny))
                             found[0] = i;
+                        Log("Pokémon " + pkm.Species.ToString() + ", ciclo " + i);
+                    }
+                    else Log("Pokémon null, ciclo " + i);
                     i++;
                 }
             }
+
             return found;
         }
 
