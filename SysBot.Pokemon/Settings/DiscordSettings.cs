@@ -30,6 +30,9 @@ namespace SysBot.Pokemon
         [Category(Operation), Description("Custom message the bot will reply with when a user says hello to it. Use string formatting to mention the user in the reply.")]
         public string HelloResponse { get; set; } = "Hi {0}!";
 
+        [Category(Operation), Description("User with this ID will receive a ping if an Encounter Bot will match a Stop Condition.")]
+        public string UserTag { get; set; } = string.Empty;
+
         // Whitelists
 
         [Category(Whitelists), Description("Users with this role are allowed to enter the Trade queue.")]

@@ -440,7 +440,7 @@ namespace SysBot.Pokemon
              * 0 = No rewards, adventure not started/ended or lost at the first raid.
              * 1 = First pointer used
              * 2 = Second pointer used
-             * ecc. check Structures/RAM/PokeDataOffsets
+             * etc. check Structures/RAM/PokeDataOffsets
              * */
             int i = 0;
             foreach(string pointer in dynamaxRewards)

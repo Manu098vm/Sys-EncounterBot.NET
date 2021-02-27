@@ -113,6 +113,7 @@ namespace SysBot.Pokemon
 
             while (!token.IsCancellationRequested)
             {
+                Log("Inside cicle");
                 //Capture video clip is menaged internally
                 if (Hub.Config.StopConditions.CaptureVideoClip == true)
                     Hub.Config.StopConditions.CaptureVideoClip = false;
@@ -178,11 +179,13 @@ namespace SysBot.Pokemon
                 //Ending routine
                 if (found[0] > 0)
                 {
+                    if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
+                        Log("<@" + Hub.Config.Discord.UserTag + ">");
                     Log("A Shiny Pokémon has been found!");
                     await Task.Delay(1_500, token).ConfigureAwait(false);
                     for (int i = 1; i < found[0]; i++)
                         await Click(DDOWN, 1_000, token).ConfigureAwait(false);
-                    await Click(A, 1_200, token).ConfigureAwait(false);
+                    await Click(A, 0_900, token).ConfigureAwait(false);
                     await Click(DDOWN, 0_800, token).ConfigureAwait(false);
                     await Click(A, 2_300, token).ConfigureAwait(false);
                     await PressAndHold(CAPTURE, 2_000, 10_000, token).ConfigureAwait(false);
