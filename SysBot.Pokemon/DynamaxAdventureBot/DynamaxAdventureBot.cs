@@ -128,6 +128,7 @@ namespace SysBot.Pokemon
 
                 //MAIN LOOP
                 int raidCount = 1;
+                int elapsed = 0;
                 bool inBattle = false;
                 bool lost = false;
                 while (!(await IsInLairEndList(token) > 0 || lost))
@@ -136,7 +137,7 @@ namespace SysBot.Pokemon
                     if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
                     {
                         lost = true;
-                        Log("Lost at first raid.");
+                        Log("Lost at first raid. Starting again.");
                     }
                     else if (!await IsInBattle(token).ConfigureAwait(false) && inBattle)
                         inBattle = false;
@@ -151,10 +152,15 @@ namespace SysBot.Pokemon
                         if (pk != null)
                             Log("Raid Battle " + raidCount + ": " + pk.Species.ToString() + " " + pk.Nickname);
                         else
-                            Log("Raid Battle " + raidCount);
+                            Log("Raid Battle " + raidCount + ". RAM probably shifted. It suggested to reboot the game or console.");
 
                         inBattle = true;
                         raidCount++;
+                    }
+                    else if (await IsInBattle(token).ConfigureAwait(false) && inBattle)
+                    {
+                        elapsed++;
+                        //TODO: Check how many cicles a standard raid takes
                     }
                     else if (!await IsInBattle(token).ConfigureAwait(false) && !inBattle)
                     {
@@ -165,50 +171,53 @@ namespace SysBot.Pokemon
                     }
                 }
 
-                //Check for shinies, check all the StopConditions for the Legendary
-                int[] found = await IsAdventureHuntFound(await IsInLairEndList(token), token).ConfigureAwait(false);
-
-                if (!lost) adventureCompleted++;
-                if (found[1] == 0)
-                    Log("Lost at battle n. 4, adventure n. " + adventureCompleted + ".");
-                else if (raidCount < 5)
-                    Log("Lost at battle n. " + (raidCount - 1) + ", adventure n. " + adventureCompleted + ".");
-                else
-                    Log("Adventure n. " + adventureCompleted + " completed.");
-
-                //Ending routine
-                if (found[0] > 0)
+                if (!lost)
                 {
-                    if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                        Log("<@" + Hub.Config.Discord.UserTag + ">");
-                    Log("A Shiny Pokémon has been found!");
-                    await Task.Delay(1_500, token).ConfigureAwait(false);
-                    for (int i = 1; i < found[0]; i++)
-                        await Click(DDOWN, 1_000, token).ConfigureAwait(false);
-                    await Click(A, 0_900, token).ConfigureAwait(false);
-                    await Click(DDOWN, 0_800, token).ConfigureAwait(false);
-                    await Click(A, 2_300, token).ConfigureAwait(false);
-                    await PressAndHold(CAPTURE, 2_000, 10_000, token).ConfigureAwait(false);
-                    if (wasVideoClipActive == true)
-                        Hub.Config.StopConditions.CaptureVideoClip = true;
-                    if (found[0] == 4)
-                        return;
+                    //Check for shinies, check all the StopConditions for the Legendary
+                    int[] found = await IsAdventureHuntFound(await IsInLairEndList(token), token).ConfigureAwait(false);
+
+                    adventureCompleted++;
+                    if (found[1] == 0)
+                        Log("Lost at battle n. 4, adventure n. " + adventureCompleted + ".");
+                    else if (raidCount < 5)
+                        Log("Lost at battle n. " + (raidCount - 1) + ", adventure n. " + adventureCompleted + ".");
+                    else
+                        Log("Adventure n. " + adventureCompleted + " completed.");
+
+                    //Ending routine
+                    if (found[0] > 0)
+                    {
+                        if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
+                            Log("<@" + Hub.Config.Discord.UserTag + ">");
+                        Log("A Shiny Pokémon has been found!");
+                        await Task.Delay(1_500, token).ConfigureAwait(false);
+                        for (int i = 1; i < found[0]; i++)
+                            await Click(DDOWN, 1_000, token).ConfigureAwait(false);
+                        await Click(A, 0_900, token).ConfigureAwait(false);
+                        await Click(DDOWN, 0_800, token).ConfigureAwait(false);
+                        await Click(A, 2_300, token).ConfigureAwait(false);
+                        await PressAndHold(CAPTURE, 2_000, 10_000, token).ConfigureAwait(false);
+                        if (wasVideoClipActive == true)
+                            Hub.Config.StopConditions.CaptureVideoClip = true;
+                        //If legendary Pokémon is found, stop the routine, else keep the shiny pokemon and restart the routine
+                        if (found[0] == 4)
+                            return;
+                        else
+                        {
+                            await Task.Delay(1_500, token).ConfigureAwait(false);
+                            await Click(B, 1_500, token).ConfigureAwait(false);
+                            while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                                await Click(A, 0_800, token).ConfigureAwait(false);
+                        }
+                    }
                     else
                     {
+                        Log("No result found, starting again");
                         await Task.Delay(1_500, token).ConfigureAwait(false);
-                        await Click(B, 1_500, token).ConfigureAwait(false);
+                        await Click(B, 1_000, token).ConfigureAwait(false);
                         while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
                             await Click(A, 0_800, token).ConfigureAwait(false);
                     }
-                }
-                else
-                {
-                    Log("No result found, starting again");
-                    await Task.Delay(1_500, token).ConfigureAwait(false);
-                    if (!lost)
-                        await Click(B, 1_000, token).ConfigureAwait(false);
-                    while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                        await Click(A, 0_800, token).ConfigureAwait(false);
                 }
             }
         }
@@ -284,12 +293,8 @@ namespace SysBot.Pokemon
 
             if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
             {
-                Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
-                if (Hub.Config.StopConditions.CaptureVideoClip)
-                {
-                    await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
-                    await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
-                }
+                if(legends)
+                    Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
                 return true;
             }
             return false;
