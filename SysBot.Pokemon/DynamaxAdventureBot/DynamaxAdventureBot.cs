@@ -160,7 +160,14 @@ namespace SysBot.Pokemon
                     else if (await IsInBattle(token).ConfigureAwait(false) && inBattle)
                     {
                         elapsed++;
+                        Log("Time Elapsed: " + elapsed);
                         //TODO: Check how many cicles a standard raid takes
+                        if (elapsed > 1000)
+                        {
+                            for (int j = 0; j < 10; j++)
+                                await Click(B, 1_00, token).ConfigureAwait(false);
+                            await Click(DDOWN, 1_000, token).ConfigureAwait(false);
+                        }
                     }
                     else if (!await IsInBattle(token).ConfigureAwait(false) && !inBattle)
                     {
@@ -188,8 +195,9 @@ namespace SysBot.Pokemon
                     if (found[0] > 0)
                     {
                         if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                            Log("<@" + Hub.Config.Discord.UserTag + ">");
-                        Log("A Shiny Pokémon has been found!");
+                            Log("<@" + Hub.Config.Discord.UserTag + "> A Shiny Pokémon has been found!");
+                        else
+                            Log("A Shiny Pokémon has been found!");
                         await Task.Delay(1_500, token).ConfigureAwait(false);
                         for (int i = 1; i < found[0]; i++)
                             await Click(DDOWN, 1_000, token).ConfigureAwait(false);
