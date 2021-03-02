@@ -53,7 +53,6 @@ namespace SysBot.Pokemon
             byte[] demageStandardState = BitConverter.GetBytes(0x7900E808);
             byte[] demageAlteredState = BitConverter.GetBytes(0x7900E81F);
             byte[] demageTemporalState;
-            ulong mainbase = await SwitchConnection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
             bool wasVideoClipActive = Hub.Config.StopConditions.CaptureVideoClip;
 
             //Check/set target parameters
@@ -69,7 +68,6 @@ namespace SysBot.Pokemon
             byte[] current_try1 = await Connection.ReadBytesAsync(LairSpeciesSelector, 2, token).ConfigureAwait(false);
             byte[] current_try2 = await Connection.ReadBytesAsync(LairSpeciesSelector2, 2, token).ConfigureAwait(false);
 
-            //In some instances, the boss path offset is different. If that's the case, do not inject a boss path and leave the "current" bytes to Bulbasaur. It will be ignored as it's not a pokémon available in the Lairs.
             if (Enum.IsDefined(typeof(LairSpecies), (ushort)BitConverter.ToInt16(current_try1, 0)))
                 pathoffset = LairSpeciesSelector;
             else if (Enum.IsDefined(typeof(LairSpecies), (ushort)BitConverter.ToInt16(current_try2, 0)))
@@ -142,11 +140,11 @@ namespace SysBot.Pokemon
                         //Allows 1HKO
                         demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
                         if (demageStandardState.SequenceEqual(demageTemporalState))
-                            await SwitchConnection.WriteBytesAbsoluteAsync(demageAlteredState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
+                            await SwitchConnection.WriteBytesMainAsync(demageAlteredState, demageOutputOffset, token).ConfigureAwait(false);
 
                         var pk = await ReadUntilPresent(RaidPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
                         if (pk != null)
-                            Log($"Raid Battle {raidCount} {pk.Species} {pk.Nickname}");
+                            Log($"Raid Battle {raidCount}: {pk.Species} {pk.Nickname}");
                         else
                             Log($"Raid Battle {raidCount}.{Environment.NewLine}RAM probably shifted. It suggested to reboot the game or console.");
 
@@ -169,7 +167,7 @@ namespace SysBot.Pokemon
                         //Disable 1HKO
                         demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
                         if (demageAlteredState.SequenceEqual(demageTemporalState))
-                            await SwitchConnection.WriteBytesAbsoluteAsync(demageStandardState, mainbase + demageOutputOffset, token).ConfigureAwait(false);
+                            await SwitchConnection.WriteBytesMainAsync(demageStandardState, demageOutputOffset, token).ConfigureAwait(false);
                     }
                 }
 
@@ -179,10 +177,10 @@ namespace SysBot.Pokemon
                     int[] found = await IsAdventureHuntFound(await IsInLairEndList(token), token).ConfigureAwait(false);
 
                     adventureCompleted++;
-                    if (found[1] == 0)
-                        Log($"Lost at battle n. 4, adventure n. {adventureCompleted}.");
-                    else if (raidCount < 5)
+                    if (raidCount < 5)
                         Log($"Lost at battle n. {(raidCount - 1)}, adventure n. {adventureCompleted}.");
+                    else if (found[1] == 0)
+                        Log($"Lost at battle n. 4, adventure n. {adventureCompleted}.");
                     else
                         Log($"Adventure n. {adventureCompleted} completed.");
 
@@ -190,7 +188,7 @@ namespace SysBot.Pokemon
                     if (found[0] > 0)
                     {
                         if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                            Log("<@" + Hub.Config.Discord.UserTag + "> A Shiny Pokémon has been found!");
+                            Log($"<@{Hub.Config.Discord.UserTag}> a Shiny Pokémon has been found!");
                         else
                             Log("A Shiny Pokémon has been found!");
                         await Task.Delay(1_500, token).ConfigureAwait(false);
@@ -252,9 +250,9 @@ namespace SysBot.Pokemon
                 i = 1;
                 foreach (string pointer in pointers)
                 {
-                    if (i == 4) found[1] = 1;
                     var pkm = await ReadUntilPresent(await ParsePointer(pointer, token), 2_000, 0_200, token).ConfigureAwait(false);
-                    if (pkm != null)
+                    if (i == 4 && pkm != null) found[1] = 1;
+                    else if (pkm != null)
                         if ((await HandleEncounter(pkm, i == 4, token).ConfigureAwait(false) == true) || (i < 4 && pkm.IsShiny))
                             found[0] = i;
                     i++;
