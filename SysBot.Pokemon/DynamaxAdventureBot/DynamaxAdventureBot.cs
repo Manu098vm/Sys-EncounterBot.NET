@@ -82,7 +82,7 @@ namespace SysBot.Pokemon
 
             if (mon != "None" && current != wanted && !Enum.IsDefined(typeof(LairSpecies), mon))
             {
-                Log(mon + " is not an available Lair Boss species. Check your configurations and restart the bot.");
+                Log($"{mon} is not an available Lair Boss species. Check your configurations and restart the bot.");
                 return;
             }
             else if (mon != "None" && current != wanted && Enum.IsDefined(typeof(LairSpecies), mon))
@@ -90,19 +90,16 @@ namespace SysBot.Pokemon
                 if (caneditspecies)
                 {
                     await Connection.WriteBytesAsync(wanted, pathoffset, token);
-                    Log(mon + " ready to be hunted.");
+                    Log($"{mon} ready to be hunted.");
                 }
                 else {
-                    Log("________________________________");
-                    Log("ATTENTION!");
-                    Log(mon + " may not be your first path pokemon. Ignore this message if the Pokémon on the Stop Condition matches the Pokémon on your current Lair Path.");
-                    Log("________________________________");
+                    Log($"________________________________{Environment.NewLine}ATTENTION!" +
+                        $"{Environment.NewLine}{mon} may not be your first path pokemon. Ignore this message if the Pokémon on the Stop Condition matches the Pokémon on your current Lair Path." +
+                        $"{Environment.NewLine}________________________________");
                 }
             }
             else if (mon == "None")
-            {
                 Log("(Any) Legendary ready to be hunted.");
-            }
 
             //Check ShinyXOR
             if (Hub.Config.StopConditions.ShinyTarget.ToString() == "SquareOnly")
@@ -113,7 +110,6 @@ namespace SysBot.Pokemon
 
             while (!token.IsCancellationRequested)
             {
-                Log("Inside cicle");
                 //Capture video clip is menaged internally
                 if (Hub.Config.StopConditions.CaptureVideoClip == true)
                     Hub.Config.StopConditions.CaptureVideoClip = false;
@@ -131,7 +127,7 @@ namespace SysBot.Pokemon
                 int elapsed = 0;
                 bool inBattle = false;
                 bool lost = false;
-                while (!(await IsInLairEndList(token) > 0 || lost))
+                while (!(await IsInLairEndList(token).ConfigureAwait(false) > 0 || lost))
                 {
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
@@ -150,19 +146,18 @@ namespace SysBot.Pokemon
 
                         var pk = await ReadUntilPresent(RaidPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
                         if (pk != null)
-                            Log("Raid Battle " + raidCount + ": " + pk.Species.ToString() + " " + pk.Nickname);
+                            Log($"Raid Battle {raidCount} {pk.Species} {pk.Nickname}");
                         else
-                            Log("Raid Battle " + raidCount + ". RAM probably shifted. It suggested to reboot the game or console.");
+                            Log($"Raid Battle {raidCount}.{Environment.NewLine}RAM probably shifted. It suggested to reboot the game or console.");
 
                         inBattle = true;
                         raidCount++;
+                        elapsed = 0;
                     }
                     else if (await IsInBattle(token).ConfigureAwait(false) && inBattle)
                     {
                         elapsed++;
-                        Log("Time Elapsed: " + elapsed);
-                        //TODO: Check how many cicles a standard raid takes
-                        if (elapsed > 1000)
+                        if (elapsed > 100)
                         {
                             for (int j = 0; j < 10; j++)
                                 await Click(B, 1_00, token).ConfigureAwait(false);
@@ -185,11 +180,11 @@ namespace SysBot.Pokemon
 
                     adventureCompleted++;
                     if (found[1] == 0)
-                        Log("Lost at battle n. 4, adventure n. " + adventureCompleted + ".");
+                        Log($"Lost at battle n. 4, adventure n. {adventureCompleted}.");
                     else if (raidCount < 5)
-                        Log("Lost at battle n. " + (raidCount - 1) + ", adventure n. " + adventureCompleted + ".");
+                        Log($"Lost at battle n. {(raidCount - 1)}, adventure n. {adventureCompleted}.");
                     else
-                        Log("Adventure n. " + adventureCompleted + " completed.");
+                        Log($"Adventure n. {adventureCompleted} completed.");
 
                     //Ending routine
                     if (found[0] > 0)
@@ -236,8 +231,6 @@ namespace SysBot.Pokemon
             int[] found = { 0, 0 };
             int i = 0;
 
-            Log("Entered check with pointer id: " + pointer_id);
-
             //Set pointer1 
             if (pointer_id == 0)
                 Log("Pointers search returned 0. No rewards found. If you see this message more than one time, it is suggested to reboot your console in order to continue to use the Bot properly and prevent RAM shifting.");
@@ -255,10 +248,6 @@ namespace SysBot.Pokemon
                 else
                     pointers.RemoveAt(1);
 
-                Log("Pointer list: ");
-                foreach (string pointer in pointers)
-                    Log(pointer);
-
                 //Read data from dynamic pointers
                 i = 1;
                 foreach (string pointer in pointers)
@@ -266,12 +255,8 @@ namespace SysBot.Pokemon
                     if (i == 4) found[1] = 1;
                     var pkm = await ReadUntilPresent(await ParsePointer(pointer, token), 2_000, 0_200, token).ConfigureAwait(false);
                     if (pkm != null)
-                    {
                         if ((await HandleEncounter(pkm, i == 4, token).ConfigureAwait(false) == true) || (i < 4 && pkm.IsShiny))
                             found[0] = i;
-                        Log("Pokémon " + pkm.Species.ToString() + ", ciclo " + i);
-                    }
-                    else Log("Pokémon null, ciclo " + i);
                     i++;
                 }
             }
