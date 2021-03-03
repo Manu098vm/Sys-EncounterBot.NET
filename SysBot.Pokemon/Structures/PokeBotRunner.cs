@@ -100,6 +100,7 @@ namespace SysBot.Pokemon
                 => new PokeTradeBot(Hub, cfg),
 
             PokeRoutineType.EggFetch => new EggBot(cfg, Hub),
+            PokeRoutineType.GiftBot => new GiftBot(cfg, Hub),
             PokeRoutineType.FossilBot => new FossilBot(cfg, Hub),
             PokeRoutineType.RaidBot => new RaidBot(cfg, Hub),
             PokeRoutineType.DynamaxAdventure => new DynamaxAdventureBot(cfg, Hub),

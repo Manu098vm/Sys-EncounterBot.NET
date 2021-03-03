@@ -103,7 +103,7 @@ namespace SysBot.Pokemon
 
         public const uint CurrentScreen_LairMenu = 0xFFAC2CC4;
 
-        //Dynamax rewards pointers
+        //Pointers
         public const string reward1_1 = "[[[[main+28F4060]+1B0]+68]+58]+D0";
         public const string reward1_2 = "[[[[main+2977BC0]+1B0]+68]+58]+D0";
         public const string reward1_3 = "[[[[main+28F4060]+1B0]+68]+B8]+D0";
@@ -115,6 +115,8 @@ namespace SysBot.Pokemon
         public const string reward4_1 = "[[[[main+28F4060]+1B0]+68]+70]+D0";
         public const string reward4_2 = "[[[[main+2977BC0]+1B0]+68]+70]+D0";
         public static readonly string[] dynamaxRewards = { reward1_1, reward1_2, reward1_3, reward1_4, reward2_1, reward2_2, reward3_1, reward3_2, reward4_1, reward4_2 };
+
+        public static string giftpoke = "[[[[main+28F4060]+208]+08]+58]";
 
         #endregion
 

@@ -13,6 +13,7 @@
         Dump,
 
         EggFetch,
+        GiftBot,
         FossilBot,
         RaidBot,
         DynamaxAdventure,

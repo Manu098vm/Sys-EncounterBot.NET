@@ -208,7 +208,10 @@ namespace SysBot.Pokemon
                             await Task.Delay(1_500, token).ConfigureAwait(false);
                             await Click(B, 1_500, token).ConfigureAwait(false);
                             while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                                await Click(A, 0_800, token).ConfigureAwait(false);
+                            {
+                                await Click(A, 0_500, token).ConfigureAwait(false);
+                                await Task.Delay(2_00, token).ConfigureAwait(false);
+                            }
                         }
                     }
                     else
@@ -217,7 +220,10 @@ namespace SysBot.Pokemon
                         await Task.Delay(1_500, token).ConfigureAwait(false);
                         await Click(B, 1_000, token).ConfigureAwait(false);
                         while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                            await Click(A, 0_800, token).ConfigureAwait(false);
+                        {
+                            await Click(A, 0_500, token).ConfigureAwait(false);
+                            await Task.Delay(2_00, token).ConfigureAwait(false);
+                        }
                     }
                 }
             }
@@ -251,10 +257,12 @@ namespace SysBot.Pokemon
                 foreach (string pointer in pointers)
                 {
                     var pkm = await ReadUntilPresent(await ParsePointer(pointer, token), 2_000, 0_200, token).ConfigureAwait(false);
-                    if (i == 4 && pkm != null) found[1] = 1;
-                    else if (pkm != null)
+                    if (pkm != null)
+                    {
+                        if(i == 4) found[1] = 1;
                         if ((await HandleEncounter(pkm, i == 4, token).ConfigureAwait(false) == true) || (i < 4 && pkm.IsShiny))
                             found[0] = i;
+                    }
                     i++;
                 }
             }

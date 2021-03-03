@@ -346,7 +346,10 @@ namespace SysBot.Pokemon
             await Task.Delay(10_000 + config.Timings.ExtraTimeLoadGame, token).ConfigureAwait(false);
 
             while (!(await IsOnOverworld(config, token).ConfigureAwait(false) || await IsInBattle(token)))
-                await Click(A, 2_000, token).ConfigureAwait(false);
+            {
+                await Click(A, 0_500, token).ConfigureAwait(false);
+                await Task.Delay(2_000, token).ConfigureAwait(false);
+            }
 
             Log("Back in the overworld!");
         }
