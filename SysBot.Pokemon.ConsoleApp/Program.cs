@@ -39,7 +39,7 @@ namespace SysBot.Pokemon.ConsoleApp
 
         private static void ExitNoConfig()
         {
-            var bot = new PokeBotState { Connection = new SwitchConnectionConfig { IP = "192.168.0.1", Port = 6000 }, InitialRoutine = PokeRoutineType.FlexTrade };
+            var bot = new PokeBotState { Connection = new SwitchConnectionConfig { IP = "192.168.0.1", Port = 6000 }, InitialRoutine = PokeRoutineType.EncounterBot };
             var cfg = new ProgramConfig { Bots = new[] { bot } };
             var created = JsonConvert.SerializeObject(cfg, new JsonSerializerSettings
             {
@@ -64,7 +64,6 @@ namespace SysBot.Pokemon.ConsoleApp
                     Console.WriteLine($"Failed to add bot: {bot}");
             }
 
-            PokeTradeBot.SeedChecker = new Z3SeedSearchHandler<PK8>();
             LogUtil.Forwarders.Add((msg, ident) => Console.WriteLine($"{ident}: {msg}"));
             env.StartAll();
             Console.WriteLine($"Started all bots (Count: {prog.Bots.Length}.");

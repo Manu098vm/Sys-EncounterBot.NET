@@ -19,15 +19,10 @@ namespace SysBot.Pokemon
         public override void Add(RoutineExecutor<PokeBotState> bot)
         {
             base.Add(bot);
-            if (bot is PokeTradeBot b)
-                Hub.Bots.Add(b);
         }
 
         public override bool Remove(IConsoleBotConfig cfg, bool callStop)
         {
-            var bot = GetBot(cfg)?.Bot;
-            if (bot is PokeTradeBot b)
-                Hub.Bots.Remove(b);
             return base.Remove(cfg, callStop);
         }
 
@@ -48,7 +43,6 @@ namespace SysBot.Pokemon
             AutoLegalityWrapper.EnsureInitialized(Hub.Config.Legality);
 
             AddIntegrations();
-            AddTradeBotMonitors();
 
             base.InitializeStart();
         }
@@ -76,33 +70,11 @@ namespace SysBot.Pokemon
                 base.ResumeAll();
         }
 
-        private void AddTradeBotMonitors()
-        {
-            Task.Run(async () => await new QueueMonitor(Hub).MonitorOpenQueue(CancellationToken.None).ConfigureAwait(false));
-
-            var path = Hub.Config.Folder.DistributeFolder;
-            if (!Directory.Exists(path))
-                LogUtil.LogError("The distribution folder was not found. Please verify that it exists!", "Hub");
-
-            var pool = Hub.Ledy.Pool;
-            if (!pool.Reload())
-                LogUtil.LogError("Nothing to distribute for Empty Trade Queues!", "Hub");
-        }
-
         public PokeRoutineExecutor CreateBotFromConfig(PokeBotState cfg) => cfg.NextRoutineType switch
         {
-            PokeRoutineType.FlexTrade or PokeRoutineType.Idle
-                or PokeRoutineType.SurpriseTrade
-                or PokeRoutineType.LinkTrade
-                or PokeRoutineType.Clone
-                or PokeRoutineType.Dump
-                or PokeRoutineType.SeedCheck
-                => new PokeTradeBot(Hub, cfg),
-
             PokeRoutineType.EggFetch => new EggBot(cfg, Hub),
             PokeRoutineType.GiftBot => new GiftBot(cfg, Hub),
             PokeRoutineType.FossilBot => new FossilBot(cfg, Hub),
-            PokeRoutineType.RaidBot => new RaidBot(cfg, Hub),
             PokeRoutineType.DynamaxAdventure => new DynamaxAdventureBot(cfg, Hub),
             PokeRoutineType.EncounterBot => new EncounterBot(cfg, Hub),
             PokeRoutineType.RemoteControl => new RemoteControlBot(cfg),

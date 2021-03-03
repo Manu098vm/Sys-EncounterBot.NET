@@ -15,11 +15,6 @@ namespace SysBot.Pokemon.WinForms
         private static void SetUpSpriteCreator(SaveFile sav)
         {
             SpriteUtil.Initialize(sav);
-            StreamSettings.CreateSpriteFile = (pk, fn) =>
-            {
-                var png = pk.Sprite();
-                png.Save(fn);
-            };
         }
     }
 }

@@ -128,7 +128,7 @@ namespace SysBot.Pokemon.Discord
             // Restore Logging
             await Task.Delay(5_000, token).ConfigureAwait(false);
             LogModule.RestoreLogging(_client);
-            TradeStartModule.RestoreTradeStarting(_client);
+
 
             var game = SysCordInstance.Settings.BotGameStatus;
             if (!string.IsNullOrWhiteSpace(game))
@@ -243,10 +243,9 @@ namespace SysBot.Pokemon.Discord
                 var delta = time - lastLogged;
                 var gap = TimeSpan.FromSeconds(Interval) - delta;
 
-                bool noQueue = !SysCordInstance.Self.Hub.Queues.Info.GetCanQueue();
                 if (gap <= TimeSpan.Zero)
                 {
-                    var idle = noQueue ? UserStatus.DoNotDisturb : UserStatus.Idle;
+                    var idle = UserStatus.Idle;
                     if (idle != state)
                     {
                         state = idle;
@@ -256,12 +255,8 @@ namespace SysBot.Pokemon.Discord
                     continue;
                 }
 
-                var active = noQueue ? UserStatus.DoNotDisturb : UserStatus.Online;
-                if (active != state)
-                {
-                    state = active;
-                    await _client.SetStatusAsync(state).ConfigureAwait(false);
-                }
+                await _client.SetStatusAsync(state).ConfigureAwait(false);
+
                 await Task.Delay(gap, token).ConfigureAwait(false);
             }
         }

@@ -33,10 +33,6 @@ namespace SysBot.Pokemon
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public FolderSettings Folder { get; set; } = new();
 
-        [Category(Operation)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public QueueSettings Queues { get; set; } = new();
-
         [Category(Operation), Description("Stop conditions for EggBot, FossilBot, and EncounterBot.")]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public StopConditionSettings StopConditions { get; set; } = new();
@@ -46,23 +42,6 @@ namespace SysBot.Pokemon
         public TimingSettings Timings { get; set; } = new();
 
         // Bots
-
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public TradeSettings Trade { get; set; } = new();
-
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public SeedCheckSettings SeedCheck { get; set; } = new();
-
-        [Category(Bots), Description("Settings for idle distribution trades.")]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public DistributionSettings Distribution { get; set; } = new();
-
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public RaidSettings Raid { get; set; } = new();
-
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public EggSettings Egg { get; set; } = new();
@@ -80,22 +59,6 @@ namespace SysBot.Pokemon
         [Category(Integration)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public DiscordSettings Discord { get; set; } = new();
-
-        [Category(Integration)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public TwitchSettings Twitch { get; set; } = new();
-
-        [Category(Integration)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public YouTubeSettings YouTube { get; set; } = new();
-
-        [Category(Integration), Description("Allows favored users to join the queue with a more favorable position than unfavored users.")]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public FavoredPrioritySettings Favoritism { get; set; } = new();
-
-        [Category(Integration), Description("Configure generation of assets for streaming.")]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public StreamSettings Stream { get; set; } = new();
 
         [Category(Debug), Description("Skips creating bots when the program is started; helpful for testing integrations.")]
         public bool SkipConsoleBotCreation { get; set; }

@@ -28,19 +28,6 @@ namespace SysBot.Pokemon.Discord
         public bool CanUseCommandChannel(ulong channel) => WhitelistedChannels.Count == 0 || WhitelistedChannels.Contains(channel);
         public bool CanUseCommandUser(ulong uid) => !BlacklistedUsers.Contains(uid);
 
-        public RequestSignificance GetSignificance(IEnumerable<string> roles)
-        {
-            var result = RequestSignificance.None;
-            foreach (var r in roles)
-            {
-                if (SudoRoles.Contains(r))
-                    return RequestSignificance.Sudo;
-                if (FavoredRoles.Contains(r))
-                    result = RequestSignificance.Favored;
-            }
-            return result;
-        }
-
         public DiscordManager(PokeTradeHubConfig cfg)
         {
             Config = cfg;

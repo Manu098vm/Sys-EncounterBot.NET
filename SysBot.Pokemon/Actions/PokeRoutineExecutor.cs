@@ -42,12 +42,6 @@ namespace SysBot.Pokemon
             return new PK8(data);
         }
 
-        public async Task<PK8> ReadSurpriseTradePokemon(CancellationToken token)
-        {
-            var data = await Connection.ReadBytesAsync(SurpriseTradePartnerPokemonOffset, BoxFormatSlotSize, token).ConfigureAwait(false);
-            return new PK8(data);
-        }
-
         public async Task SetBoxPokemon(PK8 pkm, int box, int slot, CancellationToken token, SAV8? sav = null)
         {
             if (sav != null)
@@ -130,12 +124,6 @@ namespace SysBot.Pokemon
             return !result.SequenceEqual(original);
         }
 
-        public async Task<bool> LinkTradePartnerFound(CancellationToken token)
-        {
-            var data = await Connection.ReadBytesAsync(LinkTradeSearchingOffset, 1, token).ConfigureAwait(false);
-            return data[0] == 0;
-        }
-
         public async Task<SAV8SWSH> IdentifyTrainer(CancellationToken token)
         {
             Log("Grabbing trainer data of host console...");
@@ -175,141 +163,11 @@ namespace SysBot.Pokemon
             return sav;
         }
 
-        protected async Task EnterTradeCode(int code, PokeTradeHubConfig config, CancellationToken token)
-        {
-            var keys = TradeUtil.GetPresses(code);
-            foreach (var key in keys)
-            {
-                int delay = config.Timings.KeypressTime;
-                await Click(key, delay, token).ConfigureAwait(false);
-            }
-            // Confirm Code outside of this method (allow synchronization)
-        }
-
-        public async Task EnsureConnectedToYComm(PokeTradeHubConfig config, CancellationToken token)
-        {
-            if (!await IsGameConnectedToYComm(token).ConfigureAwait(false))
-            {
-                Log("Reconnecting to Y-Comm...");
-                await ReconnectToYComm(config, token).ConfigureAwait(false);
-            }
-        }
-
-        public async Task<bool> CheckTradePartnerName(TradeMethod tradeMethod, string Name, CancellationToken token)
-        {
-            var name = await GetTradePartnerName(tradeMethod, token).ConfigureAwait(false);
-            return name == Name;
-        }
-
-        public async Task<string> GetTradePartnerName(TradeMethod tradeMethod, CancellationToken token)
-        {
-            var ofs = GetTrainerNameOffset(tradeMethod);
-            var data = await Connection.ReadBytesAsync(ofs, 26, token).ConfigureAwait(false);
-            return StringConverter.GetString7(data, 0, 26);
-        }
-
-        public async Task<bool> IsGameConnectedToYComm(CancellationToken token)
-        {
-            // Reads the Y-Comm Flag is the Game is connected Online
-            var data = await Connection.ReadBytesAsync(IsConnectedOffset, 1, token).ConfigureAwait(false);
-            return data[0] == 1;
-        }
-
-        public async Task ReconnectToYComm(PokeTradeHubConfig config, CancellationToken token)
-        {
-            // Press B in case a Error Message is Present
-            await Click(B, 2000, token).ConfigureAwait(false);
-
-            // Return to Overworld
-            if (!await IsOnOverworld(config, token).ConfigureAwait(false))
-            {
-                for (int i = 0; i < 5; i++)
-                {
-                    await Click(B, 500, token).ConfigureAwait(false);
-                }
-            }
-
-            await Click(Y, 1000, token).ConfigureAwait(false);
-
-            // Press it twice for safety -- sometimes misses it the first time.
-            await Click(PLUS, 2_000, token).ConfigureAwait(false);
-            await Click(PLUS, 5_000 + config.Timings.ExtraTimeReconnectYComm, token).ConfigureAwait(false);
-
-            for (int i = 0; i < 5; i++)
-            {
-                await Click(B, 500, token).ConfigureAwait(false);
-            }
-        }
-
-        public async Task ExitTrade(PokeTradeHubConfig config, bool unexpected, CancellationToken token)
-        {
-            if (unexpected)
-                Log("Unexpected behavior, recover position");
-
-            int attempts = 0;
-            int softBanAttempts = 0;
-            while (!await IsOnOverworld(config, token).ConfigureAwait(false))
-            {
-                var screenID = await GetCurrentScreen(token).ConfigureAwait(false);
-                if (screenID == CurrentScreen_Softban)
-                {
-                    softBanAttempts++;
-                    if (softBanAttempts > 10)
-                        await ReOpenGame(config, token).ConfigureAwait(false);
-                }
-
-                attempts++;
-                if (attempts >= 15)
-                    break;
-
-                await Click(B, 1_000, token).ConfigureAwait(false);
-                await Click(B, 1_000, token).ConfigureAwait(false);
-                await Click(A, 1_000, token).ConfigureAwait(false);
-            }
-        }
-
-        public async Task ExitSeedCheckTrade(PokeTradeHubConfig config, CancellationToken token)
-        {
-            // Seed Check Bot doesn't show anything, so it can skip the first B press.
-            int attempts = 0;
-            while (!await IsOnOverworld(config, token).ConfigureAwait(false))
-            {
-                attempts++;
-                if (attempts >= 15)
-                    break;
-
-                await Click(B, 1_000, token).ConfigureAwait(false);
-                await Click(A, 1_000, token).ConfigureAwait(false);
-            }
-
-            await Task.Delay(3_000, token).ConfigureAwait(false);
-        }
 
         public async Task ReOpenGame(PokeTradeHubConfig config, CancellationToken token)
         {
-            // Reopen the game if we get softbanned
-            Log("Potential softban detected, reopening game just in case!");
             await CloseGame(config, token).ConfigureAwait(false);
             await StartGame(config, token).ConfigureAwait(false);
-
-            // In case we are softbanned, reset the timestamp
-            await Unban(token).ConfigureAwait(false);
-        }
-
-        public async Task Unban(CancellationToken token)
-        {
-            // Like previous Generations the Game uses a Unix Timestamp for 
-            // how long we are Soft-Banned and once the Soft-Ban is lifted
-            // the Game sets the value back to 0 (1970/01/01 12:00 AM (UTC) )
-            var data = BitConverter.GetBytes(0);
-            await Connection.WriteBytesAsync(data, SoftBanUnixTimespanOffset, token).ConfigureAwait(false);
-        }
-
-        public async Task<bool> CheckIfSoftBanned(CancellationToken token)
-        {
-            // Check if the Unix Timestamp isn't Zero, if so we are Softbanned.
-            var data = await Connection.ReadBytesAsync(SoftBanUnixTimespanOffset, 1, token).ConfigureAwait(false);
-            return data[0] > 1;
         }
 
         public async Task CloseGame(PokeTradeHubConfig config, CancellationToken token)
@@ -355,39 +213,6 @@ namespace SysBot.Pokemon
         }
 
 
-        public async Task<bool> CheckIfSearchingForLinkTradePartner(CancellationToken token)
-        {
-            var data = await Connection.ReadBytesAsync(LinkTradeSearchingOffset, 1, token).ConfigureAwait(false);
-            return data[0] == 1;
-        }
-
-        public async Task<bool> CheckIfSearchingForSurprisePartner(CancellationToken token)
-        {
-            var data = await Connection.ReadBytesAsync(SurpriseTradeSearchOffset, 8, token).ConfigureAwait(false);
-            return BitConverter.ToUInt32(data, 0) == SurpriseTradeSearch_Searching;
-        }
-
-        public async Task ResetTradePosition(PokeTradeHubConfig config, CancellationToken token)
-        {
-            Log("Resetting bot position.");
-
-            // Shouldn't ever be used while not on overworld.
-            if (!await IsOnOverworld(config, token).ConfigureAwait(false))
-                await ExitTrade(config, true, token).ConfigureAwait(false);
-
-            // Ensure we're searching before we try to reset a search.
-            if (!await CheckIfSearchingForLinkTradePartner(token).ConfigureAwait(false))
-                return;
-
-            await Click(Y, 2_000, token).ConfigureAwait(false);
-            for (int i = 0; i < 5; i++)
-                await Click(A, 1_500, token).ConfigureAwait(false);
-            // Extra A press for Japanese.
-            if (GameLang == LanguageID.Japanese)
-                await Click(A, 1_500, token).ConfigureAwait(false);
-            await Click(B, 1_500, token).ConfigureAwait(false);
-            await Click(B, 1_500, token).ConfigureAwait(false);
-        }
 
         public async Task<bool> IsEggReady(SwordShieldDaycare daycare, CancellationToken token)
         {
@@ -454,13 +279,6 @@ namespace SysBot.Pokemon
                     return i;
             }
             return 0;
-        }
-
-        public async Task<bool> IsInBox(CancellationToken token)
-        {
-            var data = await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false);
-            var dataint = BitConverter.ToUInt32(data, 0);
-            return dataint == CurrentScreen_Box1 || dataint == CurrentScreen_Box2;
         }
 
         public async Task<bool> IsOnOverworld(PokeTradeHubConfig config, CancellationToken token)

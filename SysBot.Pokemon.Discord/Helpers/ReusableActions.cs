@@ -40,15 +40,6 @@ namespace SysBot.Pokemon.Discord
             await channel.SendPKMAsShowdownSetAsync(pkm).ConfigureAwait(false);
         }
 
-        public static RequestSignificance GetFavor(this IUser user)
-        {
-            var mgr = SysCordInstance.Manager;
-            if (mgr.CanUseSudo(user.Id))
-                return RequestSignificance.Sudo;
-            if (user is SocketGuildUser g)
-                return mgr.GetSignificance(g.Roles.Select(z => z.Name));
-            return RequestSignificance.None;
-        }
 
         public static async Task EchoAndReply(this ISocketMessageChannel channel, string msg)
         {

@@ -7,7 +7,6 @@ namespace SysBot.Pokemon
         public const uint BoxStartOffset = 0x45075880;
         public const uint CurrentBoxOffset = 0x450C680E;
         public const uint TrainerDataOffset = 0x45068F18;
-        public const uint SoftBanUnixTimespanOffset = 0x450C89E8;
         public const uint IsConnectedOffset = 0x30C7CCA8;
         public const uint TextSpeedOffset = 0x450690A0;
         public const uint ItemTreasureAddress = 0x45068970;
@@ -37,23 +36,6 @@ namespace SysBot.Pokemon
         public const uint WildPokemonOffset = 0x8FEA3648;
         public const uint RaidPokemonOffset = 0x886A95B8;
         public const uint LegendaryPokemonOffset = 0x886BC348;
-
-        // Link Trade Offsets
-        public const uint LinkTradePartnerPokemonOffset = 0xAF286078;
-        public const uint LinkTradePartnerNameOffset = 0xAF28384C;
-        public const uint LinkTradeSearchingOffset = 0x2F76C3C8;
-
-        // Suprise Trade Offsets
-        public const uint SurpriseTradePartnerPokemonOffset = 0x450675a0;
-
-        public const uint SurpriseTradeLockSlot = 0x450676fc;
-        public const uint SurpriseTradeLockBox = 0x450676f8;
-
-        public const uint SurpriseTradeSearchOffset = 0x45067704;
-        public const uint SurpriseTradeSearch_Empty = 0x00000000;
-        public const uint SurpriseTradeSearch_Searching = 0x01000000;
-        public const uint SurpriseTradeSearch_Found = 0x0200012C;
-        public const uint SurpriseTradePartnerNameOffset = 0x45067708;
 
         /* Wild Area Daycare */
         public const uint DayCare_Wildarea_Step_Counter = 0x4511FC54;
@@ -119,16 +101,6 @@ namespace SysBot.Pokemon
         public static string giftpoke = "[[[[main+28F4060]+208]+08]+58]";
 
         #endregion
-
-        public static uint GetTrainerNameOffset(TradeMethod tradeMethod)
-        {
-            return tradeMethod switch
-            {
-                TradeMethod.LinkTrade => LinkTradePartnerNameOffset,
-                TradeMethod.SupriseTrade => SurpriseTradePartnerNameOffset,
-                _ => throw new ArgumentException(nameof(tradeMethod)),
-            };
-        }
 
         public static uint GetDaycareStepCounterOffset(SwordShieldDaycare daycare)
         {
