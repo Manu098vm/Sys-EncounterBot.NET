@@ -15,12 +15,12 @@ namespace SysBot.Base
             Directory.CreateDirectory("logs");
             var logfile = new FileTarget("logfile")
             {
-                FileName = Path.Combine("logs", "SysBotLog.txt"),
+                FileName = Path.Combine("logs", "SysEncounterBotLog.txt"),
                 ConcurrentWrites = true,
 
                 ArchiveEvery = FileArchivePeriod.Day,
                 ArchiveNumbering = ArchiveNumberingMode.Date,
-                ArchiveFileName = Path.Combine("logs", "SysBotLog.{#}.txt"),
+                ArchiveFileName = Path.Combine("logs", "SysEncounterBotLog.{#}.txt"),
                 ArchiveDateFormat = "yyyy-MM-dd",
                 ArchiveAboveSize = 104857600, // 100MB (never)
                 MaxArchiveFiles = 14, // 2 weeks

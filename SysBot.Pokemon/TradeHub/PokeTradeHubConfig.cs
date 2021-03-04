@@ -12,9 +12,6 @@ namespace SysBot.Pokemon
         private const string Integration = nameof(Integration);
         private const string Debug = nameof(Debug);
 
-        [Category(FeatureToggle), Description("When enabled, the bot will press the B button occasionally when it is not processing anything (to avoid sleep).")]
-        public bool AntiIdle { get; set; }
-
         [Category(FeatureToggle), Description("Method for detecting the overworld. Original method may not work consistently for some users, while ConsoleLanguageSpecific method requires your Switch console language.")]
         public ScreenDetectionMode ScreenDetection { get; set; } = ScreenDetectionMode.ConsoleLanguageSpecific;
 
@@ -24,10 +21,6 @@ namespace SysBot.Pokemon
         [Category(Operation)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public CountSettings Counts { get; set; } = new();
-
-        [Category(Operation)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public LegalitySettings Legality { get; set; } = new();
 
         [Category(Operation)]
         [TypeConverter(typeof(ExpandableObjectConverter))]

@@ -148,17 +148,6 @@ namespace SysBot.Pokemon.Discord
             await _commands.AddModulesAsync(assembly, _services).ConfigureAwait(false);
             var modules = _commands.Modules.ToList();
 
-            var blacklist = Hub.Config.Discord.ModuleBlacklist
-                .Replace("Module", "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(z => z.Trim()).ToList();
-
-            foreach (var module in modules)
-            {
-                var name = module.Name.Replace("Module", "");
-                if (blacklist.Any(z => z.Equals(name, StringComparison.OrdinalIgnoreCase)))
-                    await _commands.RemoveModuleAsync(module).ConfigureAwait(false);
-            }
-
             // Subscribe a handler to see if a message invokes a command.
             _client.MessageReceived += HandleMessageAsync;
         }
@@ -199,19 +188,6 @@ namespace SysBot.Pokemon.Discord
         {
             // Create a Command Context.
             var context = new SocketCommandContext(_client, msg);
-
-            // Check Permission
-            var mgr = SysCordInstance.Manager;
-            if (!mgr.CanUseCommandUser(msg.Author.Id))
-            {
-                await msg.Channel.SendMessageAsync("You are not permitted to use this command.").ConfigureAwait(false);
-                return true;
-            }
-            if (!mgr.CanUseCommandChannel(msg.Channel.Id) && msg.Author.Id != mgr.Owner)
-            {
-                await msg.Channel.SendMessageAsync("You can't use that command here.").ConfigureAwait(false);
-                return true;
-            }
 
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully).

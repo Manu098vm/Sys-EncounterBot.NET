@@ -48,11 +48,6 @@
         Spiritomb,
 
         /// <summary>
-        /// Max Lair
-        /// </summary>
-        DynamaxAdventure,
-
-        /// <summary>
         /// IV Live Checking
         /// </summary>
         StatsLiveChecking,

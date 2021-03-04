@@ -1,4 +1,4 @@
-# SysBot.NET
+# Sys-EncounterBot.NET
 ![License](https://img.shields.io/badge/License-AGPLv3-blue.svg)
 
 ## Support Discord:
@@ -16,5 +16,15 @@ Uses [Discord.Net](https://github.com/discord-net/Discord.Net) , [TwitchLib](htt
 ## Other Dependencies
 Pokémon API logic is provided by [PKHeX](https://github.com/kwsch/PKHeX/), and template generation is provided by [AutoMod](https://github.com/architdate/PKHeX-Plugins/).
 
+## Credits
+
+[olliz0r](https://github.com/olliz0r) for [sys-botbase](https://github.com/olliz0r/sys-botbase)
+
+[kwsch](https://github.com/kwsch) for [PKHeX](https://github.com/kwsch/PKHeX)
+
+[architdate](https://github.com/architdate), [Lusamine](https://github.com/Lusamine), all the ALM team and all the people involved in the developing/testing of the [PKHeX-Plugins](https://github.com/architdate/PKHeX-Plugins), thanks to which this project would never exist
+
+[Zyro670](https://github.com/zyro670), KD#0001 and Q8yShadow🐍🦈#9487 for the suggestions, testing and help on implementations.
+
 # License
-Refer to the `License.md` for details regarding licensing.
+Refer to the `LICENSE` for details regarding licensing.

@@ -4,28 +4,26 @@ namespace SysBot.Pokemon
 {
     public class CountSettings
     {
-        private const string Trades = nameof(Trades);
-        private const string Received = nameof(Received);
+        private const string Dumps = nameof(Dumps);
+        private const string Count = nameof(Count);
         public override string ToString() => "Completed Counts Storage";
 
-        [Category(Trades), Description("Completed Dump Trades (Specific User)")]
+        [Category(Dumps), Description("Completed Dump Trades (Specific User)")]
         public int CompletedDumps { get; set; }
 
-        // Received
-
-        [Category(Received), Description("Eggs Retrieved")]
+        [Category(Count), Description("Eggs Retrieved")]
         public int CompletedEggs { get; set; }
 
-        [Category(Received), Description("Fossil Pokémon Revived")]
+        [Category(Count), Description("Fossil Pokémon Revived")]
         public int CompletedFossils { get; set; }
 
-        [Category(Received), Description("Encountered Wild Pokémon")]
+        [Category(Count), Description("Encountered Wild Pokémon")]
         public int CompletedEncounters { get; set; }
 
-        [Category(Received), Description("Encountered Legendary Pokémon")]
+        [Category(Count), Description("Encountered Legendary Pokémon")]
         public int CompletedLegends { get; set; }
 
-        [Category(Received), Description("Raids Started")]
+        [Category(Count), Description("Raids Started")]
         public int CompletedRaids { get; set; }
     }
 }
