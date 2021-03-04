@@ -24,27 +24,12 @@ namespace SysBot.Pokemon
 
         private int encounterCount;
 
-        private const int InjectBox = 0;
-        private const int InjectSlot = 0;
-
         private static readonly PK8 Blank = new();
 
         public override async Task MainLoop(CancellationToken token)
         {
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
-
-            await SetCurrentBox(0, token).ConfigureAwait(false);
-
-            var existing = await ReadBoxPokemon(InjectBox, InjectSlot, token).ConfigureAwait(false);
-            if (existing.Species != 0 && existing.ChecksumValid)
-            {
-                Log("Destination slot is occupied! Dumping the Pokémon found there...");
-                DumpPokemon(DumpSetting.DumpFolder, "saved", existing);
-            }
-            Log("Clearing destination slot to start the bot.");
-            await SetBoxPokemon(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
-
             Log("Checking item counts...");
             var pouchData = await Connection.ReadBytesAsync(ItemTreasureAddress, 80, token).ConfigureAwait(false);
             var counts = FossilCount.GetFossilCounts(pouchData);
@@ -55,38 +40,29 @@ namespace SysBot.Pokemon
                 return;
             }
 
-            Log("Starting main FossilBot loop.");
             Config.IterateNextRoutine();
+
             while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.FossilBot)
             {
-                if (encounterCount != 0 && encounterCount % reviveCount == 0)
-                {
-                    Log($"Ran out of fossils to revive {Hub.Config.Fossil.Species}.");
-                    if (Hub.Config.Fossil.InjectWhenEmpty)
-                    {
-                        Log("Restoring original pouch data.");
-                        await Connection.WriteBytesAsync(pouchData, ItemTreasureAddress, token).ConfigureAwait(false);
-                        await Task.Delay(500, token).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        Log("Restart the game and the bot(s) or set \"Inject Fossils\" to True in the config.");
-                        return;
-                    }
-                }
-
                 await ReviveFossil(counts, token).ConfigureAwait(false);
                 Log("Fossil revived. Checking details...");
 
-                var pk = await ReadBoxPokemon(InjectBox, InjectSlot, token).ConfigureAwait(false);
-                if (pk.Species == 0 || !pk.ChecksumValid)
+                var pk = await ReadUntilPresent(await ParsePointer(giftpoke, token), 2_000, 0_200, token).ConfigureAwait(false);
+                if (pk == null)
                 {
-                    Log("Invalid data detected in destination slot. Restarting loop.");
+                    Log("RAM probably shifted.");
                     continue;
                 }
 
                 encounterCount++;
-                Log($"Encounter: {encounterCount}:{Environment.NewLine}{ShowdownParsing.GetShowdownText(pk)}{Environment.NewLine}{Environment.NewLine}");
+
+                string showdowntext = ShowdownParsing.GetShowdownText(pk);
+                if (pk.IsShiny && pk.ShinyXor == 0)
+                    showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
+                else if (pk.IsShiny)
+                    showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
+
+                Log($"Encounter: {encounterCount}:{Environment.NewLine}{showdowntext}{Environment.NewLine}{Environment.NewLine}");
                 if (DumpSetting.Dump)
                     DumpPokemon(DumpSetting.DumpFolder, "fossil", pk);
 
@@ -100,26 +76,26 @@ namespace SysBot.Pokemon
                         await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
                     }
 
-                    if (Hub.Config.Fossil.ContinueAfterMatch)
-                    {
-                        Log("Result found! Continuing to collect more fossils.");
-                    }
+                    if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
+                        Log($"<@{Hub.Config.Discord.UserTag}> Result found! Stopping routine execution; restart the bot(s) to search again.");
                     else
-                    {
                         Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
-                        await DetachController(token).ConfigureAwait(false);
-                        return;
-                    }
-                }
 
-                Log("Clearing destination slot.");
-                await SetBoxPokemon(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
+                    await DetachController(token).ConfigureAwait(false);
+                    return;
+                }
+                else
+                {
+                    await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                    await StartGame(Hub.Config, token).ConfigureAwait(false);
+                }
             }
         }
 
         private async Task ReviveFossil(FossilCount count, CancellationToken token)
         {
             Log("Starting fossil revival routine...");
+
             if (GameLang == LanguageID.Spanish)
                 await Click(A, 0_900, token).ConfigureAwait(false);
 
@@ -141,12 +117,11 @@ namespace SysBot.Pokemon
                 await Click(DDOWN, 300, token).ConfigureAwait(false);
 
             // A spam through accepting the fossil and agreeing to revive.
-            for (int i = 0; i < 8; i++)
+            while (await ReadUntilPresent(await ParsePointer(giftpoke, token), 2_000, 0_200, token).ConfigureAwait(false) == null)
+            {
                 await Click(A, 0_400, token).ConfigureAwait(false);
-
-            // Safe to mash B from here until we get out of all menus.
-            while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                await Click(B, 0_400, token).ConfigureAwait(false);
+                await Task.Delay(1_000, token).ConfigureAwait(false);
+            }
         }
     }
 }
