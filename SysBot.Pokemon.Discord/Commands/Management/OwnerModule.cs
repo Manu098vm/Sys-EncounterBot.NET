@@ -25,24 +25,6 @@ namespace SysBot.Pokemon.Discord
             await Process(Context.Message.MentionedUsers.Select(z => z.Id), (z, x) => z.Remove(x), z => z.SudoDiscord).ConfigureAwait(false);
         }
 
-        [Command("addChannel")]
-        [Summary("Adds a channel to the list of channels that are accepting commands.")]
-        [RequireOwner]
-        // ReSharper disable once UnusedParameter.Global
-        public async Task AddChannel()
-        {
-            await Process(new[] { Context.Message.Channel.Id }, (z, x) => z.Add(x), z => z.WhitelistedChannels).ConfigureAwait(false);
-        }
-
-        [Command("removeChannel")]
-        [Summary("Removes a channel from the list of channels that are accepting commands.")]
-        [RequireOwner]
-        // ReSharper disable once UnusedParameter.Global
-        public async Task RemoveChannel()
-        {
-            await Process(new[] { Context.Message.Channel.Id }, (z, x) => z.Remove(x), z => z.WhitelistedChannels).ConfigureAwait(false);
-        }
-
         [Command("sudoku")]
         [Alias("kill", "shutdown")]
         [Summary("Causes the entire process to end itself!")]

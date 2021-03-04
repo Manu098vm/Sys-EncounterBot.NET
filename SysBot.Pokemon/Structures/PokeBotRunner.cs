@@ -70,7 +70,9 @@ namespace SysBot.Pokemon
             PokeRoutineType.FossilBot => new FossilBot(cfg, Hub),
             PokeRoutineType.DynamaxAdventure => new DynamaxAdventureBot(cfg, Hub),
             PokeRoutineType.EncounterBot => new EncounterBot(cfg, Hub),
+            PokeRoutineType.LiveStatsChecking => new LiveStatsChecking(cfg, Hub),
             PokeRoutineType.RemoteControl => new RemoteControlBot(cfg),
+            PokeRoutineType.Idle => new Idle(cfg),
             _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
         };
     }

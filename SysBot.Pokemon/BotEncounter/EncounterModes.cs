@@ -46,10 +46,5 @@
         /// Bot will soft reset Spiritomb
         /// </summary>
         Spiritomb,
-
-        /// <summary>
-        /// IV Live Checking
-        /// </summary>
-        StatsLiveChecking,
     }
 }

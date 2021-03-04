@@ -8,6 +8,7 @@
         FossilBot,
         DynamaxAdventure,
         EncounterBot,
+        LiveStatsChecking,
         RemoteControl,
     }
 }

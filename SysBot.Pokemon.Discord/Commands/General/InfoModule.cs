@@ -62,7 +62,6 @@ namespace SysBot.Pokemon.Discord
         }
 
         public static string GetCoreDate() => GetDateOfDll("PKHeX.Core.dll");
-        public static string GetALMDate() => GetDateOfDll("PKHeX.Core.AutoMod.dll");
 
         private static string GetDateOfDll(string dll)
         {

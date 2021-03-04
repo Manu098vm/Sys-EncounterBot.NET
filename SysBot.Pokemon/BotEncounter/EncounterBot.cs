@@ -45,7 +45,6 @@ namespace SysBot.Pokemon
                 EncounterMode.Regigigas => DoRegigigasEncounter(token),
                 EncounterMode.Regis => DoRegiEncounter(token),
                 EncounterMode.LegendaryDogs => DoDogEncounter(token),
-                EncounterMode.StatsLiveChecking => LiveStatsChecking(token),
                 //SoJ and Spirittomb uses the same routine
                 EncounterMode.SwordsJustice => DoJusticeEncounter(token,"Sword of Justice"),
                 EncounterMode.Spiritomb => DoJusticeEncounter(token,"Spiritomb"),
@@ -217,30 +216,6 @@ namespace SysBot.Pokemon
 
                 // Extra delay to be sure we're fully out of the battle.
                 await Task.Delay(0_250, token).ConfigureAwait(false);
-            }
-        }
-
-        private async Task LiveStatsChecking(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                while (await IsInBattle(token).ConfigureAwait(false))
-                    await Task.Delay(1_000, token).ConfigureAwait(false);
-
-                while (!await IsInBattle(token).ConfigureAwait(false))
-                    await Task.Delay(1_000, token).ConfigureAwait(false);
-
-                Log("Encounter started! Checking details...");
-                var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
-
-                // Offsets are flickery so make sure we see it 3 times.
-                for (int i = 0; i < 3; i++)
-                    await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
-
-                if (pk == null)
-                    Log("Pokémon Check error!");
-                else
-                    await HandleEncounter(pk, false, token).ConfigureAwait(false);
             }
         }
 

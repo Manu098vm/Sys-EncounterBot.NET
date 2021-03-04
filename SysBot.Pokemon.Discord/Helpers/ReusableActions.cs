@@ -42,7 +42,14 @@ namespace SysBot.Pokemon.Discord
 
         public static string GetFormattedShowdownText(PKM pkm)
         {
-            var showdown = ShowdownParsing.GetShowdownText(pkm);
+            int TID = (pkm.Gen7 || pkm.Gen8) ? pkm.TrainerID7 : pkm.TID;
+            int SID = (pkm.Gen7 || pkm.Gen8) ? pkm.TrainerSID7 : pkm.SID;
+            string showdowntext = ShowdownParsing.GetShowdownText(pkm);
+            if (pkm.IsShiny && pkm.ShinyXor == 0)
+                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
+            else if (pkm.IsShiny)
+                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
+            string showdown = $"{showdowntext}\nOT: {pkm.OT_Name}\nTID: {TID}\nSID: {SID}";
             return Format.Code(showdown);
         }
 

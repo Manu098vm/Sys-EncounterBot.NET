@@ -47,6 +47,10 @@ namespace SysBot.Pokemon
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public EncounterSettings Encounter { get; set; } = new();
 
+        [Category(Bots)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public LiveStatsCheckingSettings LiveStatsSettings { get; set; } = new();
+
         // Integration
 
         [Category(Integration)]

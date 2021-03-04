@@ -63,23 +63,6 @@ namespace SysBot.Pokemon.Discord
             await Context.Channel.EchoAndReply($"The bot at {ip} ({bot.Bot.Connection.Label}) has been commanded to Stop.").ConfigureAwait(false);
         }
 
-        [Command("botIdle")]
-        [Alias("botPause")]
-        [Summary("Commands a bot to Idle by IP address/port.")]
-        [RequireSudo]
-        public async Task IdleBotAsync(string ip)
-        {
-            var bot = SysCordInstance.Runner.GetBot(ip);
-            if (bot == null)
-            {
-                await ReplyAsync($"No bot has that IP address ({ip}).").ConfigureAwait(false);
-                return;
-            }
-
-            bot.Pause();
-            await Context.Channel.EchoAndReply($"The bot at {ip} ({bot.Bot.Connection.Label}) has been commanded to Idle.").ConfigureAwait(false);
-        }
-
         [Command("botChange")]
         [Summary("Changes the routine of a bot (trades).")]
         [RequireSudo]
