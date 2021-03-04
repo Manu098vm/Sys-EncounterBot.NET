@@ -398,7 +398,7 @@ namespace SysBot.Pokemon
             if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
             {
                 if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                    Log($"<@{Hub.Config.Discord.UserTag}> Result found! Stopping routine execution; restart the bot(s) to search again.");
+                    Log($"<@{Hub.Config.Discord.UserTag}> result found! Stopping routine execution; restart the bot(s) to search again.");
                 else
                     Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
                 if (Hub.Config.StopConditions.CaptureVideoClip)

@@ -187,11 +187,7 @@ namespace SysBot.Pokemon
                     //Ending routine
                     if (found[0] > 0)
                     {
-                        if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                            Log($"<@{Hub.Config.Discord.UserTag}> a Shiny Pokémon has been found!");
-                        else
-                            Log("A Shiny Pokémon has been found!");
-                        await Task.Delay(1_500, token).ConfigureAwait(false);
+                                                await Task.Delay(1_500, token).ConfigureAwait(false);
                         for (int i = 1; i < found[0]; i++)
                             await Click(DDOWN, 1_000, token).ConfigureAwait(false);
                         await Click(A, 0_900, token).ConfigureAwait(false);
@@ -261,7 +257,11 @@ namespace SysBot.Pokemon
                     {
                         if(i == 4) found[1] = 1;
                         if ((await HandleEncounter(pkm, i == 4, token).ConfigureAwait(false) == true) || (i < 4 && pkm.IsShiny))
+                        {
+                            if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
+                                Log("<@" + Hub.Config.Discord.UserTag +"> a " + (pkm.IsShiny ? "Shiny" : "") + pkm.Nickname + "has been found!");
                             found[0] = i;
+                        }
                     }
                     i++;
                 }
@@ -292,7 +292,7 @@ namespace SysBot.Pokemon
 
             if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
             {
-                if(legends)
+                if (legends)
                     Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
                 return true;
             }

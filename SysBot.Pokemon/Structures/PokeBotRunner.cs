@@ -1,9 +1,7 @@
 ﻿using PKHeX.Core;
 using SysBot.Base;
 using System;
-using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SysBot.Pokemon
 {
@@ -51,9 +49,6 @@ namespace SysBot.Pokemon
 
             // bots currently don't de-register
             Thread.Sleep(100);
-            int count = Hub.BotSync.Barrier.ParticipantCount;
-            if (count != 0)
-                Hub.BotSync.Barrier.RemoveParticipants(count);
         }
 
         public override void PauseAll()
