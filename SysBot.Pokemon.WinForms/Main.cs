@@ -229,7 +229,7 @@ namespace SysBot.Pokemon.WinForms
             row.Remove += (s, e) =>
             {
                 Bots.Remove(row.State);
-                RunningEnvironment.Remove(row.State, !RunningEnvironment.Hub.Config.SkipConsoleBotCreation);
+                RunningEnvironment.Remove(row.State, !(false));
                 FLP_Bots.Controls.Remove(row);
             };
         }

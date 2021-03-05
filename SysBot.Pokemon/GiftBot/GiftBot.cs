@@ -44,7 +44,7 @@ namespace SysBot.Pokemon
                 Log("Gift found! Checking details...");
                 var pk = await ReadUntilPresent(await ParsePointer(giftpoke, token), 2_000, 0_200, token).ConfigureAwait(false);
                 if (pk != null)
-                    if (await HandlePokemon(pk, true, token).ConfigureAwait(false))
+                    if (await HandlePokemon(pk, Hub.Config.GiftBotSettings.IsLegendary, token).ConfigureAwait(false))
                     {
                         if (Hub.Config.StopConditions.CaptureVideoClip)
                         {

@@ -16,7 +16,7 @@ namespace SysBot.Pokemon
         }
 
         public readonly PokeTradeHubConfig Config;
-        public readonly BotSynchronizer BotSync;
+        public readonly BotSynchronizer? BotSync;
         public readonly BotCompleteCounts Counts;
     }
 }

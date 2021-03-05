@@ -28,8 +28,7 @@ namespace SysBot.Pokemon
         {
             InitializeStart();
 
-            if (!Hub.Config.SkipConsoleBotCreation)
-                base.StartAll();
+            base.StartAll();
         }
 
         public override void InitializeStart()
@@ -53,14 +52,12 @@ namespace SysBot.Pokemon
 
         public override void PauseAll()
         {
-            if (!Hub.Config.SkipConsoleBotCreation)
-                base.PauseAll();
+            base.PauseAll();
         }
 
         public override void ResumeAll()
         {
-            if (!Hub.Config.SkipConsoleBotCreation)
-                base.ResumeAll();
+            base.ResumeAll();
         }
 
         public PokeRoutineExecutor CreateBotFromConfig(PokeBotState cfg) => cfg.NextRoutineType switch

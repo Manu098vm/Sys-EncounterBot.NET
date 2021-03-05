@@ -2,7 +2,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
 
@@ -71,12 +70,12 @@ namespace SysBot.Pokemon
                     for (int i = 0; i < 3; i++)
                         await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
 
-                    await HandleEncounter(pk, Hub.Config.LiveStatsSettings.IsLegendary, token).ConfigureAwait(false);
+                    HandleEncounter(pk, Hub.Config.LiveStatsSettings.IsLegendary);
                 }
             }
         }
 
-        private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)
+        private bool HandleEncounter(PK8 pk, bool legends)
         {
             encounterCount++;
 

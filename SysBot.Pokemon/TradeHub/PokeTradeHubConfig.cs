@@ -49,6 +49,10 @@ namespace SysBot.Pokemon
 
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
+        public GiftBotSettings GiftBotSettings { get; set; } = new();
+
+        [Category(Bots)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
         public LiveStatsCheckingSettings LiveStatsSettings { get; set; } = new();
 
         // Integration
@@ -56,8 +60,5 @@ namespace SysBot.Pokemon
         [Category(Integration)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public DiscordSettings Discord { get; set; } = new();
-
-        [Category(Debug), Description("Skips creating bots when the program is started; helpful for testing integrations.")]
-        public bool SkipConsoleBotCreation { get; set; }
     }
 }

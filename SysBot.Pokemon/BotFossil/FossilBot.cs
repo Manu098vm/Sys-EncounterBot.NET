@@ -24,8 +24,6 @@ namespace SysBot.Pokemon
 
         private int encounterCount;
 
-        private static readonly PK8 Blank = new();
-
         public override async Task MainLoop(CancellationToken token)
         {
             Log("Identifying trainer data of the host console.");
@@ -62,7 +60,7 @@ namespace SysBot.Pokemon
                 else if (pk.IsShiny)
                     showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
 
-                Log($"Encounter: {encounterCount}:{Environment.NewLine}{showdowntext}{Environment.NewLine}{Environment.NewLine}");
+                Log($"Encounter: {encounterCount}:{Environment.NewLine}{Environment.NewLine}{showdowntext}{Environment.NewLine}{Environment.NewLine}");
                 if (DumpSetting.Dump)
                     DumpPokemon(DumpSetting.DumpFolder, "fossil", pk);
 
