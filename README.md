@@ -23,9 +23,7 @@ Pokémon API logic is provided by [PKHeX](https://github.com/kwsch/PKHeX/).
 
 [kwsch](https://github.com/kwsch) for [PKHeX](https://github.com/kwsch/PKHeX)
 
-[architdate](https://github.com/architdate), [Lusamine](https://github.com/Lusamine), all the ALM team and all the people involved in the developing/testing of the [PKHeX-Plugins](https://github.com/architdate/PKHeX-Plugins), thanks to which this project would never exist
-
-[Lusamine](https://github.com/Lusamine) for the original Sysbot Encounter Bots.
+[architdate](https://github.com/architdate), [Lusamine](https://github.com/Lusamine), all the ALM team and all the people involved in the developing/testing of [SysBot.NET](https://github.com/kwsch/SysBot.NET), thanks to which this project would never exist.
 
 [Zyro670](https://github.com/zyro670), KD#0001 and Q8yShadow🐍🦈#9487 for the suggestions, testing and help on implementations.
 
