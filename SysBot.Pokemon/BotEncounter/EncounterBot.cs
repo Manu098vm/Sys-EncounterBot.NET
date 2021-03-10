@@ -41,13 +41,12 @@ namespace SysBot.Pokemon
             {
                 EncounterMode.VerticalLine => WalkInLine(token),
                 EncounterMode.HorizontalLine => WalkInLine(token),
-                EncounterMode.Eternatus => DoEternatusEncounter(token),
-                EncounterMode.Regigigas => DoRegigigasEncounter(token),
-                EncounterMode.Regis => DoRegiEncounter(token),
+                EncounterMode.Regis => DoRestartingEncounter(token, (EncounterType)1),
+                EncounterMode.Regigigas => DoRestartingEncounter(token, (EncounterType)2),
+                EncounterMode.Spiritomb => DoRestartingEncounter(token, (EncounterType)3),
+                EncounterMode.SwordsJustice => DoRestartingEncounter(token, (EncounterType)4),
+                EncounterMode.Eternatus => DoRestartingEncounter(token, (EncounterType)5),
                 EncounterMode.LegendaryDogs => DoDogEncounter(token),
-                //SoJ and Spirittomb uses the same routine
-                EncounterMode.SwordsJustice => DoJusticeEncounter(token,"Sword of Justice"),
-                EncounterMode.Spiritomb => DoJusticeEncounter(token,"Spiritomb"),
                 EncounterMode.Keldeo => DoKeldeoEncounter(token),
                 _ => WalkInLine(token),
             };
@@ -94,78 +93,42 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task DoEternatusEncounter(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.EncounterBot)
-            {
-                await SetStick(LEFT, 0, 20_000, 1_000, token).ConfigureAwait(false);
-                await ResetStick(token).ConfigureAwait(false);
-
-                var pk = await ReadUntilPresent(RaidPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
-                if (pk != null)
-                {
-                    if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
-                        return;
-                }
-
-                Connection.Log("Resetting Eternatus by restarting the game");
-                await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                await StartGame(Hub.Config, token).ConfigureAwait(false);
-            }
-        }
-
-        private async Task DoRegigigasEncounter(CancellationToken token)
+        private async Task DoRestartingEncounter(CancellationToken token, EncounterType type)
         {
             Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
+            uint encounterOffset = (type == (EncounterType)2 || type == (EncounterType)5) ? RaidPokemonOffset : WildPokemonOffset;
+            bool isLegendary = (type == (EncounterType)3);
+            bool skipRoutine = (type == (EncounterType)3 || type == (EncounterType)4);
+
             while (!token.IsCancellationRequested)
             {
-                Log("Looking for Gigas...");
-
-                //Click through all the menus until the encounter.
-                while (!await IsInBattle(token).ConfigureAwait(false))
-                    await Click(A, 1_000, token).ConfigureAwait(false);
-
-                Log("An encounter has started!");
-
-                var pk = await ReadUntilPresent(RaidPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
-                if (pk != null)
+                if (!skipRoutine)
                 {
-                    if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
-                        return;
+                    Log($"Looking for {type}...");
+
+                    if (type == (EncounterType)5)
+                    {
+                        await SetStick(LEFT, 0, 20_000, 1_000, token).ConfigureAwait(false);
+                        await ResetStick(token).ConfigureAwait(false);
+                    }
+
+                    //Click through all the menus until the encounter.
+                    while (!await IsInBattle(token).ConfigureAwait(false))
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+
+                    Log("An encounter has started! Checking details...");
+
+                    var pk = await ReadUntilPresent(encounterOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                    if (pk != null)
+                    {
+                        if (await HandleEncounter(pk, isLegendary, token).ConfigureAwait(false))
+                            return;
+                    }
+
+                    Log($"Resetting {type} by restarting the game");
                 }
 
-                Connection.Log("Resetting Regigigas by restarting the game");
-
-                await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                await StartGame(Hub.Config, token).ConfigureAwait(false);
-            }
-        }
-
-        private async Task DoRegiEncounter(CancellationToken token)
-        {
-            Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
-            while (!token.IsCancellationRequested)
-            {
-                Log("Looking for a titan...");
-
-                // Click through all the menus untill the encounter.
-                while (!await IsInBattle(token).ConfigureAwait(false))
-                    await Click(A, 1_000, token).ConfigureAwait(false);
-
-                Log("Encounter started! Checking details...");
-                var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
-                if (pk == null)
-                {
-                    // Flee and continue looping.
-                    while (await IsInBattle(token).ConfigureAwait(false))
-                        await FleeToOverworld(token).ConfigureAwait(false);
-                    continue;
-                }
-
-                if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
-                    return;
-
-                Log("Restarting game...");
+                skipRoutine = false;
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
             }
@@ -215,34 +178,7 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task DoJusticeEncounter(CancellationToken token, String name)
-        {
-            Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
-            while (!token.IsCancellationRequested)
-            {
-                Log("Restarting game...");
-                await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                await StartGame(Hub.Config, token).ConfigureAwait(false);
-
-                Log("Looking for a " + name);
-                // Click through all the menus untill the encounter.
-                while (!await IsInBattle(token).ConfigureAwait(false))
-                    await Click(A, 1_000, token).ConfigureAwait(false);
-
-                Log("Encounter started! Checking details...");
-                var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
-                if (pk == null)
-                {
-                    // Flee and continue looping.
-                    while (await IsInBattle(token).ConfigureAwait(false))
-                        await FleeToOverworld(token).ConfigureAwait(false);
-                    continue;
-                }
-
-                if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
-                    return;
-            }
-        }
+        
 
         private async Task DoKeldeoEncounter(CancellationToken token)
         {
@@ -288,7 +224,6 @@ namespace SysBot.Pokemon
                 Log("Restarting game...");
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
-                //ISwitchConnectionAsync SwitchConnection, String pointer
             }
         }
 
@@ -409,6 +344,16 @@ namespace SysBot.Pokemon
             {
                 Log("Stuck in there!");
             }
+        }
+
+        public enum EncounterType
+        {
+            None = 0,
+            Regis = 1,
+            Regigigas = 2,
+            Spiritomb = 3,
+            SoJ = 4,
+            Eternatus = 5,
         }
     }
 }
