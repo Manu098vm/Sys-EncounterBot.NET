@@ -206,7 +206,7 @@ namespace SysBot.Pokemon
                             while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
                             {
                                 await Click(A, 0_500, token).ConfigureAwait(false);
-                                await Task.Delay(2_00, token).ConfigureAwait(false);
+                                await Task.Delay(2_000, token).ConfigureAwait(false);
                             }
                         }
                     }
@@ -218,7 +218,7 @@ namespace SysBot.Pokemon
                         while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
                         {
                             await Click(A, 0_500, token).ConfigureAwait(false);
-                            await Task.Delay(2_00, token).ConfigureAwait(false);
+                            await Task.Delay(2_000, token).ConfigureAwait(false);
                         }
                     }
                 }
