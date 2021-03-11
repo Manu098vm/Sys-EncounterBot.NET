@@ -46,8 +46,9 @@ namespace SysBot.Pokemon
                 EncounterMode.Spiritomb => DoRestartingEncounter(token, (EncounterType)3),
                 EncounterMode.SwordsJustice => DoRestartingEncounter(token, (EncounterType)4),
                 EncounterMode.Eternatus => DoRestartingEncounter(token, (EncounterType)5),
-                EncounterMode.LegendaryDogs => DoDogEncounter(token),
+                EncounterMode.Dogs_or_Calyrex => DoDogEncounter(token),
                 EncounterMode.Keldeo => DoKeldeoEncounter(token),
+                EncounterMode.Zapdos => DoSeededEncounter(token, (EncounterType)8),
                 _ => WalkInLine(token),
             };
             await task.ConfigureAwait(false);
@@ -95,7 +96,6 @@ namespace SysBot.Pokemon
 
         private async Task DoRestartingEncounter(CancellationToken token, EncounterType type)
         {
-            Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
             uint encounterOffset = (type == (EncounterType)2 || type == (EncounterType)5) ? RaidPokemonOffset : WildPokemonOffset;
             bool isLegendary = (type == (EncounterType)3);
             bool skipRoutine = (type == (EncounterType)3 || type == (EncounterType)4);
@@ -134,11 +134,35 @@ namespace SysBot.Pokemon
             }
         }
 
+        private async Task DoSeededEncounter(CancellationToken token, EncounterType type)
+        {
+            byte[] seed = await Connection.ReadBytesAsync(ZapdosSeed, 4, token).ConfigureAwait(false);
+            while (!token.IsCancellationRequested)
+            {
+                seed = await Connection.ReadBytesAsync(ZapdosSeed, 4, token).ConfigureAwait(false);
+                Log($"Zapdos Seed: {String.Join(" ", seed)}");
+                if(seed == BitConverter.GetBytes((ushort)0))
+                {
+                    Log("Seed became 0. Saving the game.");
+                    await Click(X, 3_000, token).ConfigureAwait(false);
+                    await Click(R, 1_500, token).ConfigureAwait(false);
+                    await Click(A, 5_000, token).ConfigureAwait(false);
+                    for(int i = 0; i < 5; i++)
+                    {
+                        await Click(B, 0_500, token).ConfigureAwait(false);
+                    }
+                } else
+                {
+                    Log($"Seed found! resulting encounter will be: {HandleEncounter(GenerateFromSeed(seed, token))}");
+                }
+            }
+        }
+
         private async Task DoDogEncounter(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
-                Log("Looking for a new dog...");
+                Log("Looking for a new legendary...");
 
                 // At the start of each loop, an A press is needed to exit out of a prompt.
                 await Click(A, 0_200, token).ConfigureAwait(false);
@@ -178,11 +202,8 @@ namespace SysBot.Pokemon
             }
         }
 
-        
-
         private async Task DoKeldeoEncounter(CancellationToken token)
         {
-            Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
             int tries = 0;
             while (!token.IsCancellationRequested)
             {
@@ -330,30 +351,12 @@ namespace SysBot.Pokemon
 
         private async Task FleeToOverworld(CancellationToken token)
         {
-            try
-            {
-                Log("Start flee");
-                // This routine will always escape a battle.
-                await Task.Delay(1_000, token).ConfigureAwait(false);
-                await Click(DUP, 0_400, token).ConfigureAwait(false);
-                await Click(A, 0_400, token).ConfigureAwait(false);
-                await Click(B, 0_400, token).ConfigureAwait(false);
-                await Click(B, 0_400, token).ConfigureAwait(false);
-                Log("End flee");
-            } catch (Exception)
-            {
-                Log("Stuck in there!");
-            }
-        }
-
-        public enum EncounterType
-        {
-            None = 0,
-            Regis = 1,
-            Regigigas = 2,
-            Spiritomb = 3,
-            SoJ = 4,
-            Eternatus = 5,
+            // This routine will always escape a battle.
+            await Task.Delay(1_000, token).ConfigureAwait(false);
+            await Click(DUP, 0_400, token).ConfigureAwait(false);
+            await Click(A, 0_400, token).ConfigureAwait(false);
+            await Click(B, 0_400, token).ConfigureAwait(false);
+            await Click(B, 0_400, token).ConfigureAwait(false);
         }
     }
 }

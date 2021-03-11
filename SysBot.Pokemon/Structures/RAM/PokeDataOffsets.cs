@@ -13,6 +13,7 @@ namespace SysBot.Pokemon
         public const uint demageOutputOffset = 0x007E37F0;
         public const uint LairSpeciesSelector = 0x50B129A0;
         public const uint LairSpeciesSelector2 = 0x50B12278;
+        public const uint ZapdosSeed = 0x4505C3D8;
 
         // Raid Offsets
         // The dex number of the Pokémon the host currently has chosen. 
@@ -98,26 +99,28 @@ namespace SysBot.Pokemon
         public const string reward4_2 = "[[[[main+2977BC0]+1B0]+68]+70]+D0";
         public static readonly string[] dynamaxRewards = { reward1_1, reward1_2, reward1_3, reward1_4, reward2_1, reward2_2, reward3_1, reward3_2, reward4_1, reward4_2 };
 
+        //public static string ZapdosSeed = "[[main+26364F0]+1C8]+1078";
+
         public static string giftpoke = "[[[[main+28F4060]+208]+08]+58]";
 
         #endregion
 
-        public static uint GetDaycareStepCounterOffset(SwordShieldDaycare daycare)
+        public static uint GetDaycareStepCounterOffset(Enumerations daycare)
         {
             return daycare switch
             {
-                SwordShieldDaycare.WildArea => DayCare_Wildarea_Step_Counter,
-                SwordShieldDaycare.Route5 => DayCare_Route5_Step_Counter,
+                Enumerations.WildArea => DayCare_Wildarea_Step_Counter,
+                Enumerations.Route5 => DayCare_Route5_Step_Counter,
                 _ => throw new ArgumentException(nameof(daycare)),
             };
         }
 
-        public static uint GetDaycareEggIsReadyOffset(SwordShieldDaycare daycare)
+        public static uint GetDaycareEggIsReadyOffset(Enumerations daycare)
         {
             return daycare switch
             {
-                SwordShieldDaycare.WildArea => DayCare_Wildarea_Egg_Is_Ready,
-                SwordShieldDaycare.Route5 => DayCare_Route5_Egg_Is_Ready,
+                Enumerations.WildArea => DayCare_Wildarea_Egg_Is_Ready,
+                Enumerations.Route5 => DayCare_Route5_Egg_Is_Ready,
                 _ => throw new ArgumentException(nameof(daycare)),
             };
         }

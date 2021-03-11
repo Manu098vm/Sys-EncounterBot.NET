@@ -13,7 +13,7 @@ namespace SysBot.Pokemon
         private readonly BotCompleteCounts Counts;
         private readonly IDumper DumpSetting;
         private readonly int[] DesiredIVs;
-        private const SwordShieldDaycare Location = SwordShieldDaycare.Route5;
+        private const Enumerations Location = Enumerations.Route5;
 
         public EggBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
         {

@@ -30,7 +30,7 @@
         /// <summary>
         /// Bot will soft reset the Legendary Dogs
         /// </summary>
-        LegendaryDogs,
+        Dogs_or_Calyrex,
 
         /// <summary>
         /// Bot will soft reset the Swords of Justice Trio
@@ -46,5 +46,10 @@
         /// Bot will soft reset Spiritomb
         /// </summary>
         Spiritomb,
+
+        /// <summary>
+        /// Bot will soft reset Zapdos
+        /// </summary>
+        Zapdos,
     }
 }

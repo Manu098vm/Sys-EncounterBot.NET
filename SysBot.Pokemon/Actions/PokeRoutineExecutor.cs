@@ -214,7 +214,7 @@ namespace SysBot.Pokemon
 
 
 
-        public async Task<bool> IsEggReady(SwordShieldDaycare daycare, CancellationToken token)
+        public async Task<bool> IsEggReady(Enumerations daycare, CancellationToken token)
         {
             var ofs = GetDaycareEggIsReadyOffset(daycare);
             // Read a single byte of the Daycare metadata to check the IsEggReady flag.
@@ -222,7 +222,7 @@ namespace SysBot.Pokemon
             return data[0] == 1;
         }
 
-        public async Task SetEggStepCounter(SwordShieldDaycare daycare, CancellationToken token)
+        public async Task SetEggStepCounter(Enumerations daycare, CancellationToken token)
         {
             // Set the step counter in the Daycare metadata to 180. This is the threshold that triggers the "Should I create a new egg" subroutine.
             // When the game executes the subroutine, it will generate a new seed and set the IsEggReady flag.

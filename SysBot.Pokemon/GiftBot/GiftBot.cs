@@ -26,7 +26,6 @@ namespace SysBot.Pokemon
 
         public override async Task MainLoop(CancellationToken token)
         {
-            Log("Reminder: LDN-MITM SYSMODULE IS REQUIRED IN ORDER FOR THIS BOT TO WORK!");
             while (!token.IsCancellationRequested)
             {
                 if(Hub.Config.StopConditions.MarkTarget != 0)
@@ -44,7 +43,7 @@ namespace SysBot.Pokemon
                 Log("Gift found! Checking details...");
                 var pk = await ReadUntilPresent(await ParsePointer(giftpoke, token), 2_000, 0_200, token).ConfigureAwait(false);
                 if (pk != null)
-                    if (await HandlePokemon(pk, Hub.Config.GiftBotSettings.IsLegendary, token).ConfigureAwait(false))
+                    if (HandlePokemon(pk, Hub.Config.GiftBotSettings.IsLegendary))
                     {
                         if (Hub.Config.StopConditions.CaptureVideoClip)
                         {
@@ -59,7 +58,7 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task<bool> HandlePokemon(PK8 pk, bool legends, CancellationToken token)
+        private bool HandlePokemon(PK8 pk, bool legends)
         {
             encounterCount++;
 

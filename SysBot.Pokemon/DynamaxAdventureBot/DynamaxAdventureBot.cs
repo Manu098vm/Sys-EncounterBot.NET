@@ -125,7 +125,7 @@ namespace SysBot.Pokemon
                 int elapsed = 0;
                 bool inBattle = false;
                 bool lost = false;
-                while (!(await IsInLairEndList(token).ConfigureAwait(false) > 0 || lost))
+                while (!(await IsInLairEndList(token).ConfigureAwait(false) > 0 || lost || token.IsCancellationRequested))
                 {
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
@@ -256,7 +256,7 @@ namespace SysBot.Pokemon
                     if (pkm != null)
                     {
                         if(i == 4) found[1] = 1;
-                        if ((await HandleEncounter(pkm, i == 4, token).ConfigureAwait(false) == true) || (i < 4 && pkm.IsShiny))
+                        if ((HandleEncounter(pkm, i == 4) == true) || (i < 4 && pkm.IsShiny))
                         {
                             if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
                                 Log("<@" + Hub.Config.Discord.UserTag +"> a" + (pkm.IsShiny ? " Shiny " : " ") + pkm.Nickname + " has been found!");
@@ -270,7 +270,7 @@ namespace SysBot.Pokemon
             return found;
         }
 
-        private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)
+        private bool HandleEncounter(PK8 pk, bool legends)
         {
             encounterCount++;
 
