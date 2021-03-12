@@ -1,7 +1,10 @@
 # Sys-EncounterBot.NET
 ![License](https://img.shields.io/badge/License-AGPLv3-blue.svg)
 
-## Support Discord:
+## Disclaimer:
+I am carrying out this project for personal use and, above all, as a learning tool. Most of the bots are a proof of concept and they may work for me but not for you. If you run into any problems or have any suggestions, feel free to contact me, but please note that I may not be able to offer the support you are looking for. This is by no means a polished product and probably it won't be that for very long. 
+
+## Support:
 
 For support on setting up your own instance of Sys-EncounterBot.NET, feel free to [join my Discord](https://discord.gg/WFbcUd6U8d) !
 This fork is not maintained by the PKHeX Dev server.
