@@ -134,20 +134,19 @@ namespace SysBot.Pokemon
             }
         }
 
-        private PK8 CalculateFromSeed(uint seed, PK8 pkm)
+        private void CalculateFromSeed(uint seed)
         {
             int UNSET = -1;
-            PK8 pk = pkm;
             var xoro = new Sysbot.Pokemon.Xoroshiro128Plus(seed);
 
             Log("Calculating from seed " + String.Format("{0:X}", seed));
 
             // EC & PID
-            pk.EncryptionConstant = (uint)xoro.NextInt(uint.MaxValue);
-            pk.PID = (uint)xoro.NextInt(uint.MaxValue);
+            uint EC = (uint)xoro.NextInt(uint.MaxValue);
+            uint PID = (uint)xoro.NextInt(uint.MaxValue);
 
-            Log("Calculated EC: " + String.Format("{0:X}", pk.EncryptionConstant));
-            Log("Calculated PID:  " + String.Format("{0:X}", pk.PID));
+            Log("Calculated EC: " + String.Format("{0:X}", EC));
+            Log("Calculated PID:  " + String.Format("{0:X}", PID));
 
             //IVS
             var ivs = new[] { UNSET, UNSET, UNSET, UNSET, UNSET, UNSET };
@@ -167,16 +166,26 @@ namespace SysBot.Pokemon
                     ivs[i] = (int)xoro.NextInt(32);
             }
 
-            pk.IV_HP = ivs[0];
-            pk.IV_ATK = ivs[1];
-            pk.IV_DEF = ivs[2];
-            pk.IV_SPA = ivs[3];
-            pk.IV_SPD = ivs[4];
-            pk.IV_SPE = ivs[5];
+            string IVs = "";
+            int j = 0;
+            foreach(int iv in ivs)
+            {
+                IVs += iv;
+                if (!(j < ivs.Length))
+                    IVs += "/";
+                j++;
+            }
 
-            Log($"Calculated IVs: {pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}");
+            Log($"Calculated IVs: {IVs}");
 
-            return pk;
+            //int lol = (int)xoro.NextInt(6);
+
+            for (j = 0; j <= 100; j++)
+            { 
+                int nature = (int)xoro.NextInt(25);
+                Log($"[{j}] Nature: {nature} {(Nature)nature}");
+            }
+
         }
 
         private async Task DoSeededEncounter(CancellationToken token, EncounterType type)
@@ -184,36 +193,21 @@ namespace SysBot.Pokemon
             uint seed = BitConverter.ToUInt32(await Connection.ReadBytesAsync(ZapdosSeed, 4, token).ConfigureAwait(false), 0);
             Log("Seed found on RAM: " + String.Format("{0:X}", seed));
             SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
-            PK8 pkm = new PK8();
-            pkm.Species = 145;
-            pkm.SetForm(1);
-            pkm.SetNickname("Zapdos");
-            pkm.TID = sav.TID;
-            pkm.TrainerID7 = sav.TrainerID7;
-            pkm.SID = sav.SID;
-            pkm.TrainerSID7 = sav.TrainerSID7;
-            pkm = CalculateFromSeed(seed, pkm);
-            await HandleEncounter(pkm, true, token).ConfigureAwait(false);
 
-            /*while (!token.IsCancellationRequested)
+            if(seed == 0)
             {
-                seed = BigEndian.ToUInt32(await Connection.ReadBytesAsync(ZapdosSeed, 4, token).ConfigureAwait(false), 0);
-                //Log("Zapdos Seed: " + String.Join(" ", seed) + "\nProva seed: " + String.Join(" ", compare));
-                if(seed == 0)
+                Log("Seed became 0. Saving the game.");
+                await Click(X, 3_000, token).ConfigureAwait(false);
+                await Click(R, 1_500, token).ConfigureAwait(false);
+                await Click(A, 5_000, token).ConfigureAwait(false);
+                for(int i = 0; i < 5; i++)
                 {
-                    Log("Seed became 0. Saving the game.");
-                    await Click(X, 3_000, token).ConfigureAwait(false);
-                    await Click(R, 1_500, token).ConfigureAwait(false);
-                    await Click(A, 5_000, token).ConfigureAwait(false);
-                    for(int i = 0; i < 5; i++)
-                    {
-                        await Click(B, 0_500, token).ConfigureAwait(false);
-                    }
-                } else
-                {
-                    //Log($"Seed found! resulting encounter will be: {HandleEncounter(GenerateFromSeed(seed, token))}");
+                    await Click(B, 0_500, token).ConfigureAwait(false);
                 }
-            }*/
+            } else
+            {
+                CalculateFromSeed(seed);
+            }
         }
 
         private async Task DoDogEncounter(CancellationToken token)
