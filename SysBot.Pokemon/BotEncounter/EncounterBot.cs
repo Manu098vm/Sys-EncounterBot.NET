@@ -134,14 +134,67 @@ namespace SysBot.Pokemon
             }
         }
 
+        private PK8 CalculateFromSeed(uint seed, PK8 pkm)
+        {
+            int UNSET = -1;
+            PK8 pk = pkm;
+            var xoro = new Sysbot.Pokemon.Xoroshiro128Plus(seed);
+
+            // EC & PID
+            pkm.EncryptionConstant = (uint)xoro.NextInt(uint.MaxValue);
+            var pid = (uint)xoro.NextInt(uint.MaxValue);
+            if (Overworld8RNG.GetIsShiny(pk.TID, pk.SID, pid))
+                pid ^= 0x1000_0000;
+            pkm.PID = pid;
+
+            //IVS
+            var ivs = new[] { UNSET, UNSET, UNSET, UNSET, UNSET, UNSET };
+            const int MAX = 31;
+            for (int i = 0; i < 3; i++)
+            {
+                int index;
+                do { index = (int)xoro.NextInt(6); }
+                while (ivs[index] != UNSET);
+
+                ivs[index] = MAX;
+            }
+
+            for (int i = 0; i < ivs.Length; i++)
+            {
+                if (ivs[i] == UNSET)
+                    ivs[i] = (int)xoro.NextInt(32);
+            }
+
+            pk.IV_HP = ivs[0];
+            pk.IV_ATK = ivs[1];
+            pk.IV_DEF = ivs[2];
+            pk.IV_SPA = ivs[3];
+            pk.IV_SPD = ivs[4];
+            pk.IV_SPE = ivs[5];
+
+            return pk;
+        }
+
         private async Task DoSeededEncounter(CancellationToken token, EncounterType type)
         {
-            byte[] seed = await Connection.ReadBytesAsync(ZapdosSeed, 4, token).ConfigureAwait(false);
-            while (!token.IsCancellationRequested)
+            uint seed = BigEndian.ToUInt32(await Connection.ReadBytesAsync(ZapdosSeed, 4, token).ConfigureAwait(false), 0);
+
+            SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
+            PK8 pkm = new PK8();
+            pkm.Species = 145;
+            pkm.SetForm(1);
+            pkm.TID = sav.TID;
+            pkm.TrainerID7 = sav.TrainerID7;
+            pkm.SID = sav.SID;
+            pkm.TrainerSID7 = sav.TrainerSID7;
+            pkm = CalculateFromSeed(seed, pkm);
+            await HandleEncounter(pkm, true, token).ConfigureAwait(false);
+
+            /*while (!token.IsCancellationRequested)
             {
-                seed = await Connection.ReadBytesAsync(ZapdosSeed, 4, token).ConfigureAwait(false);
-                Log($"Zapdos Seed: {String.Join(" ", seed)}");
-                if(seed == BitConverter.GetBytes((ushort)0))
+                seed = BigEndian.ToUInt32(await Connection.ReadBytesAsync(ZapdosSeed, 4, token).ConfigureAwait(false), 0);
+                //Log("Zapdos Seed: " + String.Join(" ", seed) + "\nProva seed: " + String.Join(" ", compare));
+                if(seed == 0)
                 {
                     Log("Seed became 0. Saving the game.");
                     await Click(X, 3_000, token).ConfigureAwait(false);
@@ -153,9 +206,9 @@ namespace SysBot.Pokemon
                     }
                 } else
                 {
-                    Log($"Seed found! resulting encounter will be: {HandleEncounter(GenerateFromSeed(seed, token))}");
+                    //Log($"Seed found! resulting encounter will be: {HandleEncounter(GenerateFromSeed(seed, token))}");
                 }
-            }
+            }*/
         }
 
         private async Task DoDogEncounter(CancellationToken token)
