@@ -140,12 +140,14 @@ namespace SysBot.Pokemon
             PK8 pk = pkm;
             var xoro = new Sysbot.Pokemon.Xoroshiro128Plus(seed);
 
+            Log("Calculating from seed " + String.Format("{0:X}", seed));
+
             // EC & PID
-            pkm.EncryptionConstant = (uint)xoro.NextInt(uint.MaxValue);
-            var pid = (uint)xoro.NextInt(uint.MaxValue);
-            if (Overworld8RNG.GetIsShiny(pk.TID, pk.SID, pid))
-                pid ^= 0x1000_0000;
-            pkm.PID = pid;
+            pk.EncryptionConstant = (uint)xoro.NextInt(uint.MaxValue);
+            pk.PID = (uint)xoro.NextInt(uint.MaxValue);
+
+            Log("Calculated EC: " + String.Format("{0:X}", pk.EncryptionConstant));
+            Log("Calculated PID:  " + String.Format("{0:X}", pk.PID));
 
             //IVS
             var ivs = new[] { UNSET, UNSET, UNSET, UNSET, UNSET, UNSET };
@@ -172,17 +174,20 @@ namespace SysBot.Pokemon
             pk.IV_SPD = ivs[4];
             pk.IV_SPE = ivs[5];
 
+            Log($"Calculated IVs: {pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}");
+
             return pk;
         }
 
         private async Task DoSeededEncounter(CancellationToken token, EncounterType type)
         {
-            uint seed = BigEndian.ToUInt32(await Connection.ReadBytesAsync(ZapdosSeed, 4, token).ConfigureAwait(false), 0);
-
+            uint seed = BitConverter.ToUInt32(await Connection.ReadBytesAsync(ZapdosSeed, 4, token).ConfigureAwait(false), 0);
+            Log("Seed found on RAM: " + String.Format("{0:X}", seed));
             SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
             PK8 pkm = new PK8();
             pkm.Species = 145;
             pkm.SetForm(1);
+            pkm.SetNickname("Zapdos");
             pkm.TID = sav.TID;
             pkm.TrainerID7 = sav.TrainerID7;
             pkm.SID = sav.SID;
