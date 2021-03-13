@@ -13,7 +13,11 @@ namespace SysBot.Pokemon
         public const uint demageOutputOffset = 0x007E37F0;
         public const uint LairSpeciesSelector = 0x50B129A0;
         public const uint LairSpeciesSelector2 = 0x50B12278;
-        public const uint ZapdosSeed = 0x4505C3D8;
+
+        //Zapdos tests
+        public const uint ZNature = 0x4505C3C8;
+        public const uint ZMark = 0x4505C3D6;
+        public const uint ZECPIDIV = 0x4505C3D8;
 
         // Raid Offsets
         // The dex number of the Pokémon the host currently has chosen. 

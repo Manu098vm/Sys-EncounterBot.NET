@@ -65,13 +65,7 @@ namespace SysBot.Pokemon
                 if (pk == null)
                     Log("Check error. Either a wrong offset is used, or the RAM is shifted.");
                 else
-                {
-                    // Offsets are flickery so make sure we see it 3 times.
-                    for (int i = 0; i < 3; i++)
-                        await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
-
                     HandleEncounter(pk, Hub.Config.LiveStatsSettings.IsLegendary);
-                }
             }
         }
 
