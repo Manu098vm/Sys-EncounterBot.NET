@@ -134,105 +134,41 @@ namespace SysBot.Pokemon
             }
         }
 
-        private PK8 CalculateFromSeed(uint seed, PK8 pkm)
-        {
-            PK8 pk = pkm;
-
-            int UNSET = -1;
-            var xoro = new Sysbot.Pokemon.Xoroshiro128Plus(seed);
-
-            Log("Calculating from seed " + String.Format("{0:X}", seed));
-
-            // EC & PID
-            uint EC = (uint)xoro.NextInt(uint.MaxValue);
-            uint PID = (uint)xoro.NextInt(uint.MaxValue);
-
-            //IVS
-            var ivs = new[] { UNSET, UNSET, UNSET, UNSET, UNSET, UNSET };
-            const int MAX = 31;
-            for (int i = 0; i < 3; i++)
-            {
-                int index;
-                do { index = (int)xoro.NextInt(6); }
-                while (ivs[index] != UNSET);
-
-                ivs[index] = MAX;
-            }
-
-            for (int i = 0; i < ivs.Length; i++)
-            {
-                if (ivs[i] == UNSET)
-                    ivs[i] = (int)xoro.NextInt(32);
-            }
-
-            pk.EncryptionConstant = EC;
-            pk.PID = PID;
-            pk.IV_HP = ivs[0];
-            pk.IV_ATK = ivs[1];
-            pk.IV_DEF = ivs[2];
-            pk.IV_SPA = ivs[3];
-            pk.IV_SPD = ivs[4];
-            pk.IV_SPE = ivs[5];
-
-            return pk;
-        }
-
         private async Task RerollSeedEncounter(CancellationToken token)
         {
             Log("Reroll");
             await Click(X, 2_000, token).ConfigureAwait(false);
-            Log("Premuto X");
+            //Log("Premuto X");
             await Click(A, 5_000, token).ConfigureAwait(false);
             for (int i = 0; i < 6; i++)
                 await Click(A, 0_250, token).ConfigureAwait(false);
-            Log("Premuto A x6");
+            //Log("Premuto A x6");
             await Task.Delay(2_000, token).ConfigureAwait(false);
             await Click(X, 2_000, token).ConfigureAwait(false);
-            Log("Premuto X");
+            //Log("Premuto X");
             for (int i = 0; i < 6; i++)
                 await Click(R, 0_250, token).ConfigureAwait(false);
-            Log("Premuto R x3");
+            //Log("Premuto R x3");
             await Click(A, 5_000, token).ConfigureAwait(false);
-            Log("Premuto A");
+            //Log("Premuto A");
         }
 
         private async Task DoSeededEncounter(CancellationToken token, EncounterType type)
         {
+            SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
             while (!token.IsCancellationRequested)
             {
-                uint seed = BitConverter.ToUInt32(await Connection.ReadBytesAsync(ZECPIDIV, 4, token).ConfigureAwait(false), 0);
-                Log($"RAM SEED: {seed}");
-                int nature = (await Connection.ReadBytesAsync(ZNature, 1, token).ConfigureAwait(false))[0];
-                int mark = (await Connection.ReadBytesAsync(ZMark, 1, token).ConfigureAwait(false))[0];
-
-                SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
-                PK8 zapdos = new PK8
-                {
-                    Species = 145,
-                    Form = 1,
-                    Ability = 1,
-                    CurrentLevel = 70,
-                    Met_Level = 70,
-                    Gender = 2,
-                    TrainerID7 = sav.TrainerID7,
-                    TrainerSID7 = sav.TrainerSID7,
-                    TID = sav.TID,
-                    SID = sav.SID,
-                    OT_Name = sav.OT,
-                    Language = sav.Language,
-                };
-                if (mark != 255) zapdos.SetRibbon(mark, true);
-                zapdos.SetNature(nature);
-
-                if (seed == 0 || seed == 1)
+                var pkm = await ReadOwPokemon(ZOwOffset, sav, token).ConfigureAwait(false);
+                if (pkm == null)
                     await RerollSeedEncounter(token).ConfigureAwait(false);
                 else
                 {
-                    if (await HandleEncounter(CalculateFromSeed(seed, zapdos), true, token).ConfigureAwait(false))
+                    if (await HandleEncounter(pkm, true, token).ConfigureAwait(false))
                         return;
                     else
                         await RerollSeedEncounter(token).ConfigureAwait(false);
                 }
+                
             }
         }
 

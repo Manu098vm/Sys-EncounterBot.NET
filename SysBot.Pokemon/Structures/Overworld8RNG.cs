@@ -1,5 +1,11 @@
 ﻿namespace PKHeX.Core
 {
+    /// <summary>
+    /// Contains logic for the Generation 8 (SW/SH) overworld spawns that walk around the overworld.
+    /// </summary>
+    /// <remarks>
+    /// Entities spawned into the overworld that can be encountered are assigned a 32bit seed, which can be immediately derived from the <see cref="PKM.EncryptionConstant"/>.
+    /// </remarks>
     public static class Overworld8RNG
     {
         public static void ApplyDetails(PKM pk, EncounterCriteria criteria, Shiny shiny = Shiny.FixedValue, int flawless = -1)
@@ -19,15 +25,75 @@
             } while (++ctr != maxAttempts);
         }
 
+        public static PK8? CalculateFromSeed(PK8 pk, Shiny shiny, int flawless, uint seed)
+        {
+            var xoro = new Xoroshiro128Plus(seed);
+
+            // Encryption Constant
+            pk.EncryptionConstant = (uint)xoro.NextInt(uint.MaxValue);
+
+            // PID
+            var pid = (uint)xoro.NextInt(uint.MaxValue);
+            if (shiny == Shiny.Never)
+            {
+                if (GetIsShiny(pk.TID, pk.SID, pid))
+                    pid ^= 0x1000_0000;
+            }
+            else if (shiny != Shiny.Random)
+            {
+                if (!GetIsShiny(pk.TID, pk.SID, pid))
+                    pid = GetShinyPID(pk.TID, pk.SID, pid, 0);
+
+                if (shiny == Shiny.AlwaysSquare && pk.ShinyXor != 0)
+                    return null;
+                if (shiny == Shiny.AlwaysStar && pk.ShinyXor == 0)
+                    return null;
+            }
+
+            pk.PID = pid;
+
+            // IVs
+            var ivs = new[] { UNSET, UNSET, UNSET, UNSET, UNSET, UNSET };
+            const int MAX = 31;
+            for (int i = 0; i < flawless; i++)
+            {
+                int index;
+                do { index = (int)xoro.NextInt(6); }
+                while (ivs[index] != UNSET);
+
+                ivs[index] = MAX;
+            }
+
+            for (int i = 0; i < ivs.Length; i++)
+            {
+                if (ivs[i] == UNSET)
+                    ivs[i] = (int)xoro.NextInt(32);
+            }
+
+            pk.IV_HP = ivs[0];
+            pk.IV_ATK = ivs[1];
+            pk.IV_DEF = ivs[2];
+            pk.IV_SPA = ivs[3];
+            pk.IV_SPD = ivs[4];
+            pk.IV_SPE = ivs[5];
+
+            // Size
+            var scale = (IScaledSize)pk;
+            scale.HeightScalar = (int)xoro.NextInt(0x81) + (int)xoro.NextInt(0x80);
+            scale.WeightScalar = (int)xoro.NextInt(0x81) + (int)xoro.NextInt(0x80);
+
+            return pk;
+        }
+
         private static bool TryApplyFromSeed(PKM pk, EncounterCriteria criteria, Shiny shiny, int flawless, uint seed)
         {
             var xoro = new Xoroshiro128Plus(seed);
 
             // Encryption Constant
-            pk.EncryptionConstant = (uint) xoro.NextInt(uint.MaxValue);
+            pk.EncryptionConstant = (uint)xoro.NextInt(uint.MaxValue);
 
             // PID
-            var pid = (uint) xoro.NextInt(uint.MaxValue);
+            var pid = (uint)xoro.NextInt(uint.MaxValue);
             if (shiny == Shiny.Never)
             {
                 if (GetIsShiny(pk.TID, pk.SID, pid))
@@ -47,12 +113,12 @@
             pk.PID = pid;
 
             // IVs
-            var ivs = new[] {UNSET, UNSET, UNSET, UNSET, UNSET, UNSET};
+            var ivs = new[] { UNSET, UNSET, UNSET, UNSET, UNSET, UNSET };
             const int MAX = 31;
             for (int i = 0; i < flawless; i++)
             {
                 int index;
-                do { index = (int) xoro.NextInt(6); }
+                do { index = (int)xoro.NextInt(6); }
                 while (ivs[index] != UNSET);
 
                 ivs[index] = MAX;
@@ -61,7 +127,7 @@
             for (int i = 0; i < ivs.Length; i++)
             {
                 if (ivs[i] == UNSET)
-                    ivs[i] = (int) xoro.NextInt(32);
+                    ivs[i] = (int)xoro.NextInt(32);
             }
 
             if (!criteria.IsIVsCompatible(ivs, 8))
@@ -75,9 +141,9 @@
             pk.IV_SPE = ivs[5];
 
             // Remainder
-            var scale = (IScaledSize) pk;
-            scale.HeightScalar = (int) xoro.NextInt(0x81) + (int) xoro.NextInt(0x80);
-            scale.WeightScalar = (int) xoro.NextInt(0x81) + (int) xoro.NextInt(0x80);
+            var scale = (IScaledSize)pk;
+            scale.HeightScalar = (int)xoro.NextInt(0x81) + (int)xoro.NextInt(0x80);
+            scale.WeightScalar = (int)xoro.NextInt(0x81) + (int)xoro.NextInt(0x80);
 
             return true;
         }
@@ -95,11 +161,11 @@
                 return false;
 
             var xoro = new Xoroshiro128Plus(seed);
-            var ec = (uint) xoro.NextInt(uint.MaxValue);
+            var ec = (uint)xoro.NextInt(uint.MaxValue);
             if (ec != pk.EncryptionConstant)
                 return false;
 
-            var pid = (uint) xoro.NextInt(uint.MaxValue);
+            var pid = (uint)xoro.NextInt(uint.MaxValue);
             if (!IsPIDValid(pk, pid, shiny))
                 return false;
 
@@ -159,10 +225,10 @@
 
                 if (pk is not IScaledSize s)
                     continue;
-                var height = (int) copy.NextInt(0x81) + (int) copy.NextInt(0x80);
+                var height = (int)copy.NextInt(0x81) + (int)copy.NextInt(0x80);
                 if (s.HeightScalar != height)
                     continue;
-                var weight = (int) copy.NextInt(0x81) + (int) copy.NextInt(0x80);
+                var weight = (int)copy.NextInt(0x81) + (int)copy.NextInt(0x80);
                 if (s.WeightScalar != weight)
                     continue;
 
@@ -198,7 +264,7 @@
             return (uint)(((tid ^ sid ^ (pid & 0xFFFF) ^ type) << 16) | (pid & 0xFFFF));
         }
 
-        public static bool GetIsShiny(int tid, int sid, uint pid)
+        private static bool GetIsShiny(int tid, int sid, uint pid)
         {
             return GetShinyXor(pid, (uint)((sid << 16) | tid)) < 16;
         }
@@ -220,7 +286,8 @@
             if (seed == 0xD5B9C463) // Collision seed with the 0xFFFFFFFF re-roll.
             {
                 var xoro = new Xoroshiro128Plus(seed);
-                /*  ec */ xoro.NextInt(uint.MaxValue);
+                /*  ec */
+                xoro.NextInt(uint.MaxValue);
                 var pid = xoro.NextInt(uint.MaxValue);
                 if (pid != pk.PID)
                     return 0xDD6295A4;

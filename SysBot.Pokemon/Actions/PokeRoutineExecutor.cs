@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Collections;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsets;
@@ -98,6 +97,58 @@ namespace SysBot.Pokemon
                 msWaited += waitInterval;
             }
             return null;
+        }
+
+        public async Task<PK8?> ReadOwPokemon(uint offset, SAV8 TrainerData, CancellationToken token)
+        {
+            byte[] data = await Connection.ReadBytesAsync(offset, 56, token).ConfigureAwait(false);
+            Log("RAM data: " + BitConverter.ToString(data));
+
+            if (data[20] == 1)
+            {
+                PK8? pk = new PK8
+                {
+                    Species = BitConverter.ToUInt16(data.Slice(0, 2), 0),
+                    Form = data[2],
+                    CurrentLevel = data[4],
+                    Met_Level = data[4],
+                    Gender = (data[10] == 1) ? 0 : 1,
+                    OT_Name = TrainerData.OT,
+                    TID = TrainerData.TID,
+                    SID = TrainerData.SID,
+                    TrainerID7 = TrainerData.TrainerID7,
+                    TrainerSID7 = TrainerData.TrainerSID7,
+                    OT_Gender = TrainerData.Gender,
+                    HT_Name = TrainerData.OT,
+                    HT_Gender = TrainerData.Gender,
+                    Move1 = BitConverter.ToUInt16(data.Slice(48, 2), 0),
+                    Move2 = BitConverter.ToUInt16(data.Slice(50, 2), 0),
+                    Move3 = BitConverter.ToUInt16(data.Slice(52, 2), 0),
+                    Move4 = BitConverter.ToUInt16(data.Slice(54, 2), 0),
+                };
+                pk.SetNature(data[8]);
+                //Controllare se è uguale a batch
+                pk.SetAbility(data[12]);
+                if (data[22] != 255 && Enum.IsDefined(typeof(MarkIndex), data[22]))
+                    pk.SetRibbonIndex((RibbonIndex)data[22]);
+                if (!pk.IsGenderValid())
+                    pk.Gender = 2;
+                if (data[14] == 1)
+                    pk.HeldItem = data[16];
+
+                Shiny shinyness = (Shiny)(data[6] + 1);
+                int ivs = data[18];
+                uint seed = BitConverter.ToUInt32(data.Slice(24, 4), 0);
+
+                Log($"Stats in RAM: Shinyness {shinyness}, IVs {ivs}, Seed: {String.Format("{0:X}", seed)}");
+
+                pk = Overworld8RNG.CalculateFromSeed(pk, shinyness, ivs, seed);
+                if (pk != null)
+                    return pk;
+                else return null;
+            }
+            else
+                return null;
         }
 
         // Reads an offset until it changes to either match or differ from the comparison value.
