@@ -13,7 +13,8 @@ namespace SysBot.Pokemon
         public const uint demageOutputOffset = 0x007E37F0;
         public const uint LairSpeciesSelector = 0x50B129A0;
         public const uint LairSpeciesSelector2 = 0x50B12278;
-        public const uint ZOwOffset = 0x4505C3C0;
+        public const uint WildAreaMotostokeSpawns = 0x4505C3C0;
+        public const uint IsleOfArmorStationSpaws = 0x4505C9C0;
 
         // Raid Offsets
         // The dex number of the Pokémon the host currently has chosen. 

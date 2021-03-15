@@ -49,6 +49,8 @@ namespace SysBot.Pokemon
                 EncounterMode.Dogs_or_Calyrex => DoDogEncounter(token),
                 EncounterMode.Keldeo => DoKeldeoEncounter(token),
                 EncounterMode.Zapdos => DoSeededEncounter(token, (EncounterType)8),
+                EncounterMode.Moltres => DoSeededEncounter(token, (EncounterType)9),
+                EncounterMode.Wailord => DoSeededEncounter(token, (EncounterType)10),
                 _ => WalkInLine(token),
             };
             await task.ConfigureAwait(false);
@@ -134,41 +136,58 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task RerollSeedEncounter(CancellationToken token)
+        private async Task RerollSeed(EncounterType encounter, CancellationToken token)
         {
             Log("Reroll");
             await Click(X, 2_000, token).ConfigureAwait(false);
-            //Log("Premuto X");
+
             await Click(A, 5_000, token).ConfigureAwait(false);
+
+            if (encounter == (EncounterType)9 || encounter == (EncounterType)10)
+                await Click(DLEFT, 0_500, token).ConfigureAwait(false);
+
             for (int i = 0; i < 6; i++)
                 await Click(A, 0_250, token).ConfigureAwait(false);
-            //Log("Premuto A x6");
             await Task.Delay(2_000, token).ConfigureAwait(false);
+
             await Click(X, 2_000, token).ConfigureAwait(false);
-            //Log("Premuto X");
+
             for (int i = 0; i < 6; i++)
                 await Click(R, 0_250, token).ConfigureAwait(false);
-            //Log("Premuto R x3");
+
             await Click(A, 5_000, token).ConfigureAwait(false);
-            //Log("Premuto A");
         }
 
         private async Task DoSeededEncounter(CancellationToken token, EncounterType type)
         {
             SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
-            while (!token.IsCancellationRequested)
+            Species dexn;
+            uint offset = 0x00;
+            if (type == (EncounterType)8)
             {
-                var pkm = await ReadOwPokemon(ZOwOffset, sav, token).ConfigureAwait(false);
-                if (pkm == null)
-                    await RerollSeedEncounter(token).ConfigureAwait(false);
+                dexn = (Species)145;
+                offset = WildAreaMotostokeSpawns;
+            }
+            else if (type == (EncounterType)9)
+            {
+                dexn = (Species)146;
+                offset = IsleOfArmorStationSpaws;
+            }
+            else if(type == (EncounterType)10)
+            {
+                dexn = (Species)321;
+                offset = IsleOfArmorStationSpaws;
+            }
+            else
+                dexn = Hub.Config.StopConditions.StopOnSpecies;
+
+            while (!token.IsCancellationRequested && offset != 0)
+            {
+                var pkm = await ReadOwPokemon(dexn, offset, sav, token).ConfigureAwait(false);
+                if (pkm != null && await HandleEncounter(pkm, true, token).ConfigureAwait(false))
+                    return;
                 else
-                {
-                    if (await HandleEncounter(pkm, true, token).ConfigureAwait(false))
-                        return;
-                    else
-                        await RerollSeedEncounter(token).ConfigureAwait(false);
-                }
-                
+                    await RerollSeed(type, token).ConfigureAwait(false);                
             }
         }
 
@@ -346,13 +365,10 @@ namespace SysBot.Pokemon
 
         private string GetRibbonsList(PK8 pk)
         {
-            string ribbonsList = "Ribbons: ";
+            string ribbonsList = "";
             for (var mark = MarkIndex.MarkLunchtime; mark <= MarkIndex.MarkSlump; mark++)
                 if (pk.GetRibbon((int)mark))
                     ribbonsList += mark;
-
-            if (ribbonsList.Equals("Ribbons: "))
-                ribbonsList += "[]";
 
             return ribbonsList;
         }

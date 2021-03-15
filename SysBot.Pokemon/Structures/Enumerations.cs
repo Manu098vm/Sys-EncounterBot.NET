@@ -18,6 +18,7 @@
         Articuno = 7,
         Zapdos = 8,
         Moltres = 9,
+        Wailord = 10,
     }
 
     public enum TargetShinyType

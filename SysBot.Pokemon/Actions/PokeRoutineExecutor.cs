@@ -99,16 +99,24 @@ namespace SysBot.Pokemon
             return null;
         }
 
-        public async Task<PK8?> ReadOwPokemon(uint offset, SAV8 TrainerData, CancellationToken token)
+        public async Task<PK8?> ReadOwPokemon(Species target, uint startoffset, SAV8 TrainerData, CancellationToken token)
         {
-            byte[] data = await Connection.ReadBytesAsync(offset, 56, token).ConfigureAwait(false);
-            Log("RAM data: " + BitConverter.ToString(data));
+            byte[] data;
+            Species species = (Species)0;
+            uint offset = startoffset;
+            do
+            {
+                data = await Connection.ReadBytesAsync(offset, 56, token).ConfigureAwait(false);
+                species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
+                Log($"Target: {target}, Encountered: {species}");
+                offset += 192;
+            } while (target != 0 && species != 0 && target != species);
 
             if (data[20] == 1)
             {
-                PK8? pk = new PK8
+                PK8 pk = new PK8
                 {
-                    Species = BitConverter.ToUInt16(data.Slice(0, 2), 0),
+                    Species = (int)species,
                     Form = data[2],
                     CurrentLevel = data[4],
                     Met_Level = data[4],
@@ -142,9 +150,7 @@ namespace SysBot.Pokemon
                 Log($"Stats in RAM: Shinyness {shinyness}, IVs {ivs}, Seed: {String.Format("{0:X}", seed)}");
 
                 pk = Overworld8RNG.CalculateFromSeed(pk, shinyness, ivs, seed);
-                if (pk != null)
-                    return pk;
-                else return null;
+                return pk;
             }
             else
                 return null;

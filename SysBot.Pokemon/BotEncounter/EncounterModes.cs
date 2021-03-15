@@ -48,8 +48,19 @@
         Spiritomb,
 
         /// <summary>
-        /// Bot will soft reset Zapdos
+        /// Bot will reroll Zapdos
         /// </summary>
         Zapdos,
+
+
+        /// <summary>
+        /// Bot will reroll Moltres
+        /// </summary>
+        Moltres,
+
+        /// <summary>
+        /// Bot will reroll Moltres
+        /// </summary>
+        Wailord,
     }
 }
