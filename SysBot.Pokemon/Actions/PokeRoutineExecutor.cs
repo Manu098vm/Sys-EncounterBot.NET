@@ -127,9 +127,8 @@ namespace SysBot.Pokemon
                     Move4 = BitConverter.ToUInt16(data.Slice(54, 2), 0),
                 };
                 pk.SetNature(data[8]);
-                //Controllare se è uguale a batch
-                pk.SetAbility(data[12]);
-                if (data[22] != 255 && Enum.IsDefined(typeof(MarkIndex), data[22]))
+                pk.SetAbility(data[12] - 1);
+                if (data[22] != 255)
                     pk.SetRibbonIndex((RibbonIndex)data[22]);
                 if (!pk.IsGenderValid())
                     pk.Gender = 2;
