@@ -9,6 +9,5 @@
         DynamaxAdventure,
         EncounterBot,
         LiveStatsChecking,
-        RemoteControl,
     }
 }

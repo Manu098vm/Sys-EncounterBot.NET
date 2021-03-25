@@ -13,7 +13,6 @@ namespace SysBot.Pokemon
         private readonly BotCompleteCounts Counts;
         private readonly IDumper DumpSetting;
         private readonly int[] DesiredIVs;
-        private readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
 
         public LiveStatsChecking(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
         {

@@ -102,15 +102,17 @@ namespace SysBot.Pokemon
         public async Task<PK8?> ReadOwPokemon(Species target, uint startoffset, SAV8 TrainerData, CancellationToken token)
         {
             byte[] data;
-            Species species = (Species)0;
+            Species species;
             uint offset = startoffset;
+            int i = 0;
             do
             {
                 data = await Connection.ReadBytesAsync(offset, 56, token).ConfigureAwait(false);
                 species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
                 Log($"Target: {target}, Encountered: {species}");
                 offset += 192;
-            } while (target != 0 && species != 0 && target != species);
+                i++;
+            } while (target != 0 && species != 0 && target != species && i < 20);
 
             if (data[20] == 1)
             {
@@ -316,25 +318,17 @@ namespace SysBot.Pokemon
             else return false;
         }
 
-        public async Task<int> IsInLairEndList(CancellationToken token)
+        public async Task<bool> IsInLairEndList(CancellationToken token)
         {
-            //Checking all the lair rewards pointers, if one contains a Pokémon, it means the adventure is ended.
-            //Returns the pointer id used.
-            /*Legenda:
-             * 0 = No rewards, adventure not started/ended or lost at the first raid.
-             * 1 = First pointer used
-             * 2 = Second pointer used
-             * etc. check Structures/RAM/PokeDataOffsets
-             * */
-            int i = 0;
-            foreach(string pointer in dynamaxRewards)
-            {
-                i++;
-                var pkm = await ReadPokemon(await ParsePointer(pointer, token), token, 344).ConfigureAwait(false);
-                if (pkm != null && pkm.Species != 0 && pkm.ChecksumValid)
-                    return i;
-            }
-            return 0;
+            //Thanks Koi!
+            return BitConverter.GetBytes(LairRewardsScreenBytes).SequenceEqual(await Connection.ReadBytesAsync(CurrentScreenLairOffset, 4, token).ConfigureAwait(false));
+
+
+            /*var pkm = await ReadPokemon(await ParsePointer(LairReward, token), token, 344).ConfigureAwait(false);
+            if (pkm != null && pkm.Species != 0 && pkm.ChecksumValid)
+                return true;
+            else
+                return false;*/
         }
 
         public async Task<bool> IsOnOverworld(PokeTradeHubConfig config, CancellationToken token)

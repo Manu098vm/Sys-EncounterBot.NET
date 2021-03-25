@@ -48,6 +48,7 @@ namespace SysBot.Pokemon
                 EncounterMode.Eternatus => DoRestartingEncounter(token, (EncounterType)5),
                 EncounterMode.Dogs_or_Calyrex => DoDogEncounter(token),
                 EncounterMode.Keldeo => DoKeldeoEncounter(token),
+                EncounterMode.Articuno => DoSeededEncounter(token, (EncounterType)7),
                 EncounterMode.Zapdos => DoSeededEncounter(token, (EncounterType)8),
                 EncounterMode.Moltres => DoSeededEncounter(token, (EncounterType)9),
                 EncounterMode.Wailord => DoSeededEncounter(token, (EncounterType)10),
@@ -78,8 +79,7 @@ namespace SysBot.Pokemon
                     Log("Invalid data detected. Restarting loop.");
 
                     // Flee and continue looping.
-                    while (await IsInBattle(token).ConfigureAwait(false))
-                        await FleeToOverworld(token).ConfigureAwait(false);
+                    await FleeToOverworld(token).ConfigureAwait(false);
                     continue;
                 }
 
@@ -91,8 +91,7 @@ namespace SysBot.Pokemon
                     return;
 
                 Log("Running away...");
-                while (await IsInBattle(token).ConfigureAwait(false))
-                    await FleeToOverworld(token).ConfigureAwait(false);
+                await FleeToOverworld(token).ConfigureAwait(false);
             }
         }
 
@@ -138,24 +137,52 @@ namespace SysBot.Pokemon
 
         private async Task RerollSeed(EncounterType encounter, CancellationToken token)
         {
-            Log("Reroll");
+            int i = 0;
+
             await Click(X, 2_000, token).ConfigureAwait(false);
 
-            await Click(A, 5_000, token).ConfigureAwait(false);
+            await Click(PLUS, 5_000, token).ConfigureAwait(false);
+
+            Log("Into the map");
 
             if (encounter == (EncounterType)9 || encounter == (EncounterType)10)
                 await Click(DLEFT, 0_500, token).ConfigureAwait(false);
+            else if(encounter == (EncounterType)7)
+            {
+                await PressAndHold(DDOWN, 0_100, 1_000, token).ConfigureAwait(false);
+                await Click(DRIGHT, 0_700, token).ConfigureAwait(false);
+            }
 
-            for (int i = 0; i < 6; i++)
-                await Click(A, 0_250, token).ConfigureAwait(false);
-            await Task.Delay(2_000, token).ConfigureAwait(false);
+            Log("Into the PoI");
+
+            //Classic overworld check is not working here
+            for (i = 0; i < 70; i++);
+            {
+                if (i < 40)
+                {
+                    Log("Spam A");
+                    await Click(A, 1_000, token).ConfigureAwait(false);
+                }
+                else
+                {
+                    Log("Recover Position: Click B");
+                    await Click(B, 1_000, token).ConfigureAwait(false);
+                }
+            }
+
+            Log("Returned to Overworld");
+
+            await Task.Delay(2_500, token).ConfigureAwait(false);
 
             await Click(X, 2_000, token).ConfigureAwait(false);
 
-            for (int i = 0; i < 6; i++)
-                await Click(R, 0_250, token).ConfigureAwait(false);
+            Log("Returned to the Menu");
+
+            await Click(PLUS, 3_500, token).ConfigureAwait(false);
 
             await Click(A, 5_000, token).ConfigureAwait(false);
+
+            Log("Game saved, seed rerolled.");
         }
 
         private async Task DoSeededEncounter(CancellationToken token, EncounterType type)
@@ -163,7 +190,12 @@ namespace SysBot.Pokemon
             SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
             Species dexn;
             uint offset = 0x00;
-            if (type == (EncounterType)8)
+            if (type == (EncounterType)7)
+            {
+                dexn = (Species)144;
+                offset = CrownTundraSnowslideSlopeSpawns;
+            }
+            else if (type == (EncounterType)8)
             {
                 dexn = (Species)145;
                 offset = WildAreaMotostokeSpawns;
@@ -185,9 +217,15 @@ namespace SysBot.Pokemon
             {
                 var pkm = await ReadOwPokemon(dexn, offset, sav, token).ConfigureAwait(false);
                 if (pkm != null && await HandleEncounter(pkm, true, token).ConfigureAwait(false))
+                {
+                    Click(X, 3_500, token).ConfigureAwait(false);
+                    Click(R, 5_000, token).ConfigureAwait(false);
+                    Click(X, 0_100, token).ConfigureAwait(false);
+                    Log($"The overworld encounter has been found. The progresses has been saved and the game is paused, you can now go and catch {SpeciesName.GetSpeciesName((int)dexn, 2)}");
                     return;
+                }
                 else
-                    await RerollSeed(type, token).ConfigureAwait(false);                
+                    await RerollSeed(type, token).ConfigureAwait(false);     
             }
         }
 
@@ -198,7 +236,7 @@ namespace SysBot.Pokemon
                 Log("Looking for a new legendary...");
 
                 // At the start of each loop, an A press is needed to exit out of a prompt.
-                await Click(A, 0_200, token).ConfigureAwait(false);
+                await Click(A, 0_100, token).ConfigureAwait(false);
                 await SetStick(LEFT, 0, 30000, 1_000, token).ConfigureAwait(false);
 
                 // Encounters Zacian/Zamazenta and clicks through all the menus.
@@ -227,8 +265,7 @@ namespace SysBot.Pokemon
                     return;
 
                 Log("Running away...");
-                while (await IsInBattle(token).ConfigureAwait(false))
-                    await FleeToOverworld(token).ConfigureAwait(false);
+                await FleeToOverworld(token).ConfigureAwait(false);
 
                 // Extra delay to be sure we're fully out of the battle.
                 await Task.Delay(0_250, token).ConfigureAwait(false);
@@ -382,11 +419,16 @@ namespace SysBot.Pokemon
         private async Task FleeToOverworld(CancellationToken token)
         {
             // This routine will always escape a battle.
-            await Task.Delay(1_000, token).ConfigureAwait(false);
-            await Click(DUP, 0_400, token).ConfigureAwait(false);
-            await Click(A, 0_400, token).ConfigureAwait(false);
-            await Click(B, 0_400, token).ConfigureAwait(false);
-            await Click(B, 0_400, token).ConfigureAwait(false);
+            await Click(DUP, 0_200, token).ConfigureAwait(false);
+            await Click(A, 1_000, token).ConfigureAwait(false);
+
+            while (await IsInBattle(token).ConfigureAwait(false))
+            {
+                await Click(B, 0_500, token).ConfigureAwait(false);
+                await Click(B, 1_000, token).ConfigureAwait(false);
+                await Click(DUP, 0_200, token).ConfigureAwait(false);
+                await Click(A, 1_000, token).ConfigureAwait(false);
+            }
         }
     }
 }

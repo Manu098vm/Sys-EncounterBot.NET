@@ -36,23 +36,30 @@ namespace SysBot.Pokemon
 
                 Log("Looking for a gift pokemon...");
 
+                int i = 0;
                 // Click through all the menus untill the encounter.
-                while (await ReadUntilPresent(await ParsePointer(giftpoke, token), 2_000, 0_200, token).ConfigureAwait(false) == null)
-                    await Click(A, 0_700, token).ConfigureAwait(false);
+                while (await ReadUntilPresent(await ParsePointer(PokeGift, token), 1_000, 0_200, token).ConfigureAwait(false) == null && i < 60)
+                {
+                    await Click(A, 0_200, token).ConfigureAwait(false);
+                    i++;
+                }
 
-                Log("Gift found! Checking details...");
-                var pk = await ReadUntilPresent(await ParsePointer(giftpoke, token), 2_000, 0_200, token).ConfigureAwait(false);
-                if (pk != null)
-                    if (HandlePokemon(pk, Hub.Config.GiftBotSettings.IsLegendary))
-                    {
-                        if (Hub.Config.StopConditions.CaptureVideoClip)
+                if (i < 60)
+                {
+                    Log("Gift found! Checking details...");
+                    var pk = await ReadUntilPresent(await ParsePointer(PokeGift, token), 2_000, 0_200, token).ConfigureAwait(false);
+                    if (pk != null)
+                        if (HandlePokemon(pk, Hub.Config.GiftBotSettings.IsLegendary))
                         {
-                            await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
-                            await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
+                            if (Hub.Config.StopConditions.CaptureVideoClip)
+                            {
+                                await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
+                                await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
+                            }
+                            return;
                         }
-                        return;
-                    }
-
+                }
+                else Log("Reset Bot position.");
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
             }

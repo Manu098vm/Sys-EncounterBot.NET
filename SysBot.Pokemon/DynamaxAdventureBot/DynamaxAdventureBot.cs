@@ -125,7 +125,7 @@ namespace SysBot.Pokemon
                 int elapsed = 0;
                 bool inBattle = false;
                 bool lost = false;
-                while (!(await IsInLairEndList(token).ConfigureAwait(false) > 0 || lost || token.IsCancellationRequested))
+                while (!(await IsInLairEndList(token).ConfigureAwait(false) || lost || token.IsCancellationRequested))
                 {
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
@@ -174,7 +174,7 @@ namespace SysBot.Pokemon
                 if (!lost)
                 {
                     //Check for shinies, check all the StopConditions for the Legendary
-                    int[] found = await IsAdventureHuntFound(await IsInLairEndList(token), token).ConfigureAwait(false);
+                    int[] found = await IsAdventureHuntFound(token).ConfigureAwait(false);
 
                     adventureCompleted++;
                     if (raidCount < 5)
@@ -225,48 +225,28 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task<int[]> IsAdventureHuntFound(int pointer_id, CancellationToken token)
+        private async Task<int[]> IsAdventureHuntFound(CancellationToken token)
         {
-            List<string> pointers = new List<string>();
             int[] found = { 0, 0 };
             int i = 0;
+            string pointer;
 
-            //Set pointer1 
-            if (pointer_id == 0)
-                Log("Pointers search returned 0. No rewards found. If you see this message more than one time, it is suggested to reboot your console in order to continue to use the Bot properly and prevent RAM shifting.");
-            else
+            while (i < 4)
             {
-                while (i < dynamaxRewards.Length)
+                pointer = $"[[[[main+28F4060]+1B0]+68]+{String.Format("{0:X}", 88 + (8 * i))}]+D0";
+                var pkm = await ReadUntilPresent(await ParsePointer(pointer, token), 2_000, 0_200, token).ConfigureAwait(false);
+                if (pkm != null)
                 {
-                    if ((pointer_id % 2 != 0 && i % 2 == 0) || (pointer_id % 2 == 0 && i % 2 != 0))
-                        pointers.Add(dynamaxRewards[i]);
-                    i++;
-                }
-
-                if (pointer_id == 3 || pointer_id == 4)
-                    pointers.RemoveAt(0);
-                else
-                    pointers.RemoveAt(1);
-
-                //Read data from dynamic pointers
-                i = 1;
-                foreach (string pointer in pointers)
-                {
-                    var pkm = await ReadUntilPresent(await ParsePointer(pointer, token), 2_000, 0_200, token).ConfigureAwait(false);
-                    if (pkm != null)
+                    if (i == 3) found[1] = 1;
+                    if ((HandleEncounter(pkm, i == 3) == true) || (i < 4 && pkm.IsShiny))
                     {
-                        if(i == 4) found[1] = 1;
-                        if ((HandleEncounter(pkm, i == 4) == true) || (i < 4 && pkm.IsShiny))
-                        {
-                            if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                                Log("<@" + Hub.Config.Discord.UserTag +"> a" + (pkm.IsShiny ? " Shiny " : " ") + pkm.Nickname + " has been found!");
-                            found[0] = i;
-                        }
+                        if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
+                            Log("<@" + Hub.Config.Discord.UserTag + "> a" + (pkm.IsShiny ? " Shiny " : " ") + pkm.Nickname + " has been found!");
+                        found[0] = i + 1;
                     }
-                    i++;
                 }
+                i++;
             }
-
             return found;
         }
 

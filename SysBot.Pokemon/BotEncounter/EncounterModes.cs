@@ -50,6 +50,11 @@
         /// <summary>
         /// Bot will reroll Zapdos
         /// </summary>
+        Articuno,
+
+        /// <summary>
+        /// Bot will reroll Zapdos
+        /// </summary>
         Zapdos,
 
 

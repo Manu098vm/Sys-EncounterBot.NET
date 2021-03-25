@@ -45,7 +45,7 @@ namespace SysBot.Pokemon
                 await ReviveFossil(counts, token).ConfigureAwait(false);
                 Log("Fossil revived. Checking details...");
 
-                var pk = await ReadUntilPresent(await ParsePointer(giftpoke, token), 2_000, 0_200, token).ConfigureAwait(false);
+                var pk = await ReadUntilPresent(await ParsePointer(PokeGift, token).ConfigureAwait(false), 2_000, 0_200, token).ConfigureAwait(false);
                 if (pk == null)
                 {
                     Log("RAM probably shifted.");
@@ -115,7 +115,7 @@ namespace SysBot.Pokemon
                 await Click(DDOWN, 300, token).ConfigureAwait(false);
 
             // A spam through accepting the fossil and agreeing to revive.
-            while (await ReadUntilPresent(await ParsePointer(giftpoke, token), 2_000, 0_200, token).ConfigureAwait(false) == null)
+            while (await ReadUntilPresent(await ParsePointer(PokeGift, token).ConfigureAwait(false), 2_000, 0_200, token).ConfigureAwait(false) == null)
             {
                 await Click(A, 0_400, token).ConfigureAwait(false);
                 await Task.Delay(1_000, token).ConfigureAwait(false);
