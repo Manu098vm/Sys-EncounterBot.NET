@@ -135,45 +135,57 @@ namespace SysBot.Pokemon
             }
         }
 
+        private async Task<bool> IsArticunoPresent(CancellationToken token)
+        {
+            byte result = (await Connection.ReadBytesAsync(IsArticunoInSnowslide, 1, token).ConfigureAwait(false))[0];
+            return (result == 1);
+        }
+
         private async Task RerollSeed(EncounterType encounter, CancellationToken token)
         {
             int i = 0;
+            bool exit = false;
 
-            await Click(X, 2_000, token).ConfigureAwait(false);
-
-            await Click(PLUS, 5_000, token).ConfigureAwait(false);
-
-            Log("Into the map");
-
-            if (encounter == (EncounterType)9 || encounter == (EncounterType)10)
-                await Click(DLEFT, 0_500, token).ConfigureAwait(false);
-            else if(encounter == (EncounterType)7)
-            {
-                await PressAndHold(DDOWN, 0_150, 1_000, token).ConfigureAwait(false);
-                await PressAndHold(DRIGHT,0_090, 0_700, token).ConfigureAwait(false);
-            }
-
-            Log("Into the PoI");
-
-            //Classic overworld check is not working here
-            while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false) && i < 12) {
-                Log("Entered check isinoverworld");
-                if (i <= 7)
+            while (!exit)
+            { 
+                await Click(X, 2_000, token).ConfigureAwait(false);
+                await Click(PLUS, 5_000, token).ConfigureAwait(false);
+                Log("Into the map");
+                if (encounter == (EncounterType)9 || encounter == (EncounterType)10)
+                    await Click(DLEFT, 0_500, token).ConfigureAwait(false);
+                else if (encounter == (EncounterType)7)
                 {
-                    Log("Click A");
-                    await Click(A, 1_000, token).ConfigureAwait(false);
+                    await PressAndHold(DDOWN, 0_150, 1_000, token).ConfigureAwait(false);
+                    await PressAndHold(DRIGHT, 0_090, 0_700, token).ConfigureAwait(false);
                 }
-                else
+                Log("Into the PoI");
+                while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false) && i < 12)
                 {
-                    Log("Click B");
-                    await Click(B, 1_000, token).ConfigureAwait(false);
+                    Log("Entered check isinoverworld");
+                    if (i <= 7)
+                    {
+                        Log("Click A");
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        Log("Click B");
+                        await Click(B, 1_000, token).ConfigureAwait(false);
+                    }
+                    i++;
                 }
-                i++;
+                Log("Returned to Overworld");
+                await Task.Delay(2_500, token).ConfigureAwait(false);
+
+                if(encounter != (EncounterType)7 || (encounter == (EncounterType)7 && await IsArticunoPresent(token).ConfigureAwait(false)))
+                {
+                    Log("ROUTINE OK!");
+                    exit = true;
+                } else
+                {
+                    Log("Articuno non trovato!");
+                }
             }
-
-            Log("Returned to Overworld");
-
-            await Task.Delay(2_500, token).ConfigureAwait(false);
 
             await Click(X, 2_000, token).ConfigureAwait(false);
 
@@ -219,9 +231,9 @@ namespace SysBot.Pokemon
                 var pkm = await ReadOwPokemon(dexn, offset, sav, token).ConfigureAwait(false);
                 if (pkm != null && await HandleEncounter(pkm, true, token).ConfigureAwait(false))
                 {
-                    Click(X, 3_500, token).ConfigureAwait(false);
-                    Click(R, 5_000, token).ConfigureAwait(false);
-                    Click(X, 0_100, token).ConfigureAwait(false);
+                    await Click(X, 3_500, token).ConfigureAwait(false);
+                    await Click(R, 5_000, token).ConfigureAwait(false);
+                    await Click(X, 0_100, token).ConfigureAwait(false);
                     Log($"The overworld encounter has been found. The progresses has been saved and the game is paused, you can now go and catch {SpeciesName.GetSpeciesName((int)dexn, 2)}");
                     return;
                 }
