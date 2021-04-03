@@ -9,5 +9,6 @@
         DynamaxAdventure,
         EncounterBot,
         LiveStatsChecking,
+        TidSidSearcher,
     }
 }

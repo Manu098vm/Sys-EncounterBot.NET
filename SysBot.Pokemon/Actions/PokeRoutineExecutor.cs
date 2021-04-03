@@ -17,7 +17,7 @@ namespace SysBot.Pokemon
 
         public LanguageID GameLang { get; private set; }
         public GameVersion Version { get; private set; }
-        public string InGameName { get; private set; } = "SysBot.NET";
+        public string InGameName { get; private set; } = "E-BOT";
 
         public override void SoftStop() => Config.Pause();
 
@@ -191,9 +191,6 @@ namespace SysBot.Pokemon
             InGameName = sav.OT;
             Connection.Label = $"{InGameName}-{sav.DisplayTID:000000}";
             Log($"{Connection.Name} identified as {Connection.Label}, using {GameLang}.");
-
-            if (await GetTextSpeed(token).ConfigureAwait(false) != TextSpeedOption.Fast)
-                Log("Text speed should be set to FAST. Stop the bot and fix this if you encounter problems.");
 
             return sav;
         }

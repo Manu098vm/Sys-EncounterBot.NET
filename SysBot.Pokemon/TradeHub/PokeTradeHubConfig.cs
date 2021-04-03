@@ -54,6 +54,9 @@ namespace SysBot.Pokemon
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public LiveStatsCheckingSettings LiveStatsSettings { get; set; } = new();
+        [Category(Bots)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public TidSidSearcherSettings TidSidSearcherSettings { get; set; } = new();
 
         // Integration
 

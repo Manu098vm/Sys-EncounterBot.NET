@@ -149,25 +149,26 @@ namespace SysBot.Pokemon
                 await Click(DLEFT, 0_500, token).ConfigureAwait(false);
             else if(encounter == (EncounterType)7)
             {
-                await PressAndHold(DDOWN, 0_100, 1_000, token).ConfigureAwait(false);
-                await Click(DRIGHT, 0_700, token).ConfigureAwait(false);
+                await PressAndHold(DDOWN, 0_150, 1_000, token).ConfigureAwait(false);
+                await PressAndHold(DRIGHT,0_090, 0_700, token).ConfigureAwait(false);
             }
 
             Log("Into the PoI");
 
             //Classic overworld check is not working here
-            for (i = 0; i < 70; i++);
-            {
-                if (i < 40)
+            while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false) && i < 12) {
+                Log("Entered check isinoverworld");
+                if (i <= 7)
                 {
-                    Log("Spam A");
+                    Log("Click A");
                     await Click(A, 1_000, token).ConfigureAwait(false);
                 }
                 else
                 {
-                    Log("Recover Position: Click B");
+                    Log("Click B");
                     await Click(B, 1_000, token).ConfigureAwait(false);
                 }
+                i++;
             }
 
             Log("Returned to Overworld");
@@ -178,7 +179,7 @@ namespace SysBot.Pokemon
 
             Log("Returned to the Menu");
 
-            await Click(PLUS, 3_500, token).ConfigureAwait(false);
+            await Click(R, 2_000, token).ConfigureAwait(false);
 
             await Click(A, 5_000, token).ConfigureAwait(false);
 
