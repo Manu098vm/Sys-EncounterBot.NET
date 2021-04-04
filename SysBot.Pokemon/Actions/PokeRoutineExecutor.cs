@@ -2,6 +2,7 @@
 using SysBot.Base;
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -99,6 +100,64 @@ namespace SysBot.Pokemon
             return null;
         }
 
+        public async Task<byte[]> ReadKCoordinates(CancellationToken token) => await Connection.ReadBytesAsync(KCoordinatesBlock, 24592, token).ConfigureAwait(false);
+
+        public async Task<List<PK8>> ReadOwPokemonFromBlock(byte[] KCoordinates, SAV8 sav, CancellationToken token)
+        {
+            List<PK8> PK8s = new List<PK8>();
+
+            int i = 8;
+            int j = 0;
+            int last_index = 8;
+            int count = 0;
+            uint offset;
+
+            while(!token.IsCancellationRequested && i < KCoordinates.Length)
+            {
+                //If someone finds a better way to run through the block and find the spawns, feel free to improve this function.
+                if(j == 12)
+                {
+                    if (KCoordinates[i - 68] != 0 || KCoordinates[i - 68] != 255)
+                    {
+                        Species species = (Species)BitConverter.ToUInt16(KCoordinates.Slice(i - 68, 2), 0);
+                        offset = KCoordinatesBlock + (uint)i - 68;
+                        j = 0;
+                        i = last_index + 8;
+                        last_index = i;
+                        count++;
+                        var pkm = await ReadOwPokemon(species, offset, sav, token).ConfigureAwait(false);
+                        if (pkm != null)
+                            PK8s.Add(pkm);
+                    }
+                }
+
+                if(KCoordinates[i] == 255)
+                {
+                    if (i % 8 == 0)
+                        last_index = i;
+                    i++;
+                    j++;
+                }
+                else
+                {
+                    j = 0;
+                    if (i == last_index)
+                    {
+                        i += 8;
+                        last_index = i;
+                    }
+                    else
+                    {
+                        i = last_index + 8;
+                        last_index = i;
+                    }
+                }
+                
+            }
+
+            return PK8s;
+        }
+
         public async Task<PK8?> ReadOwPokemon(Species target, uint startoffset, SAV8 TrainerData, CancellationToken token)
         {
             byte[] data;
@@ -151,7 +210,7 @@ namespace SysBot.Pokemon
 
                 Log($"Stats in RAM: Shinyness {shinyness}, IVs {ivs}, Seed: {String.Format("{0:X}", seed)}");
 
-                pk = Overworld8RNG.CalculateFromSeed(pk, shinyness, ivs, seed);
+                pk = OverworldSWSHRNG.CalculateFromSeed(pk, shinyness, ivs, seed);
                 return pk;
             }
             else

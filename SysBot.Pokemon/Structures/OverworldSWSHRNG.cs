@@ -6,7 +6,7 @@
     /// <remarks>
     /// Entities spawned into the overworld that can be encountered are assigned a 32bit seed, which can be immediately derived from the <see cref="PKM.EncryptionConstant"/>.
     /// </remarks>
-    public static class Overworld8RNG
+    public static class OverworldSWSHRNG
     {
         private const int UNSET = -1;
         public static PK8 CalculateFromSeed(PK8 pk, Shiny shiny, int flawless, uint seed)

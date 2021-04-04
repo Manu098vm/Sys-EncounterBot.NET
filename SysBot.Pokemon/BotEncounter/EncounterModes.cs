@@ -3,14 +3,9 @@
     public enum EncounterMode
     {
         /// <summary>
-        /// Bot will move back and forth in a straight vertical path to encounter Pokémon
+        /// Bot will soft reset Eternatus
         /// </summary>
-        VerticalLine,
-
-        /// <summary>
-        /// Bot will move back and forth in a straight horizontal path to encounter Pokémon
-        /// </summary>
-        HorizontalLine,
+        OverworldSpawn,
 
         /// <summary>
         /// Bot will soft reset Eternatus

@@ -20,8 +20,6 @@ namespace SysBot.Pokemon
             DesiredSID = Hub.Config.TidSidSearcherSettings.SID;
         }
 
-        private int encounterCount;
-
         public override async Task MainLoop(CancellationToken token)
         {
             SAV8SWSH sav = new SAV8SWSH();

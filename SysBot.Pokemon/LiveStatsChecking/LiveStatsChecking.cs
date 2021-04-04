@@ -96,13 +96,10 @@ namespace SysBot.Pokemon
 
         private string GetRibbonsList(PK8 pk)
         {
-            string ribbonsList = "Ribbons: ";
+            string ribbonsList = "";
             for (var mark = MarkIndex.MarkLunchtime; mark <= MarkIndex.MarkSlump; mark++)
                 if (pk.GetRibbon((int)mark))
                     ribbonsList += mark;
-
-            if (ribbonsList.Equals("Ribbons: "))
-                ribbonsList += "[]";
 
             return ribbonsList;
         }

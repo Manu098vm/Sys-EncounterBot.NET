@@ -14,6 +14,7 @@ namespace SysBot.Pokemon
         public const uint LairSpeciesSelector = 0x50B129A0;
         public const uint LairSpeciesSelector2 = 0x50B12278;
         public const uint LairRewardsScreenBytes = 0xFFAE2FC6; //Thanks Koi!
+        public const uint KCoordinatesBlock = 0x4505B3C0;
         public const uint WildAreaMotostokeSpawns = 0x4505C3C0;
         public const uint IsleOfArmorStationSpaws = 0x4505C9C0;
         public const uint CrownTundraSnowslideSlopeSpawns = 0x4505EE80;

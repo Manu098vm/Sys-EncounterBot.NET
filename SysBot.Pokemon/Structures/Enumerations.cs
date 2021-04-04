@@ -19,6 +19,7 @@
         Zapdos = 8,
         Moltres = 9,
         Wailord = 10,
+        OverworldAny = 11,
     }
 
     public enum TargetShinyType
