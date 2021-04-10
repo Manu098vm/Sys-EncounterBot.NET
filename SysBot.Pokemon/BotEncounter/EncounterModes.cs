@@ -3,7 +3,7 @@
     public enum EncounterMode
     {
         /// <summary>
-        /// Bot will soft reset Eternatus
+        /// Bot will scan for any mon
         /// </summary>
         OverworldSpawn,
 

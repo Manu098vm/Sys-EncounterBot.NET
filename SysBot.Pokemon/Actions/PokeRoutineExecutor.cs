@@ -211,6 +211,7 @@ namespace SysBot.Pokemon
                 Log($"Stats in RAM: Shinyness {shinyness}, IVs {ivs}, Seed: {String.Format("{0:X}", seed)}");
 
                 pk = OverworldSWSHRNG.CalculateFromSeed(pk, shinyness, ivs, seed);
+
                 return pk;
             }
             else

@@ -145,20 +145,59 @@ namespace SysBot.Pokemon
         {
             SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
             byte[] KCoordinates = await ReadKCoordinates(token).ConfigureAwait(false);
-            //while (!token.IsCancellationRequested)
-            //{
+            while (!token.IsCancellationRequested)
+            {
+                if (await IsInBattle(token).ConfigureAwait(false))
+                {
+                    // Offsets are flickery so make sure we see it 3 times.
+                    for (int i = 0; i < 3; i++)
+                        await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
+                    Log("Unwanted encounter started, running away...");
+                    await FleeToOverworld(token).ConfigureAwait(false);
+                    // Extra delay to be sure we're fully out of the battle.
+                    await Task.Delay(0_250, token).ConfigureAwait(false);
+                }
+
                 List<PK8> PK8s = await ReadOwPokemonFromBlock(KCoordinates, sav, token).ConfigureAwait(false);
                 if (PK8s.Count > 0)
                 {
                     foreach (PK8 pkm in PK8s)
                     {
                         Log($"{((Species)pkm.Species).ToString()}");
+                        await HandleEncounter(pkm, false, token).ConfigureAwait(false);
                     }
-                    Log("End list");
                 }
                 else
-                    Log("Lista nulla!");
-            //}
+                    Log("Empty list, no overworld data in KCoordinates!");
+
+                //Walk to despawn and respawn pokemons
+                await ResetStick(token).ConfigureAwait(false);
+                Log("Indietro");
+                await SetStick(LEFT, 0, -30_000, 5_000, token).ConfigureAwait(false);
+                Log("Avanti");
+                await ResetStick(token).ConfigureAwait(false);
+                await SetStick(LEFT, 0, 30_000, 7_000, token).ConfigureAwait(false);
+                await ResetStick(token).ConfigureAwait(false);
+
+                //Check again if encountered an unwanted pokemon
+                if (await IsInBattle(token).ConfigureAwait(false))
+                {
+                    // Offsets are flickery so make sure we see it 3 times.
+                    for (int i = 0; i < 3; i++)
+                        await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
+                    Log("Unwanted encounter started, running away...");
+                    await FleeToOverworld(token).ConfigureAwait(false);
+                    // Extra delay to be sure we're fully out of the battle.
+                    await Task.Delay(0_250, token).ConfigureAwait(false);
+                }
+
+                //Save the game to update KCoordinates block
+                await Click(X, 2_000, token).ConfigureAwait(false);
+                await Click(R, 2_000, token).ConfigureAwait(false);
+                await Click(A, 5_000, token).ConfigureAwait(false);
+
+                Log("Game saved, seed rerolled.");
+            }
         }
         private async Task DoSeededEncounter(CancellationToken token, EncounterType type)
         {
