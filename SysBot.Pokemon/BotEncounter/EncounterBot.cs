@@ -48,11 +48,11 @@ namespace SysBot.Pokemon
                 EncounterMode.Dogs_or_Calyrex => DoDogEncounter(token),
                 EncounterMode.Keldeo => DoKeldeoEncounter(token),
                 EncounterMode.Articuno => DoSeededEncounter(token, (EncounterType)7),
-                EncounterMode.Zapdos => PROVAI(token, (EncounterType)8),
+                EncounterMode.Zapdos => DoSeededEncounter(token, (EncounterType)8),
                 EncounterMode.Moltres => DoSeededEncounter(token, (EncounterType)9),
                 EncounterMode.Wailord => DoSeededEncounter(token, (EncounterType)10),
-                EncounterMode.OverworldSpawn => PROVAI(token, (EncounterType)11),
-                _ => PROVAI(token, (EncounterType)11),
+                EncounterMode.OverworldSpawn => PROVAI(token),
+                _ => PROVAI(token),
             };
             await task.ConfigureAwait(false);
 
@@ -141,7 +141,7 @@ namespace SysBot.Pokemon
             Log("Game saved, seed rerolled.");
         }
 
-        private async Task PROVAI(CancellationToken token, EncounterType type)
+        private async Task PROVAI(CancellationToken token)
         {
             SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
             byte[] KCoordinates = await ReadKCoordinates(token).ConfigureAwait(false);
@@ -163,8 +163,15 @@ namespace SysBot.Pokemon
                 {
                     foreach (PK8 pkm in PK8s)
                     {
-                        Log($"{((Species)pkm.Species).ToString()}");
-                        await HandleEncounter(pkm, false, token).ConfigureAwait(false);
+                        Log($"{(Species)pkm.Species}");
+                        if(await HandleEncounter(pkm, false, token).ConfigureAwait(false))
+                        {
+                            //Save the game to update KCoordinates block
+                            await Click(X, 2_000, token).ConfigureAwait(false);
+                            await Click(R, 2_000, token).ConfigureAwait(false);
+                            await Click(A, 5_000, token).ConfigureAwait(false);
+                            return;
+                        }
                     }
                 }
                 else
@@ -229,7 +236,7 @@ namespace SysBot.Pokemon
 
             while (!token.IsCancellationRequested && offset != 0)
             {
-                var pkm = await ReadOwPokemon(dexn, offset, sav, token).ConfigureAwait(false);
+                var pkm = await ReadOwPokemon(dexn, offset, null, sav, token).ConfigureAwait(false);
                 if (pkm != null && await HandleEncounter(pkm, true, token).ConfigureAwait(false))
                 {
                     await Click(X, 3_500, token).ConfigureAwait(false);

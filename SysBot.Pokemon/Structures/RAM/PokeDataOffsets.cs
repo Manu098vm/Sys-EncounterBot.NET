@@ -19,8 +19,8 @@ namespace SysBot.Pokemon
         public const uint IsleOfArmorStationSpaws = 0x4505C9C0;
         public const uint CrownTundraSnowslideSlopeSpawns = 0x4505EE80;
         public const uint IsArticunoInSnowslide = 0x50B0EE68;
-        public const uint IsArticunoInSnowslide2 = 0x72B64CE4;
-        public const uint IsArticunoInSnowslide3 = 0x72B65044;
+        //public const uint IsArticunoInSnowslide2 = 0x72B64CE4;
+        //public const uint IsArticunoInSnowslide3 = 0x72B65044;
 
         // Raid Offsets
         // The dex number of the Pokémon the host currently has chosen. 

@@ -110,22 +110,20 @@ namespace SysBot.Pokemon
             int j = 0;
             int last_index = 8;
             int count = 0;
-            uint offset;
 
             while(!token.IsCancellationRequested && i < KCoordinates.Length)
             {
                 //If someone finds a better way to run through the block and find the spawns, feel free to improve this function.
                 if(j == 12)
                 {
-                    if (KCoordinates[i - 68] != 0 || KCoordinates[i - 68] != 255)
+                    if (KCoordinates[i - 68] != 0 && KCoordinates[i - 68] != 255)
                     {
-                        Species species = (Species)BitConverter.ToUInt16(KCoordinates.Slice(i - 68, 2), 0);
-                        offset = KCoordinatesBlock + (uint)i - 68;
+                        byte[] Bytes = KCoordinates.Slice(i - 68, 56);
                         j = 0;
                         i = last_index + 8;
                         last_index = i;
                         count++;
-                        var pkm = await ReadOwPokemon(species, offset, sav, token).ConfigureAwait(false);
+                        var pkm = await ReadOwPokemon(0, 0, Bytes, sav, token).ConfigureAwait(false);
                         if (pkm != null)
                             PK8s.Add(pkm);
                     }
@@ -158,22 +156,31 @@ namespace SysBot.Pokemon
             return PK8s;
         }
 
-        public async Task<PK8?> ReadOwPokemon(Species target, uint startoffset, SAV8 TrainerData, CancellationToken token)
+        public async Task<PK8?> ReadOwPokemon(Species target, uint startoffset, byte[]? mondata, SAV8 TrainerData, CancellationToken token)
         {
-            byte[] data;
-            Species species;
+            byte[]? data = null;
+            Species species = 0;
             uint offset = startoffset;
             int i = 0;
-            do
-            {
-                data = await Connection.ReadBytesAsync(offset, 56, token).ConfigureAwait(false);
-                species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
-                Log($"Target: {target}, Encountered: {species}");
-                offset += 192;
-                i++;
-            } while (target != 0 && species != 0 && target != species && i < 20);
 
-            if (data[20] == 1)
+            if(target != (Species)0){
+                do
+                {
+                    data = await Connection.ReadBytesAsync(offset, 56, token).ConfigureAwait(false);
+                    species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
+                    Log($"Target: {target}, Encountered: {species}");
+                    offset += 192;
+                    i++;
+                } while (target != 0 && species != 0 && target != species && i < 20);
+            }
+            else if(mondata != null)
+            {
+                data = mondata;
+                species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
+                Log($"Encountered: {species}");
+            }
+
+            if (data != null && data[20] == 1)
             {
                 PK8 pk = new PK8
                 {
@@ -274,7 +281,7 @@ namespace SysBot.Pokemon
             var sav = new SAV8SWSH();
             var info = sav.MyStatus;
             var read = await Connection.ReadBytesAsync(TrainerDataOffset, TrainerDataLength, token).ConfigureAwait(false);
-            read.CopyTo(info.Data);
+            read.CopyTo(info.Data, 0);
             return sav;
         }
 
