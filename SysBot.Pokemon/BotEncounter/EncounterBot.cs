@@ -143,6 +143,7 @@ namespace SysBot.Pokemon
 
         private async Task PROVAI(CancellationToken token)
         {
+            //THIS ROUTINE IS A PROOF OF CONCEPT, WORKING AT THE OLD CEMETERY IN THE CROWN TUNDRA
             SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
             byte[] KCoordinates = await ReadKCoordinates(token).ConfigureAwait(false);
             while (!token.IsCancellationRequested)
@@ -179,9 +180,7 @@ namespace SysBot.Pokemon
 
                 //Walk to despawn and respawn pokemons
                 await ResetStick(token).ConfigureAwait(false);
-                Log("Indietro");
                 await SetStick(LEFT, 0, -30_000, 5_000, token).ConfigureAwait(false);
-                Log("Avanti");
                 await ResetStick(token).ConfigureAwait(false);
                 await SetStick(LEFT, 0, 30_000, 7_000, token).ConfigureAwait(false);
                 await ResetStick(token).ConfigureAwait(false);
