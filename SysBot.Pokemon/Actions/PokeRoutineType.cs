@@ -3,6 +3,7 @@
     public enum PokeRoutineType
     {
         Idle,
+        Letsgo,
         EggFetch,
         GiftBot,
         FossilBot,

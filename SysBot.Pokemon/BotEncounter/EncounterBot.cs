@@ -59,7 +59,6 @@ namespace SysBot.Pokemon
             await ResetStick(token).ConfigureAwait(false);
             await DetachController(token).ConfigureAwait(false);
         }
-
         private async Task DoRestartingEncounter(CancellationToken token, EncounterType type)
         {
             uint encounterOffset = (type == (EncounterType)2 || type == (EncounterType)5) ? RaidPokemonOffset : WildPokemonOffset;
