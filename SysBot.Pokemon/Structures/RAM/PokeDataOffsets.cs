@@ -5,6 +5,7 @@ namespace SysBot.Pokemon
     public static class PokeDataOffsets
     {
         //LET'S GO EEVEE OFFSETS
+        public const uint StationaryBattleData = 0x9A118D68; //heap
         public const uint LastSpawn1 = 0x5E12B148; //heap
         public const uint LastSpawn2 = 0x5E12C120; //heap
         public const uint ShinyValue = 0x7398C4; //main
