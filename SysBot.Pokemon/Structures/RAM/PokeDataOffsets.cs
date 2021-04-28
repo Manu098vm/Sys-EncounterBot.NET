@@ -4,6 +4,21 @@ namespace SysBot.Pokemon
 {
     public static class PokeDataOffsets
     {
+        //LET'S GO EEVEE OFFSETS
+        public const uint LastSpawn1 = 0x5E12B148; //heap
+        public const uint LastSpawn2 = 0x5E12C120; //heap
+        public const uint ShinyValue = 0x7398C4; //main
+        public const uint GeneratingFunction1 = 0x739930; //main
+        public const uint GeneratingFunction2 = 0x739934; //main
+        public const uint GeneratingFunction3 = 0x739938; //main
+        public const uint GeneratingFunction4 = 0x73993C; //main
+        public const uint GeneratingFunction5 = 0x739940; //main
+        public const uint GeneratingFunction6 = 0x739944; //main
+        public const uint GeneratingFunction7 = 0x739948; //main
+        public const uint CatchCombo = 0x5E1CF500; //heap - Thanks Lincoln-LM!
+        public const uint SpeciesCombo = 0x5E1CF4F8; //heap - Thanks Lincoln-LM!
+
+        //SWSH OFFSETS
         public const uint BoxStartOffset = 0x45075880;
         public const uint CurrentBoxOffset = 0x450C680E;
         public const uint TrainerDataOffset = 0x45068F18;
@@ -12,7 +27,7 @@ namespace SysBot.Pokemon
         public const uint ItemTreasureAddress = 0x45068970;
         public const uint demageOutputOffset = 0x007E37F0;
         public const uint LairSpeciesSelector = 0x50B129A0;
-        public const uint LairSpeciesSelector2 = 0x50B12278;
+        public const uint LairSpeciesSelector2 = 0x50B12278; //Thanks Zyro670!
         public const uint LairRewardsScreenBytes = 0xFFAE2FC6; //Thanks Koi!
         public const uint KCoordinatesBlock = 0x4505B3C0;
         public const uint WildAreaMotostokeSpawns = 0x4505C3C0;
