@@ -6,6 +6,8 @@ namespace SysBot.Pokemon
     {
         //LET'S GO EEVEE OFFSETS
         public const uint StationaryBattleData = 0x9A118D68; //heap
+        public const uint GiftData = 0x5337D8B0; //heap
+        public const uint TradeData = 0x163EDC0; //main
         public const uint LastSpawn1 = 0x5E12B148; //heap
         public const uint LastSpawn2 = 0x5E12C120; //heap
         public const uint ShinyValue = 0x7398C4; //main
@@ -16,6 +18,8 @@ namespace SysBot.Pokemon
         public const uint GeneratingFunction5 = 0x739940; //main
         public const uint GeneratingFunction6 = 0x739944; //main
         public const uint GeneratingFunction7 = 0x739948; //main
+        public const uint CatchingSpecies1 = 0x9A264598; //heap - Thanks Lincoln-LM!
+        public const uint CatchingSpecies2 = 0x9A261598; //heap - Thanks Lincoln-LM!
         public const uint CatchCombo = 0x5E1CF500; //heap - Thanks Lincoln-LM!
         public const uint SpeciesCombo = 0x5E1CF4F8; //heap - Thanks Lincoln-LM!
 

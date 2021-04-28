@@ -113,6 +113,7 @@ namespace SysBot.Pokemon
             Log("Ball Plus emulation test!");
             while (!token.IsCancellationRequested)
             {
+                /*
                 //Try controller
                 //A
                 await Click(LSTICK, 1_000, token).ConfigureAwait(false);
@@ -124,7 +125,8 @@ namespace SysBot.Pokemon
 
                 //Test movements
                 await SetStick(LEFT, 30_000, 0_000, 1_000, token).ConfigureAwait(false);
-                Log("Test BP");
+                Log("Test BP"); */
+                Log(BitConverter.ToString(await SwitchConnection.ReadBytesMainAsync(0x163EDC0, 0x8, token).ConfigureAwait(false)));
             }
         }
 
