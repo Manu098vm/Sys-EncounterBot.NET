@@ -35,11 +35,25 @@ namespace SysBot.Pokemon
             var data = await Connection.ReadBytesAsync(offset, size, token).ConfigureAwait(false);
             return new PK8(data);
         }
-
         public async Task<PK8> ReadPokemon(ulong offset, CancellationToken token, int size = BoxFormatSlotSize)
         {
             var data = await SwitchConnection.ReadBytesAbsoluteAsync(offset, size, token).ConfigureAwait(false);
             return new PK8(data);
+        }
+
+        public async Task<PB7> LGReadPokemon(uint offset, CancellationToken token, int size = EncryptedSize, bool heap = true)
+        {
+            byte[] data;
+            if (heap == true)
+                data = await Connection.ReadBytesAsync(offset, size, token).ConfigureAwait(false);
+            else
+                data = await SwitchConnection.ReadBytesMainAsync(offset, size, token).ConfigureAwait(false);
+            return new PB7(data);
+        }
+        public async Task<PB7> LGReadPokemon(ulong offset, CancellationToken token, int size = EncryptedSize)
+        {
+            var data = await SwitchConnection.ReadBytesAbsoluteAsync(offset, size, token).ConfigureAwait(false);
+            return new PB7(data);
         }
 
         public async Task SetBoxPokemon(PK8 pkm, int box, int slot, CancellationToken token, SAV8? sav = null)
@@ -92,6 +106,32 @@ namespace SysBot.Pokemon
             while (msWaited < waitms)
             {
                 var pk = await ReadPokemon(offset, token, size).ConfigureAwait(false);
+                if (pk.Species != 0 && pk.ChecksumValid)
+                    return pk;
+                await Task.Delay(waitInterval, token).ConfigureAwait(false);
+                msWaited += waitInterval;
+            }
+            return null;
+        }
+        public async Task<PB7?> LGReadUntilPresent(uint offset, int waitms, int waitInterval, CancellationToken token, int size = EncryptedSize, bool heap = true)
+        {
+            int msWaited = 0;
+            while(msWaited < waitms)
+            {
+                var pk = await LGReadPokemon(offset, token, size, heap).ConfigureAwait(false);
+                if (pk.Species != 0 && pk.ChecksumValid)
+                    return pk;
+                await Task.Delay(waitInterval, token).ConfigureAwait(false);
+                msWaited += waitInterval;
+            }
+            return null;
+        }
+        public async Task<PB7?> LGReadUntilPresent(ulong offset, int waitms, int waitInterval, CancellationToken token, int size = EncryptedSize)
+        {
+            int msWaited = 0;
+            while (msWaited < waitms)
+            {
+                var pk = await LGReadPokemon(offset, token, size).ConfigureAwait(false);
                 if (pk.Species != 0 && pk.ChecksumValid)
                     return pk;
                 await Task.Delay(waitInterval, token).ConfigureAwait(false);
@@ -334,8 +374,6 @@ namespace SysBot.Pokemon
             Log("Back in the overworld!");
         }
 
-
-
         public async Task<bool> IsEggReady(Enumerations daycare, CancellationToken token)
         {
             var ofs = GetDaycareEggIsReadyOffset(daycare);
@@ -365,6 +403,8 @@ namespace SysBot.Pokemon
             var data = await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false);
             return BitConverter.ToUInt32(data, 0);
         }
+        
+        
 
         public async Task<bool> IsInBattle(CancellationToken token)
         {
@@ -411,6 +451,40 @@ namespace SysBot.Pokemon
                 return data[0] == 1;
             }
             return false;
+        }
+
+        public async Task<bool> LGIsInTitleScreen(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInTitleScreen, 1, token).ConfigureAwait(false))[0] == 1;
+        public async Task<bool> LGIsInBattle(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInOverworld, 1, token).ConfigureAwait(false))[0] != 0;
+        public async Task<bool> LGIsInTrade(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInTrade, 1, token).ConfigureAwait(false))[0] != 0;
+        public async Task<bool> LGIsGiftFound(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsGiftFound, 1, token).ConfigureAwait(false))[0] > 0;
+        public async Task<uint> LGEncounteredWild(CancellationToken token) => BitConverter.ToUInt16((await Connection.ReadBytesAsync(CatchingSpecies, 2, token).ConfigureAwait(false)),0);
+        
+        //Let's Go useful cheats for testing purposes.
+        public async Task LGZaksabeast(CancellationToken token)
+        {
+            //This is basically the Zaksabeast code ported for the newest Let's GO Eevee version. 
+            byte[] inject = new byte[] { 0xE9, 0x03, 0x00, 0x2A, 0x60, 0x12, 0x40, 0xB9, 0xE1, 0x03, 0x09, 0x2A, 0x69, 0x06, 0x00, 0xF9, 0xDC, 0xFD, 0xFF, 0x97, 0x40, 0x00, 0x00, 0x36, 0x00, 0x00, 0x00, 0x14 };
+            await SwitchConnection.WriteBytesMainAsync(inject, GeneratingFunction1, token).ConfigureAwait(false);
+
+        }
+        public async Task LGForceShiny(CancellationToken token)
+        {
+            //100% Shiny Odds
+            byte[] inject = new byte[] { 0x27, 0x00, 0x00, 0x14 };
+            await SwitchConnection.WriteBytesMainAsync(inject, ShinyValue, token).ConfigureAwait(false);
+        }
+        public async Task LGNormalShiny(CancellationToken token)
+        {
+            //Standard shiny odds
+            byte[] inject = new byte[] { 0xE0, 0x02, 0x00, 0x54 };
+            await SwitchConnection.WriteBytesMainAsync(inject, ShinyValue, token).ConfigureAwait(false);
+
+        }
+
+        public async Task LGOpenGame(CancellationToken token)
+        {
+            while (!await LGIsInTitleScreen(token).ConfigureAwait(false))
+                await Click(LSTICK, 0_500, token).ConfigureAwait(false);
         }
 
         public async Task<TextSpeedOption> GetTextSpeed(CancellationToken token)

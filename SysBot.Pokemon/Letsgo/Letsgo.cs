@@ -12,20 +12,20 @@ namespace SysBot.Pokemon
     public class Letsgo : PokeRoutineExecutor
     {
         private readonly PokeTradeHub<PK8> Hub;
-        //private readonly BotCompleteCounts Counts;
-        //private readonly IDumper DumpSetting;
-        //private readonly int[] DesiredIVs;
-        //private readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
+        private readonly BotCompleteCounts Counts;
+        private readonly IDumper DumpSetting;
+        private readonly int[] DesiredIVs;
+        private readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
 
         public Letsgo(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
-            //Counts = Hub.Counts;
-            //DumpSetting = Hub.Config.Folder;
-            //DesiredIVs = StopConditionSettings.InitializeTargetIVs(Hub);
+            Counts = Hub.Counts;
+            DumpSetting = Hub.Config.Folder;
+            DesiredIVs = StopConditionSettings.InitializeTargetIVs(Hub);
         }
 
-        //private int encounterCount;
+        private int encounterCount;
 
         public override async Task MainLoop(CancellationToken token)
         {
@@ -39,7 +39,7 @@ namespace SysBot.Pokemon
             // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
 
-            var task = Alternate(token);
+            var task = Overworld(token);
             await task.ConfigureAwait(false);
 
             await ResetStick(token).ConfigureAwait(false);
@@ -62,16 +62,10 @@ namespace SysBot.Pokemon
             int i = 0;
 
             //Check if a shiny is generated and freeze the game if so.
-            //This is basically the Zaksabeast cheat code ported for the newest Let's GO Eevee version. 
-            byte[] inject = new byte[] { 0xE9, 0x03, 0x00, 0x2A, 0x60, 0x12, 0x40, 0xB9, 0xE1, 0x03, 0x09, 0x2A, 0x69, 0x06, 0x00, 0xF9, 0xDC, 0xFD, 0xFF, 0x97, 0x40, 0x00, 0x00, 0x36, 0x00, 0x00, 0x00, 0x14 };
-            await SwitchConnection.WriteBytesMainAsync(inject, GeneratingFunction1, token).ConfigureAwait(false);
+            await LGZaksabeast(token).ConfigureAwait(false);
 
             while (!token.IsCancellationRequested)
             {
-                //Try controller
-                await Click(A, 0_200, token).ConfigureAwait(false);
-                Log("Test A");
-
                 //Catch combo to increment spawn quality (Thanks to Lincoln-LM for the offset)
                 speciescombo = BitConverter.ToUInt16(await Connection.ReadBytesAsync(SpeciesCombo, 2, token).ConfigureAwait(false), 0);
                 if ((int)speciescombo != (int)Hub.Config.StopConditions.StopOnSpecies && Hub.Config.StopConditions.StopOnSpecies != 0)
@@ -108,28 +102,81 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task Alternate(CancellationToken token)
+        private async Task Trade(CancellationToken token)
         {
-            Log("Ball Plus emulation test!");
             while (!token.IsCancellationRequested)
             {
-                /*
-                //Try controller
-                //A
-                await Click(LSTICK, 1_000, token).ConfigureAwait(false);
-                Log("Test LSTICK");
+                Log("Inside trade function");
+                //Click through all the menus until the trade.
+                /*while (!await LGIsInTrade(token).ConfigureAwait(false))
+                {
+                    await Click(LSTICK, 1_000, token).ConfigureAwait(false); //LSTICK being A with Ball Plus
+                    Log("Click A");
+                }*/
 
-                //B
-                await Click(PALMA, 1_000, token).ConfigureAwait(false);
-                Log("Test BP");
+                Log("A trade has started! Checking details...");
 
-                //Test movements
-                await SetStick(LEFT, 30_000, 0_000, 1_000, token).ConfigureAwait(false);
-                Log("Test BP"); */
-                Log(BitConverter.ToString(await SwitchConnection.ReadBytesMainAsync(0x163EDC0, 0x8, token).ConfigureAwait(false)));
+                var pk = await LGReadUntilPresent(TradeData, 2_000, 0_200, token, EncryptedSize, false).ConfigureAwait(false);
+                if (pk != null)
+                {
+                    if (await HandleEncounter(pk.ConvertToPK8(), false, token).ConfigureAwait(false))
+                        return;
+                }
+
+                Log($"Resetting the trade by restarting the game");
+                await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                for (int i = 0; i < 30; i++)
+                    await Click(LSTICK, 1_000, token).ConfigureAwait(false);
             }
         }
 
+        private async Task Test(CancellationToken token)
+        {
+            
+            while (!token.IsCancellationRequested)
+            {
+                await LGZaksabeast(token).ConfigureAwait(false);
+                await LGForceShiny(token).ConfigureAwait(false);
+            }
+            await LGNormalShiny(token).ConfigureAwait(false);
+            return;
+        }
+
+        private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)
+        {
+            encounterCount++;
+
+            //Star/Square Shiny Recognition
+            var showdowntext = ShowdownParsing.GetShowdownText(pk);
+            if (pk.IsShiny && pk.ShinyXor == 0)
+                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
+            else if (pk.IsShiny)
+                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
+
+            Log($"Encounter: {encounterCount}{Environment.NewLine}{Environment.NewLine}{showdowntext}{Environment.NewLine}{Environment.NewLine}");
+            if (legends)
+                Counts.AddCompletedLegends();
+            else
+                Counts.AddCompletedEncounters();
+
+            if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
+                DumpPokemon(DumpSetting.DumpFolder, legends ? "legends" : "encounters", pk);
+
+            if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
+            {
+                if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
+                    Log($"<@{Hub.Config.Discord.UserTag}> result found! Stopping routine execution; restart the bot(s) to search again.");
+                else
+                    Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
+                if (Hub.Config.StopConditions.CaptureVideoClip)
+                {
+                    await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
+                    await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
+                }
+                return true;
+            }
+            return false;
+        }
         private async Task ResetStick(CancellationToken token)
         {
             // If aborting the sequence, we might have the stick set at some position. Clear it just in case.
