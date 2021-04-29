@@ -458,7 +458,25 @@ namespace SysBot.Pokemon
         public async Task<bool> LGIsInTrade(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInTrade, 1, token).ConfigureAwait(false))[0] != 0;
         public async Task<bool> LGIsGiftFound(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsGiftFound, 1, token).ConfigureAwait(false))[0] > 0;
         public async Task<uint> LGEncounteredWild(CancellationToken token) => BitConverter.ToUInt16((await Connection.ReadBytesAsync(CatchingSpecies, 2, token).ConfigureAwait(false)),0);
-        
+
+        //returns [milliseconds for the value to change, value1, value2]
+        public async Task<long> LGCountMilliseconds(CancellationToken token)
+        {
+            byte data = (await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false))[0];
+            byte comparison = data;
+            Stopwatch stopwatch = new Stopwatch();
+            do
+            {
+                data = (await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false))[0];
+            } while (data != comparison);
+            stopwatch.Start();
+            do
+            {
+                data = (await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false))[0];
+            } while (data == comparison);
+            return stopwatch.ElapsedMilliseconds;
+        }
+
         //Let's Go useful cheats for testing purposes.
         public async Task LGZaksabeast(CancellationToken token)
         {

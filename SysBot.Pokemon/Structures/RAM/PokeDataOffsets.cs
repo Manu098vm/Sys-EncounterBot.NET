@@ -6,6 +6,7 @@ namespace SysBot.Pokemon
     {
         //LET'S GO EEVEE
         public const int EncryptedSize = 0x103;
+        public const uint FreezedValue = 0x16189D3;
         public const uint IsInOverworld = 0x163F694; //main
         public const uint IsInTitleScreen = 0x160D4E0; //main
         public const uint IsInTrade = 0x1614F28; //main
