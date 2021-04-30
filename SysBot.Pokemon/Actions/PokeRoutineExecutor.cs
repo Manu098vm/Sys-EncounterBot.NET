@@ -462,6 +462,7 @@ namespace SysBot.Pokemon
         //returns [milliseconds for the value to change, value1, value2]
         public async Task<long> LGCountMilliseconds(CancellationToken token)
         {
+            Log("Counting milliseconds. If the bot is stuck in this message, please stop it and report the issue to the author.");
             byte data = (await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false))[0];
             byte comparison = data;
             Stopwatch stopwatch = new Stopwatch();

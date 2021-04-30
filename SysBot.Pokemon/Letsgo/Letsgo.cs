@@ -162,16 +162,12 @@ namespace SysBot.Pokemon
                     {
                         Log($"Current catch combo being on {speciescombo} {SpeciesName.GetSpeciesName((int)speciescombo, 4)}, changing to {Hub.Config.StopConditions.StopOnSpecies}.");
                         await Connection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.StopConditions.StopOnSpecies), SpeciesCombo, token).ConfigureAwait(false);
-                        speciescombo = BitConverter.ToUInt16(await Connection.ReadBytesAsync(SpeciesCombo, 2, token).ConfigureAwait(false), 0);
-                        Log($"Catch combo changed on {speciescombo} {SpeciesName.GetSpeciesName((int)speciescombo, 4)}.");
                     }
                     catchcombo = BitConverter.ToUInt16(await Connection.ReadBytesAsync(CatchCombo, 2, token).ConfigureAwait(false), 0);
                     if (catchcombo < 41)
                     {
                         Log($"Current catch combo being {catchcombo}, incrementing to 41.");
                         await Connection.WriteBytesAsync(BitConverter.GetBytes(41), CatchCombo, token).ConfigureAwait(false);
-                        catchcombo = BitConverter.ToUInt16(await Connection.ReadBytesAsync(catchcombo, 2, token).ConfigureAwait(false), 0);
-                        Log($"Catch combo restored to {catchcombo}.");
                     }
                     do
                     {
@@ -209,7 +205,10 @@ namespace SysBot.Pokemon
                         freezingvalues[0] = (await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token))[0];
                         if (stopwatch.ElapsedMilliseconds > 2_500)
                         {
-                            Log("Game is freezed. A Shiny has been detected.");
+                            if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
+                                Log($"<@{Hub.Config.Discord.UserTag}> game is freezed, a Shiny has been detected.");
+                            else
+                                Log("Game is freezed. A Shiny has been detected.");
                             freezed = true;
                         }
                     } while (freezingvalues[0] != freezingvalues[1] || freezed == true);
@@ -220,12 +219,18 @@ namespace SysBot.Pokemon
                     if (freezed == true && Hub.Config.StopConditions.StopOnSpecies != 0 && (int)newspawn != (int)Hub.Config.StopConditions.StopOnSpecies)
                     {
                         freezed = false;
-                        Log("SHINY FOUND but not the target.");
+                        if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
+                            Log($"<@{Hub.Config.Discord.UserTag}> {SpeciesName.GetSpeciesName((int)newspawn, 4)} SHINY FOUND but not the target.");
+                        else
+                            Log($"{SpeciesName.GetSpeciesName((int)newspawn, 4)} SHINY FOUND but not the target.");
                         await LGZaksabeast(token).ConfigureAwait(false);
                     }
                     else if (freezed == true)
                     {
-                        Log($"SHINY {SpeciesName.GetSpeciesName((int)newspawn, 4)} FOUND!!");
+                        if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
+                            Log($"<@{Hub.Config.Discord.UserTag}> SHINY {SpeciesName.GetSpeciesName((int)newspawn, 4)} FOUND!!");
+                        else
+                            Log($"SHINY {SpeciesName.GetSpeciesName((int)newspawn, 4)} FOUND!!");
                         await Click(X, 1_000, token).ConfigureAwait(false);
                         return;
                     }
