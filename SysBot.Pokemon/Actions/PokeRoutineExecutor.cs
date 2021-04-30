@@ -301,6 +301,18 @@ namespace SysBot.Pokemon
 
             return sav;
         }
+        public async Task<SAV7b> LGIdentifyTrainer(CancellationToken token)
+        {
+            Log("Grabbing trainer data of host console...");
+            SAV7b sav = await LGGetFakeTrainerSAV(token).ConfigureAwait(false);
+            GameLang = (LanguageID)sav.Language;
+            Version = sav.Version;
+            InGameName = sav.OT;
+            Connection.Label = $"{InGameName}-{sav.DisplayTID:000000}";
+            Log($"{Connection.Name} identified as {Connection.Label}, using {GameLang}.");
+
+            return sav;
+        }
 
         public static void DumpPokemon(string folder, string subfolder, PKM pk)
         {
@@ -323,6 +335,16 @@ namespace SysBot.Pokemon
             var read = await Connection.ReadBytesAsync(TrainerDataOffset, TrainerDataLength, token).ConfigureAwait(false);
             read.CopyTo(info.Data, 0);
             return sav;
+        }
+
+        public async Task<SAV7b> LGGetFakeTrainerSAV(CancellationToken token)
+        {
+            SAV7b lgpe = new SAV7b();
+            byte[] dest = lgpe.Blocks.Status.Data;
+            int startofs = lgpe.Blocks.Status.Offset;
+            byte[]? data = await Connection.ReadBytesAsync(TrainerData, TrainerSize, token).ConfigureAwait(false);
+            data.CopyTo(dest, startofs);
+            return lgpe;
         }
 
 
@@ -458,24 +480,43 @@ namespace SysBot.Pokemon
         public async Task<bool> LGIsInTrade(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInTrade, 1, token).ConfigureAwait(false))[0] != 0;
         public async Task<bool> LGIsGiftFound(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsGiftFound, 1, token).ConfigureAwait(false))[0] > 0;
         public async Task<uint> LGEncounteredWild(CancellationToken token) => BitConverter.ToUInt16((await Connection.ReadBytesAsync(CatchingSpecies, 2, token).ConfigureAwait(false)),0);
+        public async Task<GameVersion> LGWhichGameVersion(CancellationToken token)
+        {
+            byte[] data = await Connection.ReadBytesAsync(LGGameVersion, 1, token).ConfigureAwait(false);
+            if (data[0] == 0x01)
+                return GameVersion.GP;
+            else if (data[0] == 0x02)
+                return GameVersion.GE;
+            else
+                return GameVersion.Invalid;
+        }
 
         //returns [milliseconds for the value to change, value1, value2]
         public async Task<long> LGCountMilliseconds(CancellationToken token)
         {
-            Log("Counting milliseconds. If the bot is stuck in this message, please stop it and report the issue to the author.");
-            byte data = (await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false))[0];
-            byte comparison = data;
+            bool stuck = false;
             Stopwatch stopwatch = new Stopwatch();
-            do
-            {
-                data = (await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false))[0];
-            } while (data != comparison);
             stopwatch.Start();
+            byte[] data = await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false);
+            byte[] comparison = data;
             do
             {
-                data = (await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false))[0];
-            } while (data == comparison);
-            return stopwatch.ElapsedMilliseconds;
+                data = await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false);
+                if (stopwatch.ElapsedMilliseconds > 2500)
+                    stuck = true;
+            } while (data.SequenceEqual(comparison) && stuck == false);
+            if (!stuck)
+            {
+                stopwatch.Restart();
+                comparison = data;
+                do
+                {
+                    data = await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false);
+                } while (data == comparison);
+                return stopwatch.ElapsedMilliseconds;
+            }             
+            else
+                return 0;
         }
 
         //Let's Go useful cheats for testing purposes.
@@ -485,6 +526,11 @@ namespace SysBot.Pokemon
             byte[] inject = new byte[] { 0xE9, 0x03, 0x00, 0x2A, 0x60, 0x12, 0x40, 0xB9, 0xE1, 0x03, 0x09, 0x2A, 0x69, 0x06, 0x00, 0xF9, 0xDC, 0xFD, 0xFF, 0x97, 0x40, 0x00, 0x00, 0x36, 0x00, 0x00, 0x00, 0x14 };
             await SwitchConnection.WriteBytesMainAsync(inject, GeneratingFunction1, token).ConfigureAwait(false);
 
+        }
+        public async Task LGUnfreeze(CancellationToken token)
+        {
+            byte[] data = new byte[] { 0x0C, 0x00, 0x00, 0x14 };
+            await SwitchConnection.WriteBytesMainAsync(data, GeneratingFunction7, token).ConfigureAwait(false);
         }
         public async Task LGForceShiny(CancellationToken token)
         {
@@ -502,8 +548,18 @@ namespace SysBot.Pokemon
 
         public async Task LGOpenGame(CancellationToken token)
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
             while (!await LGIsInTitleScreen(token).ConfigureAwait(false))
-                await Click(LSTICK, 0_500, token).ConfigureAwait(false);
+            {
+                Log("Inside");
+                if(stopwatch.ElapsedMilliseconds > 15000)
+                {
+                    await DetachController(token).ConfigureAwait(false);
+                    stopwatch.Restart();
+                }
+                await Click(A, 0_500, token).ConfigureAwait(false);
+            }
         }
 
         public async Task<TextSpeedOption> GetTextSpeed(CancellationToken token)

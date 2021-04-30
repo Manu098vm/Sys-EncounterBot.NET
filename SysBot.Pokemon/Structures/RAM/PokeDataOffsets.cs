@@ -6,7 +6,7 @@ namespace SysBot.Pokemon
     {
         //LET'S GO EEVEE
         public const int EncryptedSize = 0x103;
-        public const uint FreezedValue = 0x16189D3;
+        public const uint FreezedValue = 0x1610EE0; //1 byte
         public const uint IsInOverworld = 0x163F694; //main
         public const uint IsInTitleScreen = 0x160D4E0; //main
         public const uint IsInTrade = 0x1614F28; //main
@@ -24,6 +24,9 @@ namespace SysBot.Pokemon
         public const uint GeneratingFunction5 = 0x739940; //main
         public const uint GeneratingFunction6 = 0x739944; //main
         public const uint GeneratingFunction7 = 0x739948; //main
+        public const uint TrainerData = 0x53582030; //heap
+        public const int TrainerSize = 0x168;
+        public const uint LGGameVersion = 0x53321DA8; //heap 0x1 = pika, 0x2 = eevee - Thanks Lincoln-LM!
         public const uint CatchingSpecies = 0x9A264598; //heap - Thanks Lincoln-LM!
         public const uint CatchCombo = 0x5E1CF500; //heap - Thanks Lincoln-LM!
         public const uint SpeciesCombo = 0x5E1CF4F8; //heap - Thanks Lincoln-LM!
