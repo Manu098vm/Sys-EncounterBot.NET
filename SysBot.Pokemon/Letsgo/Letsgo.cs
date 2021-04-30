@@ -43,7 +43,7 @@ namespace SysBot.Pokemon
             // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
 
-            var task = Test(token);
+            var task = Overworld(token);
             await task.ConfigureAwait(false);
 
             await ResetStick(token).ConfigureAwait(false);
@@ -121,7 +121,8 @@ namespace SysBot.Pokemon
                     //Unfreeze to restart the routine, or log the Shiny species.
                     await LGUnfreeze(token).ConfigureAwait(false);
                     newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn1, 2, token).ConfigureAwait(false), 0);
-                    if (Hub.Config.StopConditions.StopOnSpecies != 0 && (int)newspawn != (int)Hub.Config.StopConditions.StopOnSpecies)
+                    //if (Hub.Config.StopConditions.StopOnSpecies != 0 && (int)newspawn != (int)Hub.Config.StopConditions.StopOnSpecies)
+                    if((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146 || (Hub.Config.StopConditions.StopOnSpecies != 0 && (int)newspawn != (int)Hub.Config.StopConditions.StopOnSpecies))
                     {
                         freeze = false;
                         if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
@@ -135,7 +136,7 @@ namespace SysBot.Pokemon
                             Log($"<@{Hub.Config.Discord.UserTag}> SHINY {SpeciesName.GetSpeciesName((int)newspawn, 4)} FOUND!!");
                         else
                             Log($"SHINY {SpeciesName.GetSpeciesName((int)newspawn, 4)} FOUND!!");
-                        await Click(HOME, 1_000, token).ConfigureAwait(false);
+                        await Click(X, 1_000, token).ConfigureAwait(false);
                         return;
                     }
                 }
