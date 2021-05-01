@@ -4,7 +4,7 @@ namespace SysBot.Pokemon
 {
     public static class PokeDataOffsets
     {
-        //LET'S GO EEVEE
+        //LET'S GO
         public const int EncryptedSize = 0x103;
         public const uint FreezedValue = 0x1610EE0; //1 byte
         public const uint IsInOverworld = 0x163F694; //main
@@ -16,14 +16,22 @@ namespace SysBot.Pokemon
         public const uint TradeData = 0x163EDC0; //main
         public const uint LastSpawn1 = 0x5E12B148; //heap
         public const uint LastSpawn2 = 0x5E12C120; //heap
-        public const uint ShinyValue = 0x7398C4; //main
-        public const uint GeneratingFunction1 = 0x739930; //main
-        public const uint GeneratingFunction2 = 0x739934; //main
-        public const uint GeneratingFunction3 = 0x739938; //main
-        public const uint GeneratingFunction4 = 0x73993C; //main
-        public const uint GeneratingFunction5 = 0x739940; //main
-        public const uint GeneratingFunction6 = 0x739944; //main
-        public const uint GeneratingFunction7 = 0x739948; //main
+        public const uint EShinyValue = 0x7398C4; //main
+        public const uint PShinyValue = 0xA2224310; //main - Thanks Zyro670!
+        public const uint PGeneratingFunction1 = 0x739930; //main - Thanks Zyro670!
+        public const uint PGeneratingFunction2 = 0x739934; //main - Thanks Zyro670!
+        public const uint PGeneratingFunction3 = 0x739938; //main - Thanks Zyro670!
+        public const uint PGeneratingFunction4 = 0x73993C; //main - Thanks Zyro670!
+        public const uint PGeneratingFunction5 = 0x739940; //main - Thanks Zyro670!
+        public const uint PGeneratingFunction6 = 0x739944; //main - Thanks Zyro670!
+        public const uint PGeneratingFunction7 = 0x739948; //main - Thanks Zyro670!
+        public const uint EGeneratingFunction1 = 0x739930; //main
+        public const uint EGeneratingFunction2 = 0x739934; //main
+        public const uint EGeneratingFunction3 = 0x739938; //main
+        public const uint EGeneratingFunction4 = 0x73993C; //main
+        public const uint EGeneratingFunction5 = 0x739940; //main
+        public const uint EGeneratingFunction6 = 0x739944; //main
+        public const uint EGeneratingFunction7 = 0x739948; //main
         public const uint TrainerData = 0x53582030; //heap
         public const int TrainerSize = 0x168;
         public const uint LGGameVersion = 0x53321DA8; //heap 0x1 = pika, 0x2 = eevee - Thanks Lincoln-LM!

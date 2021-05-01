@@ -520,29 +520,33 @@ namespace SysBot.Pokemon
         }
 
         //Let's Go useful cheats for testing purposes.
-        public async Task LGZaksabeast(CancellationToken token)
+        public async Task LGZaksabeast(CancellationToken token, GameVersion version)
         {
+            uint offset = version == GameVersion.GP ? PGeneratingFunction1 : EGeneratingFunction1;
             //This is basically the Zaksabeast code ported for the newest Let's GO Eevee version. 
             byte[] inject = new byte[] { 0xE9, 0x03, 0x00, 0x2A, 0x60, 0x12, 0x40, 0xB9, 0xE1, 0x03, 0x09, 0x2A, 0x69, 0x06, 0x00, 0xF9, 0xDC, 0xFD, 0xFF, 0x97, 0x40, 0x00, 0x00, 0x36, 0x00, 0x00, 0x00, 0x14 };
-            await SwitchConnection.WriteBytesMainAsync(inject, GeneratingFunction1, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesMainAsync(inject, offset, token).ConfigureAwait(false);
 
         }
-        public async Task LGUnfreeze(CancellationToken token)
+        public async Task LGUnfreeze(CancellationToken token, GameVersion version)
         {
+            uint offset = version == GameVersion.GP ? PGeneratingFunction7 : EGeneratingFunction7;
             byte[] data = new byte[] { 0x0C, 0x00, 0x00, 0x14 };
-            await SwitchConnection.WriteBytesMainAsync(data, GeneratingFunction7, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesMainAsync(data, offset, token).ConfigureAwait(false);
         }
-        public async Task LGForceShiny(CancellationToken token)
+        public async Task LGForceShiny(CancellationToken token, GameVersion version)
         {
+            uint offset = version == GameVersion.GP ? PShinyValue : EShinyValue;
             //100% Shiny Odds
             byte[] inject = new byte[] { 0x27, 0x00, 0x00, 0x14 };
-            await SwitchConnection.WriteBytesMainAsync(inject, ShinyValue, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesMainAsync(inject, offset, token).ConfigureAwait(false);
         }
-        public async Task LGNormalShiny(CancellationToken token)
+        public async Task LGNormalShiny(CancellationToken token, GameVersion version)
         {
+            uint offset = version == GameVersion.GP ? PShinyValue : EShinyValue;
             //Standard shiny odds
             byte[] inject = new byte[] { 0xE0, 0x02, 0x00, 0x54 };
-            await SwitchConnection.WriteBytesMainAsync(inject, ShinyValue, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesMainAsync(inject, offset, token).ConfigureAwait(false);
 
         }
 

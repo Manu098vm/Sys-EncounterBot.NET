@@ -23,7 +23,5 @@
         DRIGHT,
         HOME,
         CAPTURE,
-        PALMA,
-        BP,
     }
 }

@@ -43,15 +43,25 @@ namespace SysBot.Pokemon
             // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
 
-            var task = Overworld(token);
+            var task = Hub.Config.LetsGoSettings.EncounteringType switch
+            {
+                LetsGoMode.OverworldSpawn => Overworld(token),
+                LetsGoMode.WildBirds => Overworld(token, true),
+                LetsGoMode.Trades => Trade(token),
+                LetsGoMode.Stationary => Test(token),
+                LetsGoMode.Gifts => Test(token),
+                LetsGoMode.TestRoutine => Test(token),
+                _ => Test(token),
+            };
             await task.ConfigureAwait(false);
 
             await ResetStick(token).ConfigureAwait(false);
             await DetachController(token).ConfigureAwait(false);
         }
-        private async Task Overworld(CancellationToken token)
+        private async Task Overworld(CancellationToken token, bool birds = false)
         {
             Log("Let's GO Overworld Bot Proof of Concept!");
+            GameVersion version = await LGWhichGameVersion(token).ConfigureAwait(false);
             uint prev = 0;
             uint newspawn;
             uint catchcombo;
@@ -59,40 +69,53 @@ namespace SysBot.Pokemon
             int i = 0;
             bool freeze = false;
 
-            if (await LGWhichGameVersion(token).ConfigureAwait(false) == GameVersion.GE)
+            //Catch combo to increment spawn quality and shiny rate (Thanks to Lincoln-LM for the offsets)
+            if (Hub.Config.LetsGoSettings.ChainSpecies != (Species)0)
             {
-                while (!token.IsCancellationRequested)
+                speciescombo = BitConverter.ToUInt16(await Connection.ReadBytesAsync(SpeciesCombo, 2, token).ConfigureAwait(false), 0);
+                if ((int)speciescombo != (int)Hub.Config.StopConditions.StopOnSpecies && Hub.Config.StopConditions.StopOnSpecies != 0)
                 {
-                    await LGZaksabeast(token).ConfigureAwait(false);
-                    while (freeze == false)
+                    Log($"Current catch combo being on {(speciescombo == 0 ? speciescombo : SpeciesName.GetSpeciesName((int)speciescombo, 4))}, changing to {Hub.Config.StopConditions.StopOnSpecies}.");
+                    await Connection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.StopConditions.StopOnSpecies), SpeciesCombo, token).ConfigureAwait(false);
+                }
+            }
+            if (Hub.Config.LetsGoSettings.ChainCount > 0)
+            {
+                catchcombo = BitConverter.ToUInt16(await Connection.ReadBytesAsync(CatchCombo, 2, token).ConfigureAwait(false), 0);
+                if (catchcombo < Hub.Config.LetsGoSettings.ChainCount)
+                {
+                    Log($"Current catch combo being {catchcombo}, incrementing to {Hub.Config.LetsGoSettings.ChainCount}.");
+                    await Connection.WriteBytesAsync(BitConverter.GetBytes(Hub.Config.LetsGoSettings.ChainCount), CatchCombo, token).ConfigureAwait(false);
+                }
+            }
+
+            while (!token.IsCancellationRequested)
+            { 
+                //If searching for a shiny, trigger Zaksabeast freeze code, and check whenever the game get freezed.
+                if (Hub.Config.StopConditions.ShinyTarget != TargetShinyType.NonShiny && Hub.Config.StopConditions.ShinyTarget != TargetShinyType.DisableOption)
+                {
+                    //Only checks for shinies
+                    await LGZaksabeast(token, version).ConfigureAwait(false);
+                    while (freeze == false && !token.IsCancellationRequested)
                     {
                         if (await LGCountMilliseconds(token).ConfigureAwait(false) > 0)
                         {
-                            //Catch combo to increment spawn quality and shiny rate (Thanks to Lincoln-LM for the offsets)
-                            speciescombo = BitConverter.ToUInt16(await Connection.ReadBytesAsync(SpeciesCombo, 2, token).ConfigureAwait(false), 0);
-                            if ((int)speciescombo != (int)Hub.Config.StopConditions.StopOnSpecies && Hub.Config.StopConditions.StopOnSpecies != 0)
-                            {
-                                Log($"Current catch combo being on {(speciescombo == 0 ? speciescombo : SpeciesName.GetSpeciesName((int)speciescombo, 4))}, changing to {Hub.Config.StopConditions.StopOnSpecies}.");
-                                await Connection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.StopConditions.StopOnSpecies), SpeciesCombo, token).ConfigureAwait(false);
-                            }
-                            catchcombo = BitConverter.ToUInt16(await Connection.ReadBytesAsync(CatchCombo, 2, token).ConfigureAwait(false), 0);
-                            if (catchcombo < 41)
-                            {
-                                Log($"Current catch combo being {catchcombo}, incrementing to 41.");
-                                await Connection.WriteBytesAsync(BitConverter.GetBytes(41), CatchCombo, token).ConfigureAwait(false);
-                            }
-
                             //Check is inside an unwanted encounter
                             if (await LGIsInBattle(token).ConfigureAwait(false))
                             {
                                 //TODO HANDLE ENCOUNTER
                                 Log("Unwanted encounter detected!");
-                                while (await LGIsInBattle(token).ConfigureAwait(false))
+                                int j = 0;
+                                while (await LGIsInBattle(token).ConfigureAwait(false) && !token.IsCancellationRequested)
                                 {
+                                    j++;
                                     await Task.Delay(7_000, token).ConfigureAwait(false);
                                     await Click(B, 1_000, token).ConfigureAwait(false);
                                     await Click(A, 1_000, token).ConfigureAwait(false);
                                     await Task.Delay(5_000, token).ConfigureAwait(false);
+                                    if (j > 5)
+                                        for (j = 0; j <= 3; j++)
+                                            await Click(B, 1_000, token).ConfigureAwait(false);
                                 }
                                 Log("Exited wild encounter");
                             }
@@ -119,10 +142,10 @@ namespace SysBot.Pokemon
                         Log("Game is freezed. A Shiny has been detected.");
 
                     //Unfreeze to restart the routine, or log the Shiny species.
-                    await LGUnfreeze(token).ConfigureAwait(false);
+                    await LGUnfreeze(token, version).ConfigureAwait(false);
                     newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn1, 2, token).ConfigureAwait(false), 0);
                     //if (Hub.Config.StopConditions.StopOnSpecies != 0 && (int)newspawn != (int)Hub.Config.StopConditions.StopOnSpecies)
-                    if((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146 || (Hub.Config.StopConditions.StopOnSpecies != 0 && (int)newspawn != (int)Hub.Config.StopConditions.StopOnSpecies))
+                    if ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146 || (Hub.Config.StopConditions.StopOnSpecies != 0 && (int)newspawn != (int)Hub.Config.StopConditions.StopOnSpecies))
                     {
                         freeze = false;
                         if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
@@ -140,10 +163,47 @@ namespace SysBot.Pokemon
                         return;
                     }
                 }
+                else
+                {
+                    //Doesn't care for shinies
+                    //Check is inside an unwanted encounter
+                    if (await LGIsInBattle(token).ConfigureAwait(false))
+                    {
+                        //TODO HANDLE ENCOUNTER
+                        Log("Unwanted encounter detected!");
+                        int j = 0;
+                        while (await LGIsInBattle(token).ConfigureAwait(false) && !token.IsCancellationRequested)
+                        {
+                            j++;
+                            await Task.Delay(7_000, token).ConfigureAwait(false);
+                            await Click(B, 1_000, token).ConfigureAwait(false);
+                            await Click(A, 1_000, token).ConfigureAwait(false);
+                            await Task.Delay(5_000, token).ConfigureAwait(false);
+                            if (i > 5)
+                                for (j = 0; j <= 3; j++)
+                                    await Click(B, 1_000, token).ConfigureAwait(false);
+                        }
+                        Log("Exited wild encounter");
+                    }
+
+                    //Check new spawns
+                    newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn1, 2, token).ConfigureAwait(false), 0);
+                    if (newspawn != prev)
+                    {
+                        if (newspawn != 0)
+                        {
+                            i++;
+                            Log($"New spawn ({i}): {newspawn} {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
+                            if (newspawn == (int)Hub.Config.StopConditions.StopOnSpecies)
+                            {
+                                await Click(X, 1_000, token).ConfigureAwait(false);
+                                return;
+                            }
+                        }
+                        prev = newspawn;
+                    }
+                }
             }
-            else
-                Log("Only Let's Go EEVEE is currently supported.");
-            return;
         }
 
         private async Task Trade(CancellationToken token)
@@ -152,11 +212,8 @@ namespace SysBot.Pokemon
             {
                 Log("Inside trade function");
                 //Click through all the menus until the trade.
-                /*while (!await LGIsInTrade(token).ConfigureAwait(false))
-                {
-                    await Click(LSTICK, 1_000, token).ConfigureAwait(false); //LSTICK being A with Ball Plus
-                    Log("Click A");
-                }*/
+                while (!await LGIsInTrade(token).ConfigureAwait(false))
+                    await Click(A, 0_500, token).ConfigureAwait(false); //LSTICK being A with Ball Plus
 
                 Log("A trade has started! Checking details...");
 
@@ -169,31 +226,78 @@ namespace SysBot.Pokemon
 
                 Log($"Resetting the trade by restarting the game");
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                for (int i = 0; i < 30; i++)
-                    await Click(LSTICK, 1_000, token).ConfigureAwait(false);
+                await LGOpenGame(token).ConfigureAwait(false);
             }
         }
 
         private async Task Test(CancellationToken token)
         {
-            Log("Test routine");
+            GameVersion version = await LGWhichGameVersion(token).ConfigureAwait(false);
+            long waitms;
+            int i;
+
+            if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.TestOffsets))
+            {
+                Log("Testing Game Version...");
+                if (version == GameVersion.GP)
+                    Log("OK: Let's Go Pikachu.");
+                else if (version == GameVersion.GE)
+                    Log("OK: Let's Go Eevee.");
+                else
+                    Log("FAILED: Incompatible game or update.");
+
+                Log("Testing Shiny Value...");
+                var data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PShinyValue : EShinyValue, 4, token).ConfigureAwait(false);
+                byte[] compare = new byte[] { 0xE0, 0x02, 0x00, 0x54 };
+                if (data.SequenceEqual(compare))
+                    Log($"OK: {BitConverter.ToString(data)}");
+                else
+                    Log($"FAILED: {BitConverter.ToString(data)} should be {BitConverter.ToString(compare)}.");
+
+                Log("Testing generating function...");
+                data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PGeneratingFunction1 : EGeneratingFunction1, 4, token).ConfigureAwait(false);
+                compare = new byte[] { 0xE8, 0x03, 0x00, 0x2A };
+                if (data.SequenceEqual(compare))
+                    Log($"OK: {BitConverter.ToString(data)}");
+                else
+                    Log($"FAILED: {BitConverter.ToString(data)} should be {BitConverter.ToString(compare)}.");
+
+            }
+
+            i = 0;
             while (!token.IsCancellationRequested)
             {
-                if (await LGIsInBattle(token).ConfigureAwait(false))
+                if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.TestOffsets))
                 {
-                    //TODO HANDLE ENCOUNTER
-                    Log("Unwanted encounter detected!");
-                    while (await LGIsInBattle(token).ConfigureAwait(false))
-                    {
-                        await Task.Delay(7_000, token).ConfigureAwait(false);
-                        await Click(B, 1_000, token).ConfigureAwait(false);
-                        await Click(A, 1_000, token).ConfigureAwait(false);
-                        await Task.Delay(5_000, token).ConfigureAwait(false);
-                    }
-                    Log("Exited encounter");
+                    i++;
+                    Log($"Checking freezing value, attempt n.{i}...");
+                    waitms = await LGCountMilliseconds(token).ConfigureAwait(false);
+                    if (waitms > 0)
+                        Log($"OK: 0x1610EE0 changed after {waitms}ms");
+                    else
+                        Log("FAILED: 0x1610EE0 not changed.");
+                    if (i >= Hub.Config.LetsGoSettings.FreezingTestCount)
+                        return;
                 }
+
+                if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.EscapeFromBattle))
+                {
+                    if (await LGIsInBattle(token).ConfigureAwait(false))
+                    {
+                        //TODO HANDLE ENCOUNTER
+                        Log("Unwanted encounter detected!");
+                        while (await LGIsInBattle(token).ConfigureAwait(false))
+                        {
+                            await Task.Delay(7_000, token).ConfigureAwait(false);
+                            await Click(B, 1_000, token).ConfigureAwait(false);
+                            await Click(A, 1_000, token).ConfigureAwait(false);
+                            await Task.Delay(5_000, token).ConfigureAwait(false);
+                        }
+                        Log("Exited encounter");
+                    }
+                }
+                //await LGOpenGame(token).ConfigureAwait(false);
             }
-            //await LGOpenGame(token).ConfigureAwait(false);
         }
 
         private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)

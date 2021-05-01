@@ -31,6 +31,12 @@
         SquareOnly,     // Match square shiny only
     }
 
+    public enum LetsGoTest
+    {
+        TestOffsets,
+        EscapeFromBattle
+    }
+
     public enum MarkIndex
     {
         None = 0,   //Doesn't care
