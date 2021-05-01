@@ -8,6 +8,7 @@ namespace SysBot.Pokemon
         public const int EncryptedSize = 0x104;
         public const uint FreezedValue = 0x1610EE0; //1 byte
         public const uint IsInOverworld = 0x163F694; //main
+        public const uint IsInBattleScenario = 0x1EE067C; //main
         public const uint IsInTitleScreen = 0x160D4E0; //main
         public const uint IsInTrade = 0x1614F28; //main
         public const uint IsGiftFound = 0x1615928; //main
@@ -38,6 +39,10 @@ namespace SysBot.Pokemon
         public const uint CatchingSpecies = 0x9A264598; //heap - Thanks Lincoln-LM!
         public const uint CatchCombo = 0x5E1CF500; //heap - Thanks Lincoln-LM!
         public const uint SpeciesCombo = 0x5E1CF4F8; //heap - Thanks Lincoln-LM!
+
+        //Lets Go Pointers:
+        public const string SpeciesComboPointer = "[[[[main+160E410]+50]+770]+40]+298";
+        public const string CatchComboPointer = "[[[[main+160E410]+50]+840]+20]+1D0";
 
         //SWSH OFFSETS
         public const uint BoxStartOffset = 0x45075880;

@@ -34,6 +34,7 @@
     public enum LetsGoTest
     {
         TestOffsets,
+        CatchComboTest,
         EscapeFromBattle,
         CheckTrades,
         CheckGifts,
