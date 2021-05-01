@@ -236,6 +236,7 @@ namespace SysBot.Pokemon
             long waitms;
             int i;
 
+            //Test static offsets
             if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.TestOffsets))
             {
                 Log("Testing Game Version...");
@@ -249,7 +250,8 @@ namespace SysBot.Pokemon
                 Log("Testing Shiny Value...");
                 var data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PShinyValue : EShinyValue, 4, token).ConfigureAwait(false);
                 byte[] compare = new byte[] { 0xE0, 0x02, 0x00, 0x54 };
-                if (data.SequenceEqual(compare))
+                byte[] zak = new byte[] { 0xE9, 0x03, 0x00, 0x2A };
+                if (data.SequenceEqual(compare) || data.SequenceEqual(zak))
                     Log($"OK: {BitConverter.ToString(data)}");
                 else
                     Log($"FAILED: {BitConverter.ToString(data)} should be {BitConverter.ToString(compare)}.");
@@ -267,6 +269,7 @@ namespace SysBot.Pokemon
             i = 0;
             while (!token.IsCancellationRequested)
             {
+                //Test freezing value
                 if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.TestOffsets))
                 {
                     i++;
@@ -277,7 +280,38 @@ namespace SysBot.Pokemon
                     else
                         Log("FAILED: 0x1610EE0 not changed.");
                     if (i >= Hub.Config.LetsGoSettings.FreezingTestCount)
+                    {
+                        Log("Test completed.");
                         return;
+                    }
+                }
+
+                //Test Game Closed
+                if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.CheckGameOpen)) {
+                    if (await LGIsInTitleScreen(token).ConfigureAwait(false))
+                        Log("Game is Opened");
+                    else
+                        Log("Game is Closed");
+                }
+
+                //Test Trades
+                if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.CheckTrades))
+                {
+                    if (await LGIsInTrade(token).ConfigureAwait(false))
+                    {
+                        try
+                        {
+                            var pk = await LGReadUntilPresent(TradeData, 2_000, 0_200, token, EncryptedSize, false).ConfigureAwait(false);
+                            if (pk != null)
+                                Log($"Inside a trade: receiving {pk.Species}");
+                            else
+                                Log("Inside a trade, null species");
+                        } catch (Exception){
+                            Log("Inside a trade, cannot read the Pokémon.");
+                        }
+                    }
+                    else
+                        Log("Not in a trade.");
                 }
 
                 if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.EscapeFromBattle))

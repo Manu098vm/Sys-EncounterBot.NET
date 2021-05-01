@@ -556,12 +556,8 @@ namespace SysBot.Pokemon
             stopwatch.Start();
             while (!await LGIsInTitleScreen(token).ConfigureAwait(false))
             {
-                Log("Inside");
-                if(stopwatch.ElapsedMilliseconds > 15000)
-                {
+                if(stopwatch.ElapsedMilliseconds > 12000)
                     await DetachController(token).ConfigureAwait(false);
-                    stopwatch.Restart();
-                }
                 await Click(A, 0_500, token).ConfigureAwait(false);
             }
         }

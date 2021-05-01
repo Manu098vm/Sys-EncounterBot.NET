@@ -5,7 +5,7 @@ namespace SysBot.Pokemon
     public static class PokeDataOffsets
     {
         //LET'S GO
-        public const int EncryptedSize = 0x103;
+        public const int EncryptedSize = 0x104;
         public const uint FreezedValue = 0x1610EE0; //1 byte
         public const uint IsInOverworld = 0x163F694; //main
         public const uint IsInTitleScreen = 0x160D4E0; //main
@@ -17,14 +17,14 @@ namespace SysBot.Pokemon
         public const uint LastSpawn1 = 0x5E12B148; //heap
         public const uint LastSpawn2 = 0x5E12C120; //heap
         public const uint EShinyValue = 0x7398C4; //main
-        public const uint PShinyValue = 0xA2224310; //main - Thanks Zyro670!
-        public const uint PGeneratingFunction1 = 0x739930; //main - Thanks Zyro670!
-        public const uint PGeneratingFunction2 = 0x739934; //main - Thanks Zyro670!
-        public const uint PGeneratingFunction3 = 0x739938; //main - Thanks Zyro670!
-        public const uint PGeneratingFunction4 = 0x73993C; //main - Thanks Zyro670!
-        public const uint PGeneratingFunction5 = 0x739940; //main - Thanks Zyro670!
-        public const uint PGeneratingFunction6 = 0x739944; //main - Thanks Zyro670!
-        public const uint PGeneratingFunction7 = 0x739948; //main - Thanks Zyro670!
+        public const uint PShinyValue = 0x739864; //main
+        public const uint PGeneratingFunction1 = 0x7398D0; //main
+        public const uint PGeneratingFunction2 = 0x7398D4; //main
+        public const uint PGeneratingFunction3 = 0x7398D8; //main
+        public const uint PGeneratingFunction4 = 0x7398DC; //main
+        public const uint PGeneratingFunction5 = 0x7398E0; //main
+        public const uint PGeneratingFunction6 = 0x7398E4; //main
+        public const uint PGeneratingFunction7 = 0x7398E8; //main
         public const uint EGeneratingFunction1 = 0x739930; //main
         public const uint EGeneratingFunction2 = 0x739934; //main
         public const uint EGeneratingFunction3 = 0x739938; //main

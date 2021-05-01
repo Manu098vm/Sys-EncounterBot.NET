@@ -34,7 +34,11 @@
     public enum LetsGoTest
     {
         TestOffsets,
-        EscapeFromBattle
+        EscapeFromBattle,
+        CheckTrades,
+        CheckGifts,
+        CheckGameOpen,
+        CheckIsInBattle,
     }
 
     public enum MarkIndex
