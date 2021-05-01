@@ -31,7 +31,7 @@ namespace SysBot.Pokemon
             Log("Checking item counts...");
             var pouchData = await Connection.ReadBytesAsync(ItemTreasureAddress, 80, token).ConfigureAwait(false);
             var counts = FossilCount.GetFossilCounts(pouchData);
-            int reviveCount = counts.PossibleRevives(Hub.Config.Fossil.Species);
+            int reviveCount = counts.PossibleRevives(Hub.Config.SWSH_Fossil.Species);
             if (reviveCount == 0)
             {
                 Log("Insufficient fossil pieces. Please obtain at least one of each required fossil piece first.");
@@ -40,7 +40,7 @@ namespace SysBot.Pokemon
 
             Config.IterateNextRoutine();
 
-            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.FossilBot)
+            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SWSHFossilBot)
             {
                 await ReviveFossil(counts, token).ConfigureAwait(false);
                 Log("Fossil revived. Checking details...");
@@ -106,12 +106,12 @@ namespace SysBot.Pokemon
             await Click(A, 1_300, token).ConfigureAwait(false);
 
             // Selecting first fossil.
-            if (count.UseSecondOption1(Hub.Config.Fossil.Species))
+            if (count.UseSecondOption1(Hub.Config.SWSH_Fossil.Species))
                 await Click(DDOWN, 0_300, token).ConfigureAwait(false);
             await Click(A, 1_300, token).ConfigureAwait(false);
 
             // Selecting second fossil.
-            if (count.UseSecondOption2(Hub.Config.Fossil.Species))
+            if (count.UseSecondOption2(Hub.Config.SWSH_Fossil.Species))
                 await Click(DDOWN, 300, token).ConfigureAwait(false);
 
             // A spam through accepting the fossil and agreeing to revive.

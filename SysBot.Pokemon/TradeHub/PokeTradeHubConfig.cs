@@ -37,23 +37,16 @@ namespace SysBot.Pokemon
         // Bots
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public EggSettings Egg { get; set; } = new();
+        public EggSettings SWSH_Egg { get; set; } = new();
 
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public FossilSettings Fossil { get; set; } = new();
+        public FossilSettings SWSH_Fossil { get; set; } = new();
 
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public EncounterSettings Encounter { get; set; } = new();
+        public EncounterSettings SWSH_Encounter { get; set; } = new();
 
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public GiftBotSettings GiftBotSettings { get; set; } = new();
-
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public LiveStatsCheckingSettings LiveStatsSettings { get; set; } = new();
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public LetsGoSettings LetsGoSettings { get; set; } = new();

@@ -33,7 +33,7 @@ namespace SysBot.Pokemon
         [Category(StopConditions), Description("If set to TRUE, matches both ShinyTarget and TargetIVs settings. Otherwise, looks for either ShinyTarget or TargetIVs match.")]
         public bool MatchShinyAndIV { get; set; } = true;
 
-        public static bool EncounterFound(PK8 pk, int[] targetIVs, StopConditionSettings settings)
+        public static bool EncounterFound(PKM pk, int[] targetIVs, StopConditionSettings settings)
         {
             // Match Nature and Species if they were specified.
             if (settings.StopOnSpecies != Species.None && settings.StopOnSpecies != (Species)pk.Species)
@@ -43,9 +43,13 @@ namespace SysBot.Pokemon
                 return false;
 
             //If target is Any Mark then do the standard routine otherwise check for a specific Marker
-            if ((settings.MarkTarget == MarkIndex.Any && !HasMark(pk, settings.MarkTarget, false)) || 
-                (settings.MarkTarget != MarkIndex.None && settings.MarkTarget != MarkIndex.Any && !HasMark(pk, settings.MarkTarget, true)))
-                 return false;
+            if (pk is PK8)
+            {
+                PK8 pk8 = new PK8(pk.Data);
+                if ((settings.MarkTarget == MarkIndex.Any && !HasMark(pk8, settings.MarkTarget, false)) ||
+                    (settings.MarkTarget != MarkIndex.None && settings.MarkTarget != MarkIndex.Any && !HasMark(pk8, settings.MarkTarget, true)))
+                    return false;
+            }
 
             if (settings.ShinyTarget != TargetShinyType.DisableOption)
             {

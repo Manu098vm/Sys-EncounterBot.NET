@@ -38,8 +38,9 @@ namespace SysBot.Pokemon
             // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
 
-            var task = Hub.Config.Encounter.EncounteringType switch
+            var task = Hub.Config.SWSH_Encounter.EncounteringType switch
             {
+                EncounterMode.LiveStatsChecking => DoLiveStatsChecking(token),
                 EncounterMode.Regis => DoRestartingEncounter(token, (EncounterType)1),
                 EncounterMode.Regigigas => DoRestartingEncounter(token, (EncounterType)2),
                 EncounterMode.Spiritomb => DoRestartingEncounter(token, (EncounterType)3),
@@ -96,6 +97,32 @@ namespace SysBot.Pokemon
                 skipRoutine = false;
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
+            }
+        }
+
+        private async Task DoLiveStatsChecking(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                while (await IsInBattle(token).ConfigureAwait(false))
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+
+                while (!await IsInBattle(token).ConfigureAwait(false))
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+
+                Log("Encounter started! Checking details...");
+                var pk = await ReadUntilPresent(RaidPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                if (pk == null)
+                {
+                    pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                    if (pk == null)
+                        pk = await ReadUntilPresent(LegendaryPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                }
+
+                if (pk == null)
+                    Log("Check error. Either a wrong offset is used, or the RAM is shifted.");
+                else
+                    await HandleEncounter(pk, IsPKLegendary(pk.Species), token);
             }
         }
 

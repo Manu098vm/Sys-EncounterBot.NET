@@ -8,6 +8,11 @@
         OverworldSpawn,
 
         /// <summary>
+        /// Bot will log any battle-based encounter
+        /// </summary>
+        LiveStatsChecking,
+
+        /// <summary>
         /// Bot will soft reset Eternatus
         /// </summary>
         Eternatus,

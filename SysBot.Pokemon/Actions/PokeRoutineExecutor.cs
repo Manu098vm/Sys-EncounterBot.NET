@@ -457,6 +457,8 @@ namespace SysBot.Pokemon
                 return false;*/
         }
 
+        public async Task<bool> SWSHIsGiftFound(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(GiftFound, 1, token).ConfigureAwait(false))[0] > 0;
+
         public async Task<bool> IsOnOverworld(PokeTradeHubConfig config, CancellationToken token)
         {
             // Uses CurrentScreenOffset and compares the value to CurrentScreen_Overworld.
@@ -475,6 +477,8 @@ namespace SysBot.Pokemon
             return false;
         }
 
+        public bool IsPKLegendary(int species) => Enum.IsDefined(typeof(Legendary), (Legendary)species);
+        
         public async Task<bool> LGIsInTitleScreen(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInTitleScreen, 1, token).ConfigureAwait(false))[0] == 1;
         public async Task<bool> LGIsInBattle(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInBattleScenario, 1, token).ConfigureAwait(false))[0] > 0;
         public async Task<bool> LGIsInCatchScreen(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInOverworld, 1, token).ConfigureAwait(false))[0] != 0;
@@ -551,13 +555,24 @@ namespace SysBot.Pokemon
 
         }
 
-        public async Task LGOpenGame(CancellationToken token)
+        public async Task LGOpenGame(PokeTradeHubConfig config, CancellationToken token)
         {
+            // Open game.
+            await Click(A, 1_000 + config.Timings.ExtraTimeLoadProfile, token).ConfigureAwait(false);
+
+            // Menus here can go in the order: Update Prompt -> Profile -> DLC check -> Unable to use DLC.
+            //  The user can optionally turn on the setting if they know of a breaking system update incoming.
+            if (config.Timings.AvoidSystemUpdate)
+            {
+                await Click(DUP, 0_600, token).ConfigureAwait(false);
+                await Click(A, 1_000 + config.Timings.ExtraTimeLoadProfile, token).ConfigureAwait(false);
+            }
+
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
             while (!await LGIsInTitleScreen(token).ConfigureAwait(false))
             {
-                if(stopwatch.ElapsedMilliseconds > 12000)
+                if(stopwatch.ElapsedMilliseconds > 7000)
                     await DetachController(token).ConfigureAwait(false);
                 await Click(A, 0_500, token).ConfigureAwait(false);
             }

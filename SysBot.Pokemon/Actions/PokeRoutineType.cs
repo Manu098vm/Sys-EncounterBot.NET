@@ -4,11 +4,11 @@
     {
         Idle,
         LetsGo,
-        EggFetch,
-        GiftBot,
-        FossilBot,
+        SWSHEggFetch,
+        SWSHGiftBot,
+        SWSHFossilBot,
+        SWSHEncounterBot,
+        SWSHOverworldScan,
         DynamaxAdventure,
-        EncounterBot,
-        LiveStatsChecking,
     }
 }

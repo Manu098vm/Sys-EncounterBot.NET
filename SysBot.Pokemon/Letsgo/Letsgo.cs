@@ -1,15 +1,11 @@
 ﻿using PKHeX.Core;
 using System;
-using SysBot.Base;
-using System.Diagnostics;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
-using static SysBot.Pokemon.PokeDataOffsets;
 using static SysBot.Base.SwitchStick;
+using static SysBot.Pokemon.PokeDataOffsets;
 
 namespace SysBot.Pokemon
 {
@@ -19,7 +15,6 @@ namespace SysBot.Pokemon
         private readonly BotCompleteCounts Counts;
         private readonly IDumper DumpSetting;
         private readonly int[] DesiredIVs;
-        private readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
 
         public Letsgo(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
         {
@@ -68,6 +63,8 @@ namespace SysBot.Pokemon
             uint speciescombo;
             int i = 0;
             bool freeze = false;
+            bool searchforshiny = Hub.Config.StopConditions.ShinyTarget != TargetShinyType.NonShiny && Hub.Config.StopConditions.ShinyTarget != TargetShinyType.DisableOption;
+            bool found = false;
 
             //Catch combo to increment spawn quality and shiny rate (Thanks to Lincoln-LM for the offsets)
             if ((int)Hub.Config.LetsGoSettings.ChainSpecies > 0)
@@ -95,118 +92,89 @@ namespace SysBot.Pokemon
 
             while (!token.IsCancellationRequested)
             {
-                //If searching for a shiny, trigger Zaksabeast freeze code, and check whenever the game get freezed.
-                if (Hub.Config.StopConditions.ShinyTarget != TargetShinyType.NonShiny && Hub.Config.StopConditions.ShinyTarget != TargetShinyType.DisableOption)
-                {
-                    //Only checks for shinies
+                if(searchforshiny)
                     await LGZaksabeast(token, version).ConfigureAwait(false);
-                    while (freeze == false && !token.IsCancellationRequested)
+                while (freeze == false && !token.IsCancellationRequested && !found)
+                {
+                    if (await LGCountMilliseconds(token).ConfigureAwait(false) > 0 || !searchforshiny)
                     {
-                        if (await LGCountMilliseconds(token).ConfigureAwait(false) > 0)
+                        //Check is inside an unwanted encounter
+                        if (await LGIsInCatchScreen(token).ConfigureAwait(false))
                         {
-                            //Check is inside an unwanted encounter
-                            if (await LGIsInCatchScreen(token).ConfigureAwait(false))
+                            //TODO HANDLE ENCOUNTER
+                            Log($"Unwanted encounter detected!");
+                            int j = 0;
+                            while (await LGIsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested)
                             {
-                                //TODO HANDLE ENCOUNTER
-                                Log("Unwanted encounter detected!");
-                                int j = 0;
-                                while (await LGIsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested)
-                                {
-                                    j++;
-                                    await Task.Delay(7_000, token).ConfigureAwait(false);
-                                    await Click(B, 1_000, token).ConfigureAwait(false);
-                                    await Click(A, 1_000, token).ConfigureAwait(false);
-                                    await Task.Delay(5_000, token).ConfigureAwait(false);
-                                    if (j > 5)
-                                        for (j = 0; j <= 3; j++)
-                                            await Click(B, 1_000, token).ConfigureAwait(false);
-                                }
-                                Log("Exited wild encounter");
+                                j++;
+                                await Task.Delay(8_000, token).ConfigureAwait(false);
+                                if (j > 2)
+                                    await Click(B, 1_200, token).ConfigureAwait(false);
+                                await Click(B, 1_200, token).ConfigureAwait(false);
+                                await Click(A, 1_000, token).ConfigureAwait(false);
+                                await Task.Delay(6_500, token).ConfigureAwait(false);
                             }
+                            Log($"Exited wild encounter.");
+                        }
 
-                            //Check new spawns
-                            newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn1, 2, token).ConfigureAwait(false), 0);
-                            if (newspawn != prev)
+                        //Check new spawns
+                        newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn1, 2, token).ConfigureAwait(false), 0);
+                        if (newspawn != prev)
+                        {
+                            if (newspawn != 0)
                             {
-                                if (newspawn != 0)
-                                {
-                                    i++;
-                                    Log($"New spawn ({i}): {newspawn} {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
-                                }
-                                prev = newspawn;
+                                i++;
+                                encounterCount++;
+                                Log($"New spawn ({i}): {newspawn} {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
+                            }
+                            prev = newspawn;
+                            if (!searchforshiny &&
+                                ((!birds && (int)newspawn == (int)Hub.Config.StopConditions.StopOnSpecies) ||
+                                (birds && ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146)))){
+                                    Log("Stop conditions met, restart the bot(s) to search again.");
+                                    return;
                             }
                         }
-                        else
-                            freeze = true;
                     }
+                    else if (searchforshiny)
+                        freeze = true;
+                }
 
+                if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag) && searchforshiny)
+                    Log($"<@{Hub.Config.Discord.UserTag}> game is freezed, a Shiny has been detected.");
+                else
+                    Log("Game is freezed. A Shiny has been detected.");
+
+                //Unfreeze to restart the routine, or log the Shiny species.
+                await LGUnfreeze(token, version).ConfigureAwait(false);
+                newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn1, 2, token).ConfigureAwait(false), 0);
+
+                //Stop Conditions logic
+                if (birds && (int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146)
+                        found = true;
+                else if (!birds && (int)Hub.Config.StopConditions.StopOnSpecies > 0 && (int)newspawn == (int)Hub.Config.StopConditions.StopOnSpecies)
+                        found = true;
+                else
+                    found = false;
+
+                if (!found)
+                {
+                    freeze = false;
                     if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                        Log($"<@{Hub.Config.Discord.UserTag}> game is freezed, a Shiny has been detected.");
+                        Log($"<@{Hub.Config.Discord.UserTag}> {SpeciesName.GetSpeciesName((int)newspawn, 4)} SHINY FOUND but not the target.");
                     else
-                        Log("Game is freezed. A Shiny has been detected.");
-
-                    //Unfreeze to restart the routine, or log the Shiny species.
-                    await LGUnfreeze(token, version).ConfigureAwait(false);
-                    newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn1, 2, token).ConfigureAwait(false), 0);
-                    //if (Hub.Config.StopConditions.StopOnSpecies != 0 && (int)newspawn != (int)Hub.Config.StopConditions.StopOnSpecies)
-                    if ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146 || (Hub.Config.StopConditions.StopOnSpecies != 0 && (int)newspawn != (int)Hub.Config.StopConditions.StopOnSpecies))
-                    {
-                        freeze = false;
-                        if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                            Log($"<@{Hub.Config.Discord.UserTag}> {SpeciesName.GetSpeciesName((int)newspawn, 4)} SHINY FOUND but not the target.");
-                        else
-                            Log($"{SpeciesName.GetSpeciesName((int)newspawn, 4)} SHINY FOUND but not the target.");
-                    }
-                    else
-                    {
-                        if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                            Log($"<@{Hub.Config.Discord.UserTag}> SHINY {SpeciesName.GetSpeciesName((int)newspawn, 4)} FOUND!!");
-                        else
-                            Log($"SHINY {SpeciesName.GetSpeciesName((int)newspawn, 4)} FOUND!!");
-                        await Click(X, 1_000, token).ConfigureAwait(false);
-                        return;
-                    }
+                        Log($"{SpeciesName.GetSpeciesName((int)newspawn, 4)} SHINY FOUND but not the target.");
                 }
                 else
                 {
-                    //Doesn't care for shinies
-                    //Check is inside an unwanted encounter
-                    if (await LGIsInCatchScreen(token).ConfigureAwait(false))
-                    {
-                        //TODO HANDLE ENCOUNTER
-                        Log("Unwanted encounter detected!");
-                        int j = 0;
-                        while (await LGIsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested)
-                        {
-                            j++;
-                            await Task.Delay(7_000, token).ConfigureAwait(false);
-                            await Click(B, 1_000, token).ConfigureAwait(false);
-                            await Click(A, 1_000, token).ConfigureAwait(false);
-                            await Task.Delay(5_000, token).ConfigureAwait(false);
-                            if (i > 5)
-                                for (j = 0; j <= 3; j++)
-                                    await Click(B, 1_000, token).ConfigureAwait(false);
-                        }
-                        Log("Exited wild encounter");
-                    }
-
-                    //Check new spawns
-                    newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn1, 2, token).ConfigureAwait(false), 0);
-                    if (newspawn != prev)
-                    {
-                        if (newspawn != 0)
-                        {
-                            i++;
-                            Log($"New spawn ({i}): {newspawn} {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
-                            if (newspawn == (int)Hub.Config.StopConditions.StopOnSpecies)
-                            {
-                                await Click(X, 1_000, token).ConfigureAwait(false);
-                                return;
-                            }
-                        }
-                        prev = newspawn;
-                    }
+                    if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
+                        Log($"<@{Hub.Config.Discord.UserTag}> SHINY {SpeciesName.GetSpeciesName((int)newspawn, 4)} FOUND!!");
+                    else
+                        Log($"SHINY {SpeciesName.GetSpeciesName((int)newspawn, 4)} FOUND!!");
+                    await Click(X, 1_000, token).ConfigureAwait(false);
+                    return;
                 }
+
             }
         }
 
@@ -223,7 +191,7 @@ namespace SysBot.Pokemon
 
                 var pk = await LGReadUntilPresent(StationaryBattleData, 2_000, 0_200, token).ConfigureAwait(false);
                 if (pk != null)
-                    if (await HandleEncounter(pk.ConvertToPK8(), false, token).ConfigureAwait(false))
+                    if (await HandleEncounter(pk, IsPKLegendary(pk.Species), token).ConfigureAwait(false))
                     {
                         Log("Result found, defeating the enemy.");
                         //Spam A until the battle ends
@@ -236,7 +204,7 @@ namespace SysBot.Pokemon
                     }
                 Log($"Resetting Static Encounter by restarting the game");
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                await LGOpenGame(token).ConfigureAwait(false);
+                await LGOpenGame(Hub.Config, token).ConfigureAwait(false);
             }
         }
 
@@ -250,14 +218,14 @@ namespace SysBot.Pokemon
 
                 Log("A Gift has been found! Checking details...");
 
-                var pk = await LGReadUntilPresent(TradeData, 2_000, 0_200, token).ConfigureAwait(false);
+                var pk = await LGReadUntilPresent(TradeData, 2_000, 0_200, token, EncryptedSize, false).ConfigureAwait(false);
                 if (pk != null)
-                    if (await HandleEncounter(pk.ConvertToPK8(), false, token).ConfigureAwait(false))
+                    if (await HandleEncounter(pk, IsPKLegendary(pk.Species), token).ConfigureAwait(false))
                         return;
 
                 Log($"Resetting the Gift Encounter by restarting the game");
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                await LGOpenGame(token).ConfigureAwait(false);
+                await LGOpenGame(Hub.Config, token).ConfigureAwait(false);
             }
         }
 
@@ -274,13 +242,13 @@ namespace SysBot.Pokemon
                 var pk = await LGReadUntilPresent(TradeData, 2_000, 0_200, token, EncryptedSize, false).ConfigureAwait(false);
                 if (pk != null)
                 {
-                    if (await HandleEncounter(pk.ConvertToPK8(), false, token).ConfigureAwait(false))
+                    if (await HandleEncounter(pk, false, token).ConfigureAwait(false))
                         return;
                 }
 
                 Log($"Resetting the trade by restarting the game");
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                await LGOpenGame(token).ConfigureAwait(false);
+                await LGOpenGame(Hub.Config, token).ConfigureAwait(false);
             }
         }
 
@@ -418,23 +386,26 @@ namespace SysBot.Pokemon
                     if (await LGIsInCatchScreen(token).ConfigureAwait(false))
                     {
                         //TODO HANDLE ENCOUNTER
-                        Log("Unwanted encounter detected!");
-                        while (await LGIsInCatchScreen(token).ConfigureAwait(false))
+                        Log($"Unwanted encounter detected!");
+                        int j = 0;
+                        while (await LGIsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested)
                         {
-                            await Task.Delay(7_000, token).ConfigureAwait(false);
-                            await Click(B, 1_000, token).ConfigureAwait(false);
+                            j++;
+                            await Task.Delay(8_000, token).ConfigureAwait(false);
+                            if (j > 2)
+                                await Click(B, 1_200, token).ConfigureAwait(false);
+                            await Click(B, 1_200, token).ConfigureAwait(false);
                             await Click(A, 1_000, token).ConfigureAwait(false);
-                            await Task.Delay(5_000, token).ConfigureAwait(false);
+                            await Task.Delay(6_500, token).ConfigureAwait(false);
                         }
-                        Log("Exited encounter");
+                        Log($"Exited wild encounter.");
                     }
                 }
-                //await LGOpenGame(token).ConfigureAwait(false);
             }
 
         }
 
-        private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)
+        private async Task<bool> HandleEncounter(PB7 pk, bool legends, CancellationToken token)
         {
             encounterCount++;
 
@@ -445,7 +416,7 @@ namespace SysBot.Pokemon
             else if (pk.IsShiny)
                 showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
 
-            Log($"Encounter: {encounterCount}{Environment.NewLine}{Environment.NewLine}{showdowntext}{Environment.NewLine}{Environment.NewLine}");
+            Log($"Encounter: {encounterCount}{Environment.NewLine}{showdowntext}{Environment.NewLine}");
             if (legends)
                 Counts.AddCompletedLegends();
             else

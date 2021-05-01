@@ -13,7 +13,8 @@ namespace SysBot.Pokemon
         public const uint IsInTrade = 0x1614F28; //main
         public const uint IsGiftFound = 0x1615928; //main
         public const uint StationaryBattleData = 0x9A118D68; //heap
-        public const uint GiftData = 0x5337D8B0; //heap
+        public const uint GiftData = 0x163EDC0; //main
+        public const uint GiftData2 = 0xAD5DD188; //heap
         public const uint TradeData = 0x163EDC0; //main
         public const uint LastSpawn1 = 0x5E12B148; //heap
         public const uint LastSpawn2 = 0x5E12C120; //heap
@@ -34,6 +35,7 @@ namespace SysBot.Pokemon
         public const uint EGeneratingFunction6 = 0x739944; //main
         public const uint EGeneratingFunction7 = 0x739948; //main
         public const uint TrainerData = 0x53582030; //heap
+        public const uint BoxSlot1 = 0x533675B0; //heap
         public const int TrainerSize = 0x168;
         public const uint LGGameVersion = 0x53321DA8; //heap 0x1 = pika, 0x2 = eevee - Thanks Lincoln-LM!
         public const uint CatchingSpecies = 0x9A264598; //heap - Thanks Lincoln-LM!
@@ -43,6 +45,7 @@ namespace SysBot.Pokemon
         //Lets Go Pointers:
         public const string SpeciesComboPointer = "[[[[main+160E410]+50]+770]+40]+298";
         public const string CatchComboPointer = "[[[[main+160E410]+50]+840]+20]+1D0";
+        public const string GoftPokeData = "[[[[[main+160E3C8]+10]+08]+118]+68]+B8";
 
         //SWSH OFFSETS
         public const uint BoxStartOffset = 0x45075880;
@@ -60,6 +63,7 @@ namespace SysBot.Pokemon
         public const uint IsleOfArmorStationSpaws = 0x4505C9C0;
         public const uint CrownTundraSnowslideSlopeSpawns = 0x4505EE80;
         public const uint IsArticunoInSnowslide = 0x50B0EE68;
+        public const uint GiftFound = 0x297870C; //main
         //public const uint IsArticunoInSnowslide2 = 0x72B64CE4;
         //public const uint IsArticunoInSnowslide3 = 0x72B65044;
 
