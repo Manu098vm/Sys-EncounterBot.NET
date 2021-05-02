@@ -285,8 +285,8 @@ namespace SysBot.Pokemon
             Log("Testing Shiny Value...");
             var data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PShinyValue : EShinyValue, 4, token).ConfigureAwait(false);
             byte[] compare = new byte[] { 0xE0, 0x02, 0x00, 0x54 };
-            byte[] zak = new byte[] { 0xE9, 0x03, 0x00, 0x2A };
-            if (data.SequenceEqual(compare) || data.SequenceEqual(zak))
+            
+            if (data.SequenceEqual(compare))
                 Log($"OK: {BitConverter.ToString(data)}");
             else
                 Log($"FAILED: {BitConverter.ToString(data)} should be {BitConverter.ToString(compare)}.");
@@ -294,7 +294,8 @@ namespace SysBot.Pokemon
             Log("Testing generating function...");
             data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PGeneratingFunction1 : EGeneratingFunction1, 4, token).ConfigureAwait(false);
             compare = new byte[] { 0xE8, 0x03, 0x00, 0x2A };
-            if (data.SequenceEqual(compare))
+            byte[] zak = new byte[] { 0xE9, 0x03, 0x00, 0x2A };
+            if (data.SequenceEqual(compare) || data.SequenceEqual(zak))
                 Log($"OK: {BitConverter.ToString(data)}");
             else
                 Log($"FAILED: {BitConverter.ToString(data)} should be {BitConverter.ToString(compare)}.");

@@ -36,8 +36,6 @@
         TestOffsets,
         CatchComboTest,
         EscapeFromBattle,
-        CheckTrades,
-        CheckGifts,
         CheckGameOpen,
         CheckIsInBattle,
     }

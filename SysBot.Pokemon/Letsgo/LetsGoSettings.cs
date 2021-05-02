@@ -23,7 +23,7 @@ namespace SysBot.Pokemon
         [Category(LetsGo), Description("Set how many attempt the bot will do to check the freezing values. Infinite checking if 0.")]
         public int FreezingTestCount { get; set; } = 10;
 
-        [Category(LetsGo), Description("Set the maximum ms value for the Shiny Check. Edit this value in case you have false report of a Shiny appearing in the overworld. You can find the correct value for your console through TestRoutine Bot -> TestOffsets Method.")]
+        [Category(LetsGo), Description("Edit this value in case you have false report of a Shiny appearing in the overworld. You can find the correct value for your console through TestOffsets Method.")]
         public long MaxMs { get; set; } = 2500;
 
     }
