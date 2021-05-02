@@ -28,6 +28,7 @@ namespace SysBot.Pokemon
         {
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
+
             Log("Checking item counts...");
             var pouchData = await Connection.ReadBytesAsync(ItemTreasureAddress, 80, token).ConfigureAwait(false);
             var counts = FossilCount.GetFossilCounts(pouchData);
@@ -38,54 +39,48 @@ namespace SysBot.Pokemon
                 return;
             }
 
+            Log("Starting main FossilBot loop.");
             Config.IterateNextRoutine();
-
             while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SWSHFossilBot)
             {
+                if (encounterCount != 0 && encounterCount % reviveCount == 0)
+                {
+                    Log($"Ran out of fossils to revive {Hub.Config.SWSH_Fossil.Species}.");
+                    Log("Restarting the game to restore the puch data.");
+                    await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                    await StartGame(Hub.Config, token).ConfigureAwait(false);
+                }
+
                 await ReviveFossil(counts, token).ConfigureAwait(false);
                 Log("Fossil revived. Checking details...");
 
-                var pk = await ReadUntilPresent(await ParsePointer(PokeGift, token).ConfigureAwait(false), 2_000, 0_200, token).ConfigureAwait(false);
+                var pk = await ReadUntilPresent(await ParsePointer(PokeGift, token), 2_000, 0_200, token).ConfigureAwait(false);
                 if (pk == null)
-                {
-                    Log("RAM probably shifted.");
-                    continue;
-                }
-
-                encounterCount++;
-
-                string showdowntext = ShowdownParsing.GetShowdownText(pk);
-                if (pk.IsShiny && pk.ShinyXor == 0)
-                    showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
-                else if (pk.IsShiny)
-                    showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
-
-                Log($"Encounter: {encounterCount}:{Environment.NewLine}{Environment.NewLine}{showdowntext}{Environment.NewLine}{Environment.NewLine}");
-                if (DumpSetting.Dump)
-                    DumpPokemon(DumpSetting.DumpFolder, "fossil", pk);
-
-                Counts.AddCompletedFossils();
-
-                if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
-                {
-                    if (Hub.Config.StopConditions.CaptureVideoClip)
-                    {
-                        await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
-                        await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
-                    }
-
-                    if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                        Log($"<@{Hub.Config.Discord.UserTag}> Result found! Stopping routine execution; restart the bot(s) to search again.");
-                    else
-                        Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
-
-                    await DetachController(token).ConfigureAwait(false);
-                    return;
-                }
+                    Log("RAM may be shifted, please restart the game and the bot.");
                 else
                 {
-                    await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                    await StartGame(Hub.Config, token).ConfigureAwait(false);
+                    encounterCount++;
+                    Log($"Encounter: {encounterCount}:{Environment.NewLine}{ShowdownParsing.GetShowdownText(pk)}{Environment.NewLine}");
+                    if (DumpSetting.Dump)
+                        DumpPokemon(DumpSetting.DumpFolder, "fossil", pk);
+
+                    Counts.AddCompletedFossils();
+
+                    if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
+                    {
+                        if (Hub.Config.StopConditions.CaptureVideoClip)
+                        {
+                            await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
+                            await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
+                        }
+
+                        Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
+                        await DetachController(token).ConfigureAwait(false);
+                        return;
+                    }
+
+                    while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                        await Click(B, 0_200, token).ConfigureAwait(false);
                 }
             }
         }
@@ -93,7 +88,6 @@ namespace SysBot.Pokemon
         private async Task ReviveFossil(FossilCount count, CancellationToken token)
         {
             Log("Starting fossil revival routine...");
-
             if (GameLang == LanguageID.Spanish)
                 await Click(A, 0_900, token).ConfigureAwait(false);
 
@@ -115,11 +109,12 @@ namespace SysBot.Pokemon
                 await Click(DDOWN, 300, token).ConfigureAwait(false);
 
             // A spam through accepting the fossil and agreeing to revive.
-            while (await ReadUntilPresent(await ParsePointer(PokeGift, token).ConfigureAwait(false), 2_000, 0_200, token).ConfigureAwait(false) == null)
-            {
+            for (int i = 0; i < 8; i++)
                 await Click(A, 0_400, token).ConfigureAwait(false);
-                await Task.Delay(1_000, token).ConfigureAwait(false);
-            }
+
+            // Safe to mash B from here until we get out of all menus.
+            while (!await SWSHIsGiftFound(token).ConfigureAwait(false))
+                await Click(B, 0_400, token).ConfigureAwait(false);
         }
     }
 }

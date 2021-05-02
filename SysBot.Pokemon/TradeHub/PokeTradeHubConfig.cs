@@ -37,6 +37,10 @@ namespace SysBot.Pokemon
         // Bots
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
+        public OverworldScanSettings SWSH_ScanBot { get; set; } = new();
+
+        [Category(Bots)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
         public EggSettings SWSH_Egg { get; set; } = new();
 
         [Category(Bots)]

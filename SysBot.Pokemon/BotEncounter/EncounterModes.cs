@@ -3,11 +3,6 @@
     public enum EncounterMode
     {
         /// <summary>
-        /// Bot will scan for any mon
-        /// </summary>
-        OverworldSpawn,
-
-        /// <summary>
         /// Bot will log any battle-based encounter
         /// </summary>
         LiveStatsChecking,
@@ -46,26 +41,5 @@
         /// Bot will soft reset Spiritomb
         /// </summary>
         Spiritomb,
-
-        /// <summary>
-        /// Bot will reroll Zapdos
-        /// </summary>
-        Articuno,
-
-        /// <summary>
-        /// Bot will reroll Zapdos
-        /// </summary>
-        Zapdos,
-
-
-        /// <summary>
-        /// Bot will reroll Moltres
-        /// </summary>
-        Moltres,
-
-        /// <summary>
-        /// Bot will reroll Moltres
-        /// </summary>
-        Wailord,
     }
 }

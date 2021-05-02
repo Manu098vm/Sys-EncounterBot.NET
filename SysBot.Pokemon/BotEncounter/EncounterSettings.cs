@@ -8,6 +8,6 @@ namespace SysBot.Pokemon
         public override string ToString() => "Encounter Bot Settings";
 
         [Category(Encounter), Description("The method by which the SWSH bots will encounter Pokémon.")]
-        public EncounterMode EncounteringType { get; set; } = EncounterMode.OverworldSpawn;
+        public EncounterMode EncounteringType { get; set; } = EncounterMode.LiveStatsChecking;
     }
 }

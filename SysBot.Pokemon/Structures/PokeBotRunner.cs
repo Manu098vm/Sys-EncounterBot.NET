@@ -63,6 +63,7 @@ namespace SysBot.Pokemon
         public PokeRoutineExecutor CreateBotFromConfig(PokeBotState cfg) => cfg.NextRoutineType switch
         {
             PokeRoutineType.LetsGo => new Letsgo(cfg, Hub),
+            PokeRoutineType.SWSHOverworldScan => new OverworldScan(cfg, Hub),
             PokeRoutineType.SWSHEggFetch => new EggBot(cfg, Hub),
             PokeRoutineType.SWSHGiftBot => new GiftBot(cfg, Hub),
             PokeRoutineType.SWSHFossilBot => new FossilBot(cfg, Hub),

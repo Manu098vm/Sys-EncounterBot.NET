@@ -140,6 +140,8 @@ namespace SysBot.Pokemon
             return null;
         }
 
+        public async Task<bool> IsArticunoPresent(CancellationToken token) => (await Connection.ReadBytesAsync(IsArticunoInSnowslide, 1, token).ConfigureAwait(false))[0] == 1;
+
         public async Task<byte[]> ReadKCoordinates(CancellationToken token) => await Connection.ReadBytesAsync(KCoordinatesBlock, 24592, token).ConfigureAwait(false);
 
         public async Task<List<PK8>> ReadOwPokemonFromBlock(byte[] KCoordinates, SAV8 sav, CancellationToken token)

@@ -130,6 +130,7 @@ namespace SysBot.Pokemon
                             prev = newspawn;
                             if (!searchforshiny &&
                                 ((!birds && (int)newspawn == (int)Hub.Config.StopConditions.StopOnSpecies) ||
+                                (!birds && (int)Hub.Config.StopConditions.StopOnSpecies == 0) ||
                                 (birds && ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146)))){
                                     Log("Stop conditions met, restart the bot(s) to search again.");
                                     return;
@@ -141,9 +142,9 @@ namespace SysBot.Pokemon
                 }
 
                 if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag) && searchforshiny)
-                    Log($"<@{Hub.Config.Discord.UserTag}> game is freezed, a Shiny has been detected.");
+                    Log($"<@{Hub.Config.Discord.UserTag}> a Shiny has been detected.");
                 else
-                    Log("Game is freezed. A Shiny has been detected.");
+                    Log("A Shiny has been detected.");
 
                 //Unfreeze to restart the routine, or log the Shiny species.
                 await LGUnfreeze(token, version).ConfigureAwait(false);
@@ -152,8 +153,9 @@ namespace SysBot.Pokemon
                 //Stop Conditions logic
                 if (birds && (int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146)
                         found = true;
-                else if (!birds && (int)Hub.Config.StopConditions.StopOnSpecies > 0 && (int)newspawn == (int)Hub.Config.StopConditions.StopOnSpecies)
-                        found = true;
+                else if ((!birds && (int)Hub.Config.StopConditions.StopOnSpecies > 0 && (int)newspawn == (int)Hub.Config.StopConditions.StopOnSpecies) ||
+                        (!birds && (int)Hub.Config.StopConditions.StopOnSpecies == 0))
+                            found = true;
                 else
                     found = false;
 
@@ -161,9 +163,9 @@ namespace SysBot.Pokemon
                 {
                     freeze = false;
                     if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                        Log($"<@{Hub.Config.Discord.UserTag}> {SpeciesName.GetSpeciesName((int)newspawn, 4)} SHINY FOUND but not the target.");
+                        Log($"<@{Hub.Config.Discord.UserTag}> Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} is not the target, the routine will continue.");
                     else
-                        Log($"{SpeciesName.GetSpeciesName((int)newspawn, 4)} SHINY FOUND but not the target.");
+                        Log($"Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} is not the target, the routine will continue.");
                 }
                 else
                 {
@@ -315,7 +317,7 @@ namespace SysBot.Pokemon
                     Log("FAILED: 0x1610EE0 not changed.");
                 if (i >= Hub.Config.LetsGoSettings.FreezingTestCount)
                 {
-                    Log($"Test completed. Max WaitValue: {maxms}");
+                    Log($"Test completed. MaxMS value: {maxms}");
                     return;
                 }
             }
