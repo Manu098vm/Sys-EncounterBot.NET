@@ -96,7 +96,7 @@ namespace SysBot.Pokemon
                     await LGZaksabeast(token, version).ConfigureAwait(false);
                 while (freeze == false && !token.IsCancellationRequested && !found)
                 {
-                    if (await LGCountMilliseconds(token).ConfigureAwait(false) > 0 || !searchforshiny)
+                    if (await LGCountMilliseconds(Hub.Config, token).ConfigureAwait(false) > 0 || !searchforshiny)
                     {
                         //Check is inside an unwanted encounter
                         if (await LGIsInCatchScreen(token).ConfigureAwait(false))
@@ -254,155 +254,127 @@ namespace SysBot.Pokemon
 
         private async Task Test(CancellationToken token)
         {
-            GameVersion version = await LGWhichGameVersion(token).ConfigureAwait(false);
-            uint species;
-            uint count;
-            long waitms;
-            int i;
 
-            //Test static offsets
-            if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.TestOffsets))
+            var task = Hub.Config.LetsGoSettings.TestRoutine switch
             {
-                Log("Testing Game Version...");
-                if (version == GameVersion.GP)
-                    Log("OK: Let's Go Pikachu.");
-                else if (version == GameVersion.GE)
-                    Log("OK: Let's Go Eevee.");
-                else
-                    Log("FAILED: Incompatible game or update.");
+                LetsGoTest.TestOffsets => TestOffsets(token),
+                LetsGoTest.CatchComboTest => TestCatchCombo(token),
+                LetsGoTest.CheckGameOpen => TestGameReady(token),
+                LetsGoTest.CheckIsInBattle => TestBattle(token),
+                LetsGoTest.EscapeFromBattle => TestEscape(token),
+                _ => TestOffsets(token),
+            };
+            await task.ConfigureAwait(false);
+            return;
+        }
+        private async Task TestOffsets(CancellationToken token)
+        {
+            GameVersion version = await LGWhichGameVersion(token).ConfigureAwait(false);
+            long waitms;
+            long maxms = 0;
+            int i = 0;
 
-                Log("Testing Shiny Value...");
-                var data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PShinyValue : EShinyValue, 4, token).ConfigureAwait(false);
-                byte[] compare = new byte[] { 0xE0, 0x02, 0x00, 0x54 };
-                byte[] zak = new byte[] { 0xE9, 0x03, 0x00, 0x2A };
-                if (data.SequenceEqual(compare) || data.SequenceEqual(zak))
-                    Log($"OK: {BitConverter.ToString(data)}");
-                else
-                    Log($"FAILED: {BitConverter.ToString(data)} should be {BitConverter.ToString(compare)}.");
+            Log("Testing Game Version...");
+            if (version == GameVersion.GP)
+                Log("OK: Let's Go Pikachu.");
+            else if (version == GameVersion.GE)
+                Log("OK: Let's Go Eevee.");
+            else
+                Log("FAILED: Incompatible game or update.");
 
-                Log("Testing generating function...");
-                data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PGeneratingFunction1 : EGeneratingFunction1, 4, token).ConfigureAwait(false);
-                compare = new byte[] { 0xE8, 0x03, 0x00, 0x2A };
-                if (data.SequenceEqual(compare))
-                    Log($"OK: {BitConverter.ToString(data)}");
-                else
-                    Log($"FAILED: {BitConverter.ToString(data)} should be {BitConverter.ToString(compare)}.");
+            Log("Testing Shiny Value...");
+            var data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PShinyValue : EShinyValue, 4, token).ConfigureAwait(false);
+            byte[] compare = new byte[] { 0xE0, 0x02, 0x00, 0x54 };
+            byte[] zak = new byte[] { 0xE9, 0x03, 0x00, 0x2A };
+            if (data.SequenceEqual(compare) || data.SequenceEqual(zak))
+                Log($"OK: {BitConverter.ToString(data)}");
+            else
+                Log($"FAILED: {BitConverter.ToString(data)} should be {BitConverter.ToString(compare)}.");
 
-            }
+            Log("Testing generating function...");
+            data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PGeneratingFunction1 : EGeneratingFunction1, 4, token).ConfigureAwait(false);
+            compare = new byte[] { 0xE8, 0x03, 0x00, 0x2A };
+            if (data.SequenceEqual(compare))
+                Log($"OK: {BitConverter.ToString(data)}");
+            else
+                Log($"FAILED: {BitConverter.ToString(data)} should be {BitConverter.ToString(compare)}.");
 
-            i = 0;
             while (!token.IsCancellationRequested)
             {
-                //Test freezing value
-                if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.TestOffsets))
+                i++;
+                Log($"Checking freezing value, attempt n.{i}...");
+                waitms = await LGCountMilliseconds(Hub.Config, token).ConfigureAwait(false);
+                if (waitms > 0)
                 {
-                    i++;
-                    Log($"Checking freezing value, attempt n.{i}...");
-                    waitms = await LGCountMilliseconds(token).ConfigureAwait(false);
-                    if (waitms > 0)
-                        Log($"OK: 0x1610EE0 changed after {waitms}ms");
-                    else
-                        Log("FAILED: 0x1610EE0 not changed.");
-                    if (i >= Hub.Config.LetsGoSettings.FreezingTestCount)
-                    {
-                        Log("Test completed.");
-                        return;
-                    }
+                    if (waitms > maxms)
+                        maxms = waitms;
+                    Log($"OK: 0x1610EE0 changed after {waitms}ms");
                 }
-
-                //Test Catch Combo
-                if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.CatchComboTest))
+                else
+                    Log("FAILED: 0x1610EE0 not changed.");
+                if (i >= Hub.Config.LetsGoSettings.FreezingTestCount)
                 {
-                    species = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false),0);
-                    count = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
-                    Log($"Current catch combo being on {(SpeciesName.GetSpeciesName((int)species, 4)).Replace("Uovo", "None")}, count is at {count}");
-                    //Log($"Editing to {Hub.Config.LetsGoSettings.ChainSpecies}, at {Hub.Config.LetsGoSettings.ChainCount}");
-                    //await Connection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.LetsGoSettings.ChainSpecies), SpeciesCombo, token).ConfigureAwait(false);
-                    //await SwitchConnection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.LetsGoSettings.ChainCount), CatchCombo, token).ConfigureAwait(false);
-                }
-
-                //Test Game Closed
-                if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.CheckGameOpen)) {
-                    if (await LGIsInTitleScreen(token).ConfigureAwait(false))
-                        Log("Game is Opened");
-                    else
-                        Log("Game is Closed");
-                }
-
-                //Test Trades
-                if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.CheckTrades))
-                {
-                    if (await LGIsInTrade(token).ConfigureAwait(false))
-                    {
-                        try
-                        {
-                            var pk = await LGReadUntilPresent(TradeData, 2_000, 0_200, token, EncryptedSize, false).ConfigureAwait(false);
-                            if (pk != null)
-                                Log($"Inside a trade: receiving {pk.Species}");
-                            else
-                                Log("Inside a trade, null species");
-                        } catch (Exception){
-                            Log("Inside a trade, cannot read the Pokémon.");
-                        }
-                    }
-                    else
-                        Log("Not in a trade.");
-                }
-
-                //Tests Gifts
-                if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.CheckGifts))
-                {
-                    if (await LGIsGiftFound(token).ConfigureAwait(false))
-                    {
-                        try
-                        {
-                            var pk = await LGReadUntilPresent(GiftData, 2_000, 0_200, token).ConfigureAwait(false);
-                            if (pk != null)
-                                Log($"Gift found: {pk.Species}");
-                            else
-                                Log("Gift not found.");
-                        }
-                        catch (Exception)
-                        {
-                            Log("Gift found, cannot read the Pokémon.");
-                        }
-                    }
-                    else
-                        Log("Gift not found..");
-                }
-
-                //Test IsInBattleScenario
-                if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.CheckIsInBattle))
-                {
-                    if (await LGIsInBattle(token).ConfigureAwait(false))
-                        Log("In Battle Scenario!");
-                    else
-                        Log("Not in Battle Scenario!");
-                }
-
-                //Test escaping routine
-                if (Hub.Config.LetsGoSettings.TestRoutine.Equals(LetsGoTest.EscapeFromBattle))
-                {
-                    if (await LGIsInCatchScreen(token).ConfigureAwait(false))
-                    {
-                        //TODO HANDLE ENCOUNTER
-                        Log($"Unwanted encounter detected!");
-                        int j = 0;
-                        while (await LGIsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested)
-                        {
-                            j++;
-                            await Task.Delay(8_000, token).ConfigureAwait(false);
-                            if (j > 2)
-                                await Click(B, 1_200, token).ConfigureAwait(false);
-                            await Click(B, 1_200, token).ConfigureAwait(false);
-                            await Click(A, 1_000, token).ConfigureAwait(false);
-                            await Task.Delay(6_500, token).ConfigureAwait(false);
-                        }
-                        Log($"Exited wild encounter.");
-                    }
+                    Log($"Test completed. Max WaitValue: {maxms}");
+                    return;
                 }
             }
-
+        }
+        private async Task TestCatchCombo(CancellationToken token)
+        {
+            uint species;
+            uint count;
+            while (!token.IsCancellationRequested)
+            {
+                species = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
+                count = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
+                Log($"Current catch combo being on {(SpeciesName.GetSpeciesName((int)species, 4)).Replace("Uovo", "None")}, count is at {count}");
+                //Log($"Editing to {Hub.Config.LetsGoSettings.ChainSpecies}, at {Hub.Config.LetsGoSettings.ChainCount}");
+                //await Connection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.LetsGoSettings.ChainSpecies), SpeciesCombo, token).ConfigureAwait(false);
+                //await SwitchConnection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.LetsGoSettings.ChainCount), CatchCombo, token).ConfigureAwait(false);
+            }
+        }
+        private async Task TestGameReady(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                if (await LGIsInTitleScreen(token).ConfigureAwait(false))
+                    Log("Game is Opened");
+                else
+                    Log("Game is Closed");
+            }
+        }
+        private async Task TestBattle(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                if (await LGIsInBattle(token).ConfigureAwait(false))
+                    Log("In Battle Scenario!");
+                else
+                    Log("Not in Battle Scenario!");
+            }
+        }
+        private async Task TestEscape(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                if (await LGIsInCatchScreen(token).ConfigureAwait(false))
+                {
+                    //TODO HANDLE ENCOUNTER
+                    Log($"Unwanted encounter detected!");
+                    int j = 0;
+                    while (await LGIsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested)
+                    {
+                        j++;
+                        await Task.Delay(8_000, token).ConfigureAwait(false);
+                        if (j > 2)
+                            await Click(B, 1_200, token).ConfigureAwait(false);
+                        await Click(B, 1_200, token).ConfigureAwait(false);
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+                        await Task.Delay(6_500, token).ConfigureAwait(false);
+                    }
+                    Log($"Exited wild encounter.");
+                }
+            }
         }
 
         private async Task<bool> HandleEncounter(PB7 pk, bool legends, CancellationToken token)

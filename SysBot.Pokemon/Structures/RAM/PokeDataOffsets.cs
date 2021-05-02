@@ -45,7 +45,7 @@ namespace SysBot.Pokemon
         //Lets Go Pointers:
         public const string SpeciesComboPointer = "[[[[main+160E410]+50]+770]+40]+298";
         public const string CatchComboPointer = "[[[[main+160E410]+50]+840]+20]+1D0";
-        public const string GoftPokeData = "[[[[[main+160E3C8]+10]+08]+118]+68]+B8";
+        public const string GiftPokeData = "[[[[[main+160E3C8]+10]+08]+118]+68]+B8";
 
         //SWSH OFFSETS
         public const uint BoxStartOffset = 0x45075880;

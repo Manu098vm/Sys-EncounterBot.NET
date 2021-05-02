@@ -497,8 +497,9 @@ namespace SysBot.Pokemon
         }
 
         //returns [milliseconds for the value to change, value1, value2]
-        public async Task<long> LGCountMilliseconds(CancellationToken token)
+        public async Task<long> LGCountMilliseconds(PokeTradeHubConfig config, CancellationToken token)
         {
+            long WaitMS = config.LetsGoSettings.MaxMs;
             bool stuck = false;
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -507,7 +508,7 @@ namespace SysBot.Pokemon
             do
             {
                 data = await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false);
-                if (stopwatch.ElapsedMilliseconds > 2500)
+                if (stopwatch.ElapsedMilliseconds > WaitMS)
                     stuck = true;
             } while (data.SequenceEqual(comparison) && stuck == false);
             if (!stuck)
