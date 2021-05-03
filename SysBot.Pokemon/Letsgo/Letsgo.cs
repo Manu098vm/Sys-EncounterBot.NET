@@ -131,6 +131,8 @@ namespace SysBot.Pokemon
                                 ((!birds && (int)newspawn == (int)Hub.Config.StopConditions.StopOnSpecies) ||
                                 (!birds && (int)Hub.Config.StopConditions.StopOnSpecies == 0) ||
                                 (birds && ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146)))){
+                                    await Click(X, 1_000, token).ConfigureAwait(false);
+                                    await Click(HOME, 1_000, token).ConfigureAwait(false);
                                     Log("Stop conditions met, restart the bot(s) to search again.");
                                     return;
                             }
@@ -169,10 +171,11 @@ namespace SysBot.Pokemon
                 else
                 {
                     if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                        Log($"<@{Hub.Config.Discord.UserTag}> SHINY {SpeciesName.GetSpeciesName((int)newspawn, 4)} FOUND!!");
+                        Log($"<@{Hub.Config.Discord.UserTag}> Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} found!");
                     else
-                        Log($"SHINY {SpeciesName.GetSpeciesName((int)newspawn, 4)} FOUND!!");
+                        Log($"Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} found!");
                     await Click(X, 1_000, token).ConfigureAwait(false);
+                    await Click(HOME, 1_000, token).ConfigureAwait(false);
                     return;
                 }
 

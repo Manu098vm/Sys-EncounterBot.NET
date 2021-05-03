@@ -38,7 +38,7 @@ namespace SysBot.Pokemon
             // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
 
-            var task = Hub.Config.SWSH_ScanBot.EncounteringType switch
+            var task = Hub.Config.SWSH_OverworldScanBot.EncounteringType switch
             {
                 ScanMode.G_Articuno => DoSeededEncounter(token),
                 ScanMode.G_Zapdos => DoSeededEncounter(token),
@@ -56,7 +56,7 @@ namespace SysBot.Pokemon
         private async Task FlyToRerollSeed(CancellationToken token)
         {
             bool exit = false;
-            ScanMode encounter = Hub.Config.SWSH_ScanBot.EncounteringType;
+            ScanMode encounter = Hub.Config.SWSH_OverworldScanBot.EncounteringType;
 
             while (!exit)
             {
@@ -90,50 +90,13 @@ namespace SysBot.Pokemon
             Log("Game saved, seed rerolled.");
         }
 
-        private List<int[]> ParseMovements(CancellationToken token)
-        {
-            List<int[]> buttons = new List<int[]>();
-            string movements = Hub.Config.SWSH_ScanBot.MoveOrder.ToUpper() + ",";
-            Log("string to parse: " + movements);
-            int index = 0;
-            string word = "";
-
-            while(index < movements.Length-1)
-            {
-                if ((movements.Length > 1 && movements[index + 1] == ',') || movements.Length == 1)
-                {
-                    word += movements[index];
-                    if (word.Equals("UP"))
-                        buttons.Add(new int[] { 0, 30_000, Hub.Config.SWSH_ScanBot.MoveUpMs });
-                    else if (word.Equals("RIGHT"))
-                        buttons.Add(new int[] { 30_000, 0, Hub.Config.SWSH_ScanBot.MoveRightMs });
-                    else if (word.Equals("DOWN"))
-                        buttons.Add(new int[] { 0, -30_000, Hub.Config.SWSH_ScanBot.MoveDownMs });
-                    else if (word.Equals("LEFT"))
-                        buttons.Add(new int[] { -30_000, 0, Hub.Config.SWSH_ScanBot.MoveLeftMs });
-                    movements.Remove(0, 1);
-                    word = "";
-                }
-                else if (movements[index] == ',' || movements[index] == '.' || movements[index] == ' ' || movements[index] == '\n' || movements[index] == '\t' || movements[index] == '\0')
-                    movements.Remove(0, 1);
-                else
-                {
-                    word += movements[index];
-                    movements.Remove(0, 1);
-                }
-                index++;
-            }
-
-            return buttons;
-        }
-
         private async Task Overworld(CancellationToken token)
         {
             await ResetStick(token).ConfigureAwait(false);
-            //SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
+            SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
+            List<int[]> movementslist = ParseMovements();
             byte[] KCoordinates;
-            List<int[]> movementslist = ParseMovements(token);
-            //List<PK8> PK8s;
+            List<PK8> PK8s;
            
             while (!token.IsCancellationRequested)
             {
@@ -175,9 +138,15 @@ namespace SysBot.Pokemon
                 }
                 else
                 {
+                    if (Hub.Config.SWSH_OverworldScanBot.GetOnOffBike)
+                    {
+                        await Click(PLUS, 0_600, token).ConfigureAwait(false);
+                        await Click(PLUS, 5_500, token).ConfigureAwait(false);
+                    }
+
                     //Movements/Delay/Actions routines
-                    if (Hub.Config.SWSH_ScanBot.WaitMsBeforeSave > 0)
-                        await Task.Delay(Hub.Config.SWSH_ScanBot.WaitMsBeforeSave, token).ConfigureAwait(false);
+                    if (Hub.Config.SWSH_OverworldScanBot.WaitMsBeforeSave > 0)
+                        await Task.Delay(Hub.Config.SWSH_OverworldScanBot.WaitMsBeforeSave, token).ConfigureAwait(false);
 
                     foreach (int[] move in movementslist)
                     {
@@ -208,7 +177,7 @@ namespace SysBot.Pokemon
         }
         private async Task DoSeededEncounter(CancellationToken token)
         {
-            ScanMode type = Hub.Config.SWSH_ScanBot.EncounteringType;
+            ScanMode type = Hub.Config.SWSH_OverworldScanBot.EncounteringType;
             SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
             Species dexn = 0;
             uint offset = 0x00;
@@ -314,6 +283,42 @@ namespace SysBot.Pokemon
                 await Click(DUP, 0_200, token).ConfigureAwait(false);
                 await Click(A, 1_000, token).ConfigureAwait(false);
             }
+        }
+
+        private List<int[]> ParseMovements()
+        {
+            List<int[]> buttons = new List<int[]>();
+            string movements = Hub.Config.SWSH_OverworldScanBot.MoveOrder.ToUpper() + ",";
+            int index = 0;
+            string word = "";
+
+            while (index < movements.Length - 1)
+            {
+                if ((movements.Length > 1 && movements[index + 1] == ',') || movements.Length == 1)
+                {
+                    word += movements[index];
+                    if (word.Equals("UP"))
+                        buttons.Add(new int[] { 0, 30_000, Hub.Config.SWSH_OverworldScanBot.MoveUpMs });
+                    else if (word.Equals("RIGHT"))
+                        buttons.Add(new int[] { 30_000, 0, Hub.Config.SWSH_OverworldScanBot.MoveRightMs });
+                    else if (word.Equals("DOWN"))
+                        buttons.Add(new int[] { 0, -30_000, Hub.Config.SWSH_OverworldScanBot.MoveDownMs });
+                    else if (word.Equals("LEFT"))
+                        buttons.Add(new int[] { -30_000, 0, Hub.Config.SWSH_OverworldScanBot.MoveLeftMs });
+                    movements.Remove(0, 1);
+                    word = "";
+                }
+                else if (movements[index] == ',' || movements[index] == '.' || movements[index] == ' ' || movements[index] == '\n' || movements[index] == '\t' || movements[index] == '\0')
+                    movements.Remove(0, 1);
+                else
+                {
+                    word += movements[index];
+                    movements.Remove(0, 1);
+                }
+                index++;
+            }
+
+            return buttons;
         }
     }
 }
