@@ -49,20 +49,16 @@ namespace SysBot.Pokemon
         {
             //Initialization
             int adventureCompleted = 0;
-            string mon = Hub.Config.StopConditions.StopOnSpecies.ToString();
+            LairSpecies mon = Hub.Config.SWSH_DynaAdventure.EditLairPath;
             byte[] demageStandardState = BitConverter.GetBytes(0x7900E808);
             byte[] demageAlteredState = BitConverter.GetBytes(0x7900E81F);
             byte[] demageTemporalState;
             bool wasVideoClipActive = Hub.Config.StopConditions.CaptureVideoClip;
 
             //Check/set target parameters
-            ushort searchmon;
+            
             uint pathoffset = LairSpeciesSelector;
             bool caneditspecies = true;
-            if (Enum.IsDefined(typeof(LairSpecies), mon))
-                searchmon = (ushort)Enum.Parse(typeof(LairSpecies), mon);
-            else
-                searchmon = 0;
 
             //Check what's the right offset for the first lair path
             byte[] current_try1 = await Connection.ReadBytesAsync(LairSpeciesSelector, 2, token).ConfigureAwait(false);
@@ -76,14 +72,14 @@ namespace SysBot.Pokemon
                 caneditspecies = false;
 
             byte[] current = await Connection.ReadBytesAsync(pathoffset, 2, token).ConfigureAwait(false);
-            byte[] wanted = BitConverter.GetBytes(searchmon);
+            byte[] wanted = BitConverter.GetBytes((ushort)mon);
 
-            if (mon != "None" && current != wanted && !Enum.IsDefined(typeof(LairSpecies), mon))
+            if ((ushort)mon != 0 && current != wanted && !Enum.IsDefined(typeof(LairSpecies), mon))
             {
                 Log($"{mon} is not an available Lair Boss species. Check your configurations and restart the bot.");
                 return;
             }
-            else if (mon != "None" && current != wanted && Enum.IsDefined(typeof(LairSpecies), mon))
+            else if ((ushort)mon != 0 && current != wanted && Enum.IsDefined(typeof(LairSpecies), mon))
             {
                 if (caneditspecies)
                 {
@@ -96,7 +92,7 @@ namespace SysBot.Pokemon
                         $"{Environment.NewLine}________________________________");
                 }
             }
-            else if (mon == "None")
+            else if ((ushort)mon == 0)
                 Log("(Any) Legendary ready to be hunted.");
 
             //Check ShinyXOR
@@ -114,7 +110,7 @@ namespace SysBot.Pokemon
 
                 //Talk to the Lady
                 while (!await IsInLairWait(token).ConfigureAwait(false))
-                    await Click(A, 1_000, token).ConfigureAwait(false);
+                    await Click(A, 0_200, token).ConfigureAwait(false);
 
                 //Select Solo Adventure
                 await Click(DDOWN, 0_800, token).ConfigureAwait(false);
@@ -125,9 +121,18 @@ namespace SysBot.Pokemon
                 int elapsed = 0;
                 bool inBattle = false;
                 bool lost = false;
+
+                //Allows 1HKO
+                if (Hub.Config.SWSH_DynaAdventure.InstantKill)
+                {
+                    demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
+                    if (demageStandardState.SequenceEqual(demageTemporalState))
+                        await SwitchConnection.WriteBytesMainAsync(demageAlteredState, demageOutputOffset, token).ConfigureAwait(false);
+                }
+
                 while (!(await IsInLairEndList(token).ConfigureAwait(false) || lost || token.IsCancellationRequested))
                 {
-                    await Click(A, 1_000, token).ConfigureAwait(false);
+                    await Click(A, 0_200, token).ConfigureAwait(false);
                     if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
                     {
                         lost = true;
@@ -137,11 +142,6 @@ namespace SysBot.Pokemon
                         inBattle = false;
                     else if (await IsInBattle(token).ConfigureAwait(false) && !inBattle)
                     {
-                        //Allows 1HKO
-                        demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
-                        if (demageStandardState.SequenceEqual(demageTemporalState))
-                            await SwitchConnection.WriteBytesMainAsync(demageAlteredState, demageOutputOffset, token).ConfigureAwait(false);
-
                         var pk = await ReadUntilPresent(RaidPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
                         if (pk != null)
                             Log($"Raid Battle {raidCount}: {pk.Species} {pk.Nickname}");
@@ -162,13 +162,14 @@ namespace SysBot.Pokemon
                             await Click(DDOWN, 1_000, token).ConfigureAwait(false);
                         }
                     }
-                    else if (!await IsInBattle(token).ConfigureAwait(false) && !inBattle)
-                    {
-                        //Disable 1HKO
-                        demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
-                        if (demageAlteredState.SequenceEqual(demageTemporalState))
-                            await SwitchConnection.WriteBytesMainAsync(demageStandardState, demageOutputOffset, token).ConfigureAwait(false);
-                    }
+                }
+
+                //Disable 1HKO
+                if (Hub.Config.SWSH_DynaAdventure.InstantKill)
+                {
+                    demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
+                    if (demageAlteredState.SequenceEqual(demageTemporalState))
+                        await SwitchConnection.WriteBytesMainAsync(demageStandardState, demageOutputOffset, token).ConfigureAwait(false);
                 }
 
                 if (!lost)
@@ -241,7 +242,9 @@ namespace SysBot.Pokemon
                     if ((HandleEncounter(pkm, i == 3) == true) || (i < 4 && pkm.IsShiny))
                     {
                         if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                            Log("<@" + Hub.Config.Discord.UserTag + "> a" + (pkm.IsShiny ? " Shiny " : " ") + pkm.Nickname + " has been found!");
+                            Log($"<@{Hub.Config.Discord.UserTag}> a {(pkm.IsShiny ? "Shiny " : "")}{pkm.Nickname} has been found!");
+                        else
+                            Log($"A {(pkm.IsShiny ? "Shiny " : "")}{pkm.Nickname} has been found!");
                         found[0] = i + 1;
                     }
                 }

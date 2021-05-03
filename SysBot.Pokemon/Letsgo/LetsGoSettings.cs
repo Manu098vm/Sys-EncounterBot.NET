@@ -12,7 +12,7 @@ namespace SysBot.Pokemon
         public LetsGoMode EncounteringType { get; set; } = LetsGoMode.OverworldSpawn;
 
         [Category(LetsGo), Description("Force the current chain to be on the selected Species. Ignored if None.")]
-        public Species ChainSpecies { get; set; }
+        public LGPESpecies ChainSpecies { get; set; }
 
         [Category(LetsGo), Description("Force the current chain to be at the entered value. Ignored if 0.")]
         public int ChainCount { get; set; } = 0;

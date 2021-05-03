@@ -41,6 +41,10 @@ namespace SysBot.Pokemon
 
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
+        public SWSH_DynaAdventureSettings SWSH_DynaAdventure { get; set; } = new();
+
+        [Category(Bots)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
         public EggSettings SWSH_Egg { get; set; } = new();
 
         [Category(Bots)]

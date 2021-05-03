@@ -440,24 +440,11 @@ namespace SysBot.Pokemon
         {
             byte[] menu = BitConverter.GetBytes(CurrentScreen_LairMenu);
             byte[] docked = await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token).ConfigureAwait(false);
-            byte[] handheld = await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token);
-            if (menu.SequenceEqual(docked) || menu.SequenceEqual(handheld))
-                return true;
-            else return false;
+            byte[] handheld = await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token).ConfigureAwait(false);
+            return (menu.SequenceEqual(handheld) || menu.SequenceEqual(docked));
         }
 
-        public async Task<bool> IsInLairEndList(CancellationToken token)
-        {
-            //Thanks Koi!
-            return BitConverter.GetBytes(LairRewardsScreenBytes).SequenceEqual(await Connection.ReadBytesAsync(CurrentScreenLairOffset, 4, token).ConfigureAwait(false));
-
-
-            /*var pkm = await ReadPokemon(await ParsePointer(LairReward, token), token, 344).ConfigureAwait(false);
-            if (pkm != null && pkm.Species != 0 && pkm.ChecksumValid)
-                return true;
-            else
-                return false;*/
-        }
+        public async Task<bool> IsInLairEndList(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(LairRewards, 1, token).ConfigureAwait(false))[0] != 0;
 
         public async Task<bool> SWSHIsGiftFound(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(GiftFound, 1, token).ConfigureAwait(false))[0] > 0;
 
@@ -579,6 +566,7 @@ namespace SysBot.Pokemon
                     await DetachController(token).ConfigureAwait(false);
                 await Click(A, 0_500, token).ConfigureAwait(false);
             }
+            Log("Game started.");
         }
 
         public async Task<TextSpeedOption> GetTextSpeed(CancellationToken token)
