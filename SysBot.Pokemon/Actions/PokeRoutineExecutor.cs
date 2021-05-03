@@ -194,7 +194,6 @@ namespace SysBot.Pokemon
                 }
                 
             }
-
             return PK8s;
         }
 
@@ -205,21 +204,24 @@ namespace SysBot.Pokemon
             uint offset = startoffset;
             int i = 0;
 
-            if(target != (Species)0){
+            if (target != (Species)0)
+            {
                 do
                 {
                     data = await Connection.ReadBytesAsync(offset, 56, token).ConfigureAwait(false);
                     species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
-                    Log($"Target: {target}, Encountered: {species}");
+                    //Log($"Target: {target}, Encountered: {species}");
                     offset += 192;
                     i++;
-                } while (target != 0 && species != 0 && target != species && i < 20);
+                } while (target != 0 && species != 0 && target != species && i <= 20);
+                if (i == 20)
+                    data = null;
             }
-            else if(mondata != null)
+            else if (mondata != null)
             {
                 data = mondata;
                 species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
-                Log($"Encountered: {species}");
+                //Log($"Encountered: {species}");
             }
 
             if (data != null && data[20] == 1)
@@ -243,6 +245,7 @@ namespace SysBot.Pokemon
                     Move2 = BitConverter.ToUInt16(data.Slice(50, 2), 0),
                     Move3 = BitConverter.ToUInt16(data.Slice(52, 2), 0),
                     Move4 = BitConverter.ToUInt16(data.Slice(54, 2), 0),
+                    Version = 44,
                 };
                 pk.SetNature(data[8]);
                 pk.SetAbility(data[12] - 1);
@@ -257,7 +260,7 @@ namespace SysBot.Pokemon
                 int ivs = data[18];
                 uint seed = BitConverter.ToUInt32(data.Slice(24, 4), 0);
 
-                Log($"Stats in RAM: Shinyness {shinyness}, IVs {ivs}, Seed: {String.Format("{0:X}", seed)}");
+                //Log($"Stats in RAM: Shinyness {shinyness}, IVs {ivs}, Seed: {String.Format("{0:X}", seed)}");
 
                 pk = OverworldSWSHRNG.CalculateFromSeed(pk, shinyness, ivs, seed);
 
@@ -499,7 +502,7 @@ namespace SysBot.Pokemon
                 data = await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false);
                 if (stopwatch.ElapsedMilliseconds > WaitMS)
                     stuck = true;
-            } while (data.SequenceEqual(comparison) && stuck == false);
+            } while (data.SequenceEqual(comparison) && stuck == false && !token.IsCancellationRequested);
             if (!stuck)
             {
                 stopwatch.Restart();
@@ -507,7 +510,7 @@ namespace SysBot.Pokemon
                 do
                 {
                     data = await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false);
-                } while (data == comparison);
+                } while (data == comparison && !token.IsCancellationRequested);
                 return stopwatch.ElapsedMilliseconds;
             }             
             else

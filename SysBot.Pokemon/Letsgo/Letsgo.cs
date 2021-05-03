@@ -55,7 +55,6 @@ namespace SysBot.Pokemon
         }
         private async Task Overworld(CancellationToken token, bool birds = false)
         {
-            Log("Let's GO Overworld Bot Proof of Concept!");
             GameVersion version = await LGWhichGameVersion(token).ConfigureAwait(false);
             uint prev = 0;
             uint newspawn;
@@ -178,6 +177,7 @@ namespace SysBot.Pokemon
                 }
 
             }
+            await LGUnfreeze(token, version).ConfigureAwait(false);
         }
 
         private async Task Static(CancellationToken token)

@@ -41,31 +41,26 @@ namespace SysBot.Pokemon
             var task = Hub.Config.SWSH_Encounter.EncounteringType switch
             {
                 EncounterMode.LiveStatsChecking => DoLiveStatsChecking(token),
-                EncounterMode.Regis => DoRestartingEncounter(token, (EncounterType)1),
-                EncounterMode.Regigigas => DoRestartingEncounter(token, (EncounterType)2),
-                EncounterMode.Spiritomb => DoRestartingEncounter(token, (EncounterType)3),
-                EncounterMode.SwordsJustice => DoRestartingEncounter(token, (EncounterType)4),
-                EncounterMode.Eternatus => DoRestartingEncounter(token, (EncounterType)5),
+                EncounterMode.Regis => DoRestartingEncounter(token),
+                EncounterMode.Regigigas => DoRestartingEncounter(token),
+                EncounterMode.Spiritomb => DoRestartingEncounter(token),
+                EncounterMode.SwordsJustice => DoRestartingEncounter(token),
+                EncounterMode.Eternatus => DoRestartingEncounter(token),
                 EncounterMode.Dogs_or_Calyrex => DoDogEncounter(token),
                 EncounterMode.Keldeo => DoKeldeoEncounter(token),
                 _ => DoLiveStatsChecking(token),
-                /*                EncounterMode.Articuno => DoSeededEncounter(token, (EncounterType)7),
-                EncounterMode.Zapdos => DoSeededEncounter(token, (EncounterType)8),
-                EncounterMode.Moltres => DoSeededEncounter(token, (EncounterType)9),
-                EncounterMode.Wailord => DoSeededEncounter(token, (EncounterType)10),
-                EncounterMode.OverworldSpawn => PROVAI(token),
-                */
             };
             await task.ConfigureAwait(false);
 
             await ResetStick(token).ConfigureAwait(false);
             await DetachController(token).ConfigureAwait(false);
         }
-        private async Task DoRestartingEncounter(CancellationToken token, EncounterType type)
+        private async Task DoRestartingEncounter(CancellationToken token)
         {
-            uint encounterOffset = (type == (EncounterType)2 || type == (EncounterType)5) ? RaidPokemonOffset : WildPokemonOffset;
-            bool isLegendary = (type == (EncounterType)3);
-            bool skipRoutine = (type == (EncounterType)3 || type == (EncounterType)4);
+            EncounterMode type = Hub.Config.SWSH_Encounter.EncounteringType;
+            uint encounterOffset = (type == EncounterMode.Regigigas || type == EncounterMode.Eternatus) ? RaidPokemonOffset : WildPokemonOffset;
+            bool isLegendary = !(type == EncounterMode.Spiritomb);
+            bool skipRoutine = (type == EncounterMode.Spiritomb || type == EncounterMode.SwordsJustice);
 
             while (!token.IsCancellationRequested)
             {
@@ -73,7 +68,7 @@ namespace SysBot.Pokemon
                 {
                     Log($"Looking for {type}...");
 
-                    if (type == (EncounterType)5)
+                    if (type == EncounterMode.Eternatus)
                     {
                         await SetStick(LEFT, 0, 20_000, 1_000, token).ConfigureAwait(false);
                         await ResetStick(token).ConfigureAwait(false);
@@ -124,155 +119,6 @@ namespace SysBot.Pokemon
                     Log("Check error. Either a wrong offset is used, or the RAM is shifted.");
                 else
                     await HandleEncounter(pk, IsPKLegendary(pk.Species), token);
-            }
-        }
-
-        private async Task<bool> IsArticunoPresent(CancellationToken token)
-        {
-            byte result = (await Connection.ReadBytesAsync(IsArticunoInSnowslide, 1, token).ConfigureAwait(false))[0];
-            return (result == 1);
-        }
-
-        private async Task RerollSeed(EncounterType encounter, CancellationToken token)
-        {
-            bool exit = false;
-
-            while (!exit)
-            {
-                await Click(X, 2_000, token).ConfigureAwait(false);
-                await Click(PLUS, 5_000, token).ConfigureAwait(false);
-
-                if (encounter == (EncounterType)9 || encounter == (EncounterType)10)
-                    await Click(DLEFT, 0_500, token).ConfigureAwait(false);
-                else if (encounter == (EncounterType)7)
-                {
-                    await PressAndHold(DDOWN, 0_150, 1_000, token).ConfigureAwait(false);
-                    await PressAndHold(DRIGHT, 0_090, 1_000, token).ConfigureAwait(false);
-                }
-
-                for (int i = 0; i < 5; i++)
-                    await Click(A, 1_000, token).ConfigureAwait(false);
-
-                await Task.Delay(2_500, token).ConfigureAwait(false);
-
-                if (encounter != (EncounterType)7 || (encounter == (EncounterType)7 && await IsArticunoPresent(token).ConfigureAwait(false)))
-                    exit = true;
-                else
-                    Log("Articuno not found on path.");
-            }
-
-            await Click(X, 2_000, token).ConfigureAwait(false);
-            await Click(R, 2_000, token).ConfigureAwait(false);
-            await Click(A, 5_000, token).ConfigureAwait(false);
-
-            Log("Game saved, seed rerolled.");
-        }
-
-        private async Task PROVAI(CancellationToken token)
-        {
-            //THIS ROUTINE IS A PROOF OF CONCEPT, WORKING AT THE OLD CEMETERY IN THE CROWN TUNDRA
-            SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
-            byte[] KCoordinates = await ReadKCoordinates(token).ConfigureAwait(false);
-            while (!token.IsCancellationRequested)
-            {
-                if (await IsInBattle(token).ConfigureAwait(false))
-                {
-                    // Offsets are flickery so make sure we see it 3 times.
-                    for (int i = 0; i < 3; i++)
-                        await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
-                    Log("Unwanted encounter started, running away...");
-                    await FleeToOverworld(token).ConfigureAwait(false);
-                    // Extra delay to be sure we're fully out of the battle.
-                    await Task.Delay(0_250, token).ConfigureAwait(false);
-                }
-
-                List<PK8> PK8s = await ReadOwPokemonFromBlock(KCoordinates, sav, token).ConfigureAwait(false);
-                if (PK8s.Count > 0)
-                {
-                    foreach (PK8 pkm in PK8s)
-                    {
-                        Log($"{(Species)pkm.Species}");
-                        if(await HandleEncounter(pkm, false, token).ConfigureAwait(false))
-                        {
-                            //Save the game to update KCoordinates block
-                            await Click(X, 2_000, token).ConfigureAwait(false);
-                            await Click(R, 2_000, token).ConfigureAwait(false);
-                            await Click(A, 5_000, token).ConfigureAwait(false);
-                            return;
-                        }
-                    }
-                }
-                else
-                    Log("Empty list, no overworld data in KCoordinates!");
-
-                //Walk to despawn and respawn pokemons
-                await ResetStick(token).ConfigureAwait(false);
-                await SetStick(LEFT, 0, -30_000, 5_000, token).ConfigureAwait(false);
-                await ResetStick(token).ConfigureAwait(false);
-                await SetStick(LEFT, 0, 30_000, 7_000, token).ConfigureAwait(false);
-                await ResetStick(token).ConfigureAwait(false);
-
-                //Check again if encountered an unwanted pokemon
-                if (await IsInBattle(token).ConfigureAwait(false))
-                {
-                    // Offsets are flickery so make sure we see it 3 times.
-                    for (int i = 0; i < 3; i++)
-                        await ReadUntilChanged(BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
-                    Log("Unwanted encounter started, running away...");
-                    await FleeToOverworld(token).ConfigureAwait(false);
-                    // Extra delay to be sure we're fully out of the battle.
-                    await Task.Delay(0_250, token).ConfigureAwait(false);
-                }
-
-                //Save the game to update KCoordinates block
-                await Click(X, 2_000, token).ConfigureAwait(false);
-                await Click(R, 2_000, token).ConfigureAwait(false);
-                await Click(A, 5_000, token).ConfigureAwait(false);
-
-                Log("Game saved, seed rerolled.");
-            }
-        }
-        private async Task DoSeededEncounter(CancellationToken token, EncounterType type)
-        {
-            SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
-            Species dexn;
-            uint offset = 0x00;
-            if (type == (EncounterType)7)
-            {
-                dexn = (Species)144;
-                offset = CrownTundraSnowslideSlopeSpawns;
-            }
-            else if (type == (EncounterType)8)
-            {
-                dexn = (Species)145;
-                offset = WildAreaMotostokeSpawns;
-            }
-            else if (type == (EncounterType)9)
-            {
-                dexn = (Species)146;
-                offset = IsleOfArmorStationSpaws;
-            }
-            else if(type == (EncounterType)10)
-            {
-                dexn = (Species)321;
-                offset = IsleOfArmorStationSpaws;
-            }
-            else
-                dexn = Hub.Config.StopConditions.StopOnSpecies;
-
-            while (!token.IsCancellationRequested && offset != 0)
-            {
-                var pkm = await ReadOwPokemon(dexn, offset, null, sav, token).ConfigureAwait(false);
-                if (pkm != null && await HandleEncounter(pkm, true, token).ConfigureAwait(false))
-                {
-                    await Click(X, 3_500, token).ConfigureAwait(false);
-                    await Click(R, 5_000, token).ConfigureAwait(false);
-                    await Click(X, 0_100, token).ConfigureAwait(false);
-                    Log($"The overworld encounter has been found. The progresses has been saved and the game is paused, you can now go and catch {SpeciesName.GetSpeciesName((int)dexn, 2)}");
-                    return;
-                }
-                else
-                    await RerollSeed(type, token).ConfigureAwait(false);     
             }
         }
 
@@ -387,9 +233,9 @@ namespace SysBot.Pokemon
 
             if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
             {
-                if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
+                if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag) && Hub.Config.SWSH_Encounter.EncounteringType != EncounterMode.LiveStatsChecking)
                     Log($"<@{Hub.Config.Discord.UserTag}> result found! Stopping routine execution; restart the bot(s) to search again.");
-                else
+                else if(Hub.Config.SWSH_Encounter.EncounteringType != EncounterMode.LiveStatsChecking)
                     Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
                 if (Hub.Config.StopConditions.CaptureVideoClip)
                 {

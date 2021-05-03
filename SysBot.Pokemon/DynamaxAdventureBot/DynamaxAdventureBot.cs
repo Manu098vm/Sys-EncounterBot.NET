@@ -186,7 +186,7 @@ namespace SysBot.Pokemon
                         Log($"Adventure n. {adventureCompleted} completed.");
 
                     //Ending routine
-                    if ((Hub.Config.SWSH_DynaAdventure.KeepShinies && found[0] > 0) || found[0] == 4) 
+                    if ((Hub.Config.SWSH_DynaAdventure.KeepShinies && found[0] > 0) || found[0] == 4)
                     {
                         await Task.Delay(1_500, token).ConfigureAwait(false);
                         for (int i = 1; i < found[0]; i++)

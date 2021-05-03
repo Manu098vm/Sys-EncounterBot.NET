@@ -61,7 +61,7 @@ namespace SysBot.Pokemon
         public const uint KCoordinatesBlock = 0x4505B3C0;
         public const uint WildAreaMotostokeSpawns = 0x4505C3C0;
         public const uint IsleOfArmorStationSpaws = 0x4505C9C0;
-        public const uint CrownTundraSnowslideSlopeSpawns = 0x4505EE80;
+        public const uint CrownTundraSnowslideSlopeSpawns = 0x4402D2E0; //Thanks Zyro670!
         public const uint IsArticunoInSnowslide = 0x50B0EE68;
         public const uint GiftFound = 0x297870C; //main
         //public const uint IsArticunoInSnowslide2 = 0x72B64CE4;

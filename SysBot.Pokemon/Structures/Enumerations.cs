@@ -6,22 +6,6 @@
         Route5,
     }
 
-    public enum EncounterType
-    {
-        None = 0,
-        Regis = 1,
-        Regigigas = 2,
-        Spiritomb = 3,
-        SoJ = 4,
-        Eternatus = 5,
-        Keldeo = 6,
-        Articuno = 7,
-        Zapdos = 8,
-        Moltres = 9,
-        Wailord = 10,
-        OverworldAny = 11,
-    }
-
     public enum TargetShinyType
     {
         DisableOption,  // Doesn't care

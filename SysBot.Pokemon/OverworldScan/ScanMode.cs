@@ -10,21 +10,21 @@
         /// <summary>
         /// Bot will reroll Zapdos
         /// </summary>
-        Articuno,
+        G_Articuno,
 
         /// <summary>
         /// Bot will reroll Zapdos
         /// </summary>
-        Zapdos,
+        G_Zapdos,
 
         /// <summary>
         /// Bot will reroll Moltres
         /// </summary>
-        Moltres,
+        G_Moltres,
 
         /// <summary>
         /// Bot will reroll Moltres
         /// </summary>
-        Wailord,
+        IoA_Wailord,
     }
 }
