@@ -3,7 +3,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
@@ -54,11 +53,12 @@ namespace SysBot.Pokemon
             byte[] demageAlteredState = BitConverter.GetBytes(0x7900E81F);
             byte[] demageTemporalState;
             bool wasVideoClipActive = Hub.Config.StopConditions.CaptureVideoClip;
+            System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
 
             //Check/set target parameters
-            
             uint pathoffset = LairSpeciesSelector;
             bool caneditspecies = true;
+            stopwatch.Start();
 
             //Check what's the right offset for the first lair path
             byte[] current_try1 = await Connection.ReadBytesAsync(LairSpeciesSelector, 2, token).ConfigureAwait(false);
@@ -118,7 +118,6 @@ namespace SysBot.Pokemon
 
                 //MAIN LOOP
                 int raidCount = 1;
-                int elapsed = 0;
                 bool inBattle = false;
                 bool lost = false;
 
@@ -146,20 +145,21 @@ namespace SysBot.Pokemon
                         if (pk != null)
                             Log($"Raid Battle {raidCount}: {pk.Species} {pk.Nickname}");
                         else
-                            Log($"Raid Battle {raidCount}.{Environment.NewLine}RAM probably shifted. It suggested to reboot the game or console.");
+                            Log($"Raid Battle {raidCount}.{Environment.NewLine}RAM probably shifted. It is suggested to reboot the game or console.");
 
                         inBattle = true;
                         raidCount++;
-                        elapsed = 0;
+                        stopwatch.Restart();
                     }
                     else if (await IsInBattle(token).ConfigureAwait(false) && inBattle)
                     {
-                        elapsed++;
-                        if (elapsed > 100)
+                        if (stopwatch.ElapsedMilliseconds > 120000)
                         {
+                            Log("Stuck in a battle, trying to change move.");
                             for (int j = 0; j < 10; j++)
                                 await Click(B, 1_00, token).ConfigureAwait(false);
                             await Click(DDOWN, 1_000, token).ConfigureAwait(false);
+                            stopwatch.Restart();
                         }
                     }
                 }
@@ -186,7 +186,7 @@ namespace SysBot.Pokemon
                         Log($"Adventure n. {adventureCompleted} completed.");
 
                     //Ending routine
-                    if (found[0] > 0)
+                    if ((Hub.Config.SWSH_DynaAdventure.KeepShinies && found[0] > 0) || found[0] == 4) 
                     {
                         await Task.Delay(1_500, token).ConfigureAwait(false);
                         for (int i = 1; i < found[0]; i++)

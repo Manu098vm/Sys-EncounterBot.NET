@@ -12,5 +12,8 @@ namespace SysBot.Pokemon
 
         [Category(SWSH_DynaAdventure), Description("Inject 1HKO cheat to rush the enemies. It is unlikely to be able to complete an adventure without this cheat enabled.")]
         public bool InstantKill { get; set; } = true;
+
+        [Category(SWSH_DynaAdventure), Description("Discard any random shinies found during the Adventures if set to False. Keep all of them otherwise.")]
+        public bool KeepShinies { get; set; } = true;
     }
 }
