@@ -491,7 +491,7 @@ namespace SysBot.Pokemon
         //returns [milliseconds for the value to change, value1, value2]
         public async Task<long> LGCountMilliseconds(PokeTradeHubConfig config, CancellationToken token)
         {
-            long WaitMS = config.LetsGoSettings.MaxMs;
+            long WaitMS = config.LGPE_OverworldScanBot.MaxMs;
             bool stuck = false;
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();

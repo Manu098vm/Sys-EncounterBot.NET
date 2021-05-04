@@ -2,7 +2,7 @@
 
 namespace SysBot.Pokemon
 {
-    public class SWSH_DynaAdventureSettings
+    public class DynaAdventureSettings
     {
         private const string SWSH_DynaAdventure = nameof(SWSH_DynaAdventure);
         public override string ToString() => "Dynamax Adventure Settings";

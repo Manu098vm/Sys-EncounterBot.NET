@@ -41,5 +41,10 @@
         /// Bot will soft reset Spiritomb
         /// </summary>
         Spiritomb,
+
+        /// <summary>
+        /// Bot will soft reset Gifts
+        /// </summary>
+        Gifts,
     }
 }

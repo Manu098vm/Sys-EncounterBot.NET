@@ -3,12 +3,12 @@
     public enum PokeRoutineType
     {
         Idle,
-        LetsGo,
-        SWSHEggFetch,
-        SWSHGiftBot,
-        SWSHFossilBot,
-        SWSHEncounterBot,
+        LGPEOverworldScan,
+        LGPEEncounterBot,
         SWSHOverworldScan,
-        DynamaxAdventure,
+        SWSHEncounterBot,
+        SWSHDynamaxAdventure,
+        SWSHEggFetch,
+        SWSHFossilBot,
     }
 }

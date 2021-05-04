@@ -37,15 +37,19 @@ namespace SysBot.Pokemon
         // Bots
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
+        public OverworldBotSettings LGPE_OverworldScanBot { get; set; } = new();
+
+        [Category(Bots)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public LetsGoSettings LGPE_Encounter { get; set; } = new();
+
+        [Category(Bots)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
         public OverworldScanSettings SWSH_OverworldScanBot { get; set; } = new();
 
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public SWSH_DynaAdventureSettings SWSH_DynaAdventure { get; set; } = new();
-
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public EggSettings SWSH_Egg { get; set; } = new();
+        public DynaAdventureSettings SWSH_DynaAdventure { get; set; } = new();
 
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
@@ -54,10 +58,6 @@ namespace SysBot.Pokemon
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public EncounterSettings SWSH_Encounter { get; set; } = new();
-
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public LetsGoSettings LetsGoSettings { get; set; } = new();
 
         // Integration
 

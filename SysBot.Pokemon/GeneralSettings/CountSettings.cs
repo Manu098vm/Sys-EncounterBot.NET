@@ -22,8 +22,5 @@ namespace SysBot.Pokemon
 
         [Category(Count), Description("Encountered Legendary Pokémon")]
         public int CompletedLegends { get; set; }
-
-        [Category(Count), Description("Raids Started")]
-        public int CompletedRaids { get; set; }
     }
 }

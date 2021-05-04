@@ -1,6 +1,5 @@
 ﻿using PKHeX.Core;
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
@@ -14,7 +13,8 @@ namespace SysBot.Pokemon
         private readonly PokeTradeHub<PK8> Hub;
         private readonly BotCompleteCounts Counts;
         private readonly IDumper DumpSetting;
-        private readonly int[] DesiredIVs;
+        private readonly int[] DesiredMinIVs;
+        private readonly int[] DesiredMaxIVs;
         private readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
 
         public EncounterBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
@@ -22,7 +22,7 @@ namespace SysBot.Pokemon
             Hub = hub;
             Counts = Hub.Counts;
             DumpSetting = Hub.Config.Folder;
-            DesiredIVs = StopConditionSettings.InitializeTargetIVs(Hub);
+            StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
         }
 
         private int encounterCount;
@@ -59,7 +59,6 @@ namespace SysBot.Pokemon
         {
             EncounterMode type = Hub.Config.SWSH_Encounter.EncounteringType;
             uint encounterOffset = (type == EncounterMode.Regigigas || type == EncounterMode.Eternatus) ? RaidPokemonOffset : WildPokemonOffset;
-            bool isLegendary = !(type == EncounterMode.Spiritomb);
             bool skipRoutine = (type == EncounterMode.Spiritomb || type == EncounterMode.SwordsJustice);
 
             while (!token.IsCancellationRequested)
@@ -75,15 +74,20 @@ namespace SysBot.Pokemon
                     }
 
                     //Click through all the menus until the encounter.
-                    while (!await IsInBattle(token).ConfigureAwait(false))
-                        await Click(A, 1_000, token).ConfigureAwait(false);
+                    while (!await IsInBattle(token).ConfigureAwait(false) && !await SWSHIsGiftFound(token).ConfigureAwait(false))
+                        await Click(A, 0_300, token).ConfigureAwait(false);
 
-                    Log("An encounter has started! Checking details...");
+                    Log("An encounter found! Checking details...");
 
-                    var pk = await ReadUntilPresent(encounterOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                    PK8? pk;
+                    if(type == EncounterMode.Gifts)
+                        pk = await ReadUntilPresent(await ParsePointer(PokeGift, token), 2_000, 0_200, token).ConfigureAwait(false);
+                    else
+                        pk = await ReadUntilPresent(encounterOffset, 2_000, 0_200, token).ConfigureAwait(false);
+
                     if (pk != null)
                     {
-                        if (await HandleEncounter(pk, isLegendary, token).ConfigureAwait(false))
+                        if (await HandleEncounter(pk, IsPKLegendary(pk.Species), token).ConfigureAwait(false))
                             return;
                     }
 
@@ -231,12 +235,12 @@ namespace SysBot.Pokemon
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                 DumpPokemon(DumpSetting.DumpFolder, legends ? "legends" : "encounters", pk);
 
-            if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
+            if (StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
             {
                 if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag) && Hub.Config.SWSH_Encounter.EncounteringType != EncounterMode.LiveStatsChecking)
                     Log($"<@{Hub.Config.Discord.UserTag}> result found! Stopping routine execution; restart the bot(s) to search again.");
                 else if(Hub.Config.SWSH_Encounter.EncounteringType != EncounterMode.LiveStatsChecking)
-                    Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
+                    Log("Result found!");
                 if (Hub.Config.StopConditions.CaptureVideoClip)
                 {
                     await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);

@@ -13,9 +13,8 @@ namespace SysBot.Pokemon
         public const uint IsInTrade = 0x1614F28; //main
         public const uint IsGiftFound = 0x1615928; //main
         public const uint StationaryBattleData = 0x9A118D68; //heap
-        public const uint GiftData = 0x163EDC0; //main
+        public const uint PokeData = 0x163EDC0; //main
         public const uint GiftData2 = 0xAD5DD188; //heap
-        public const uint TradeData = 0x163EDC0; //main
         public const uint LastSpawn1 = 0x5E12B148; //heap
         public const uint LastSpawn2 = 0x5E12C120; //heap
         public const uint EShinyValue = 0x7398C4; //main

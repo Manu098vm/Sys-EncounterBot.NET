@@ -9,22 +9,16 @@ using static SysBot.Pokemon.PokeDataOffsets;
 
 namespace SysBot.Pokemon
 {
-    public class Letsgo : PokeRoutineExecutor
+    public class OverworldBot : PokeRoutineExecutor
     {
         private readonly PokeTradeHub<PK8> Hub;
         private readonly BotCompleteCounts Counts;
-        private readonly IDumper DumpSetting;
-        private readonly int[] DesiredIVs;
 
-        public Letsgo(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
+        public OverworldBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
             Counts = Hub.Counts;
-            DumpSetting = Hub.Config.Folder;
-            DesiredIVs = StopConditionSettings.InitializeTargetIVs(Hub);
         }
-
-        private int encounterCount;
 
         public override async Task MainLoop(CancellationToken token)
         {
@@ -38,14 +32,11 @@ namespace SysBot.Pokemon
             // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
 
-            var task = Hub.Config.LetsGoSettings.EncounteringType switch
+            var task = Hub.Config.LGPE_OverworldScanBot.Routine switch
             {
-                LetsGoMode.OverworldSpawn => Overworld(token),
-                LetsGoMode.WildBirds => Overworld(token, true),
-                LetsGoMode.Trades => Trade(token),
-                LetsGoMode.Stationary => Static(token),
-                LetsGoMode.Gifts => Gift(token),
-                LetsGoMode.TestRoutine => Test(token),
+                LGPEOverworldMode.OverworldSpawn => Overworld(token),
+                LGPEOverworldMode.WildBirds => Overworld(token, true),
+                LGPEOverworldMode.TestRoutine => Test(token),
                 _ => Test(token),
             };
             await task.ConfigureAwait(false);
@@ -62,36 +53,36 @@ namespace SysBot.Pokemon
             uint speciescombo;
             int i = 0;
             bool freeze = false;
-            bool searchforshiny = Hub.Config.StopConditions.ShinyTarget != TargetShinyType.NonShiny && Hub.Config.StopConditions.ShinyTarget != TargetShinyType.DisableOption;
+            bool searchforshiny = Hub.Config.LGPE_OverworldScanBot.OnlyShiny;
             bool found = false;
 
             //Catch combo to increment spawn quality and shiny rate (Thanks to Lincoln-LM for the offsets)
-            if ((int)Hub.Config.LetsGoSettings.ChainSpecies > 0)
+            if ((int)Hub.Config.LGPE_OverworldScanBot.ChainSpecies > 0)
             {
                 speciescombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
-                if ((speciescombo != (uint)Hub.Config.LetsGoSettings.ChainSpecies) && (Hub.Config.LetsGoSettings.ChainSpecies != 0))
+                if ((speciescombo != (uint)Hub.Config.LGPE_OverworldScanBot.ChainSpecies) && (Hub.Config.LGPE_OverworldScanBot.ChainSpecies != 0))
                 {
-                    Log($"Current catch combo being on {(speciescombo == 0 ? "None" : SpeciesName.GetSpeciesName((int)speciescombo, 4))}, changing to {Hub.Config.LetsGoSettings.ChainSpecies}.");
-                    await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes((uint)Hub.Config.LetsGoSettings.ChainSpecies), await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), token).ConfigureAwait(false);
+                    Log($"Current catch combo being on {(speciescombo == 0 ? "None" : SpeciesName.GetSpeciesName((int)speciescombo, 2))}, changing to {Hub.Config.LGPE_OverworldScanBot.ChainSpecies}.");
+                    await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes((uint)Hub.Config.LGPE_OverworldScanBot.ChainSpecies), await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), token).ConfigureAwait(false);
                     speciescombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
-                    Log($"Current catch combo being on {(speciescombo == 0 ? "None" : SpeciesName.GetSpeciesName((int)speciescombo, 4))}.");
+                    Log($"Current catch combo being now on {(speciescombo == 0 ? "None" : SpeciesName.GetSpeciesName((int)speciescombo, 2))}.");
                 }
             }
-            if (Hub.Config.LetsGoSettings.ChainCount > 0)
+            if (Hub.Config.LGPE_OverworldScanBot.ChainCount > 0)
             {
                 catchcombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
-                if (catchcombo < (uint)Hub.Config.LetsGoSettings.ChainCount)
+                if (catchcombo < (uint)Hub.Config.LGPE_OverworldScanBot.ChainCount)
                 {
-                    Log($"Current catch combo being {catchcombo}, incrementing to {Hub.Config.LetsGoSettings.ChainCount}.");
-                    await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes((uint)Hub.Config.LetsGoSettings.ChainCount), await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), token).ConfigureAwait(false);
+                    Log($"Current catch combo being {catchcombo}, incrementing to {Hub.Config.LGPE_OverworldScanBot.ChainCount}.");
+                    await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes((uint)Hub.Config.LGPE_OverworldScanBot.ChainCount), await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), token).ConfigureAwait(false);
                     catchcombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
-                    Log($"Current catch combo being {catchcombo}.");
+                    Log($"Current catch combo being now {catchcombo}.");
                 }
             }
 
             while (!token.IsCancellationRequested)
             {
-                if(searchforshiny)
+                if (searchforshiny)
                     await LGZaksabeast(token, version).ConfigureAwait(false);
                 while (freeze == false && !token.IsCancellationRequested && !found)
                 {
@@ -123,18 +114,22 @@ namespace SysBot.Pokemon
                             if (newspawn != 0)
                             {
                                 i++;
-                                encounterCount++;
+                                if (IsPKLegendary((int)newspawn))
+                                    Counts.AddCompletedLegends();
+                                else
+                                    Counts.AddCompletedEncounters();
                                 Log($"New spawn ({i}): {newspawn} {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
                             }
                             prev = newspawn;
                             if (!searchforshiny &&
-                                ((!birds && (int)newspawn == (int)Hub.Config.StopConditions.StopOnSpecies) ||
-                                (!birds && (int)Hub.Config.StopConditions.StopOnSpecies == 0) ||
-                                (birds && ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146)))){
-                                    await Click(X, 1_000, token).ConfigureAwait(false);
-                                    await Click(HOME, 1_000, token).ConfigureAwait(false);
-                                    Log("Stop conditions met, restart the bot(s) to search again.");
-                                    return;
+                                ((!birds && (int)newspawn == (int)Hub.Config.LGPE_OverworldScanBot.StopOnSpecies) ||
+                                (!birds && (int)Hub.Config.LGPE_OverworldScanBot.StopOnSpecies == 0) ||
+                                (birds && ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146))))
+                            {
+                                await Click(X, 1_000, token).ConfigureAwait(false);
+                                await Click(HOME, 1_000, token).ConfigureAwait(false);
+                                Log("Stop conditions met, restart the bot(s) to search again.");
+                                return;
                             }
                         }
                     }
@@ -142,9 +137,9 @@ namespace SysBot.Pokemon
                         freeze = true;
                 }
 
-                if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag) && searchforshiny)
+                if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag) && searchforshiny && !token.IsCancellationRequested)
                     Log($"<@{Hub.Config.Discord.UserTag}> a Shiny has been detected.");
-                else
+                else if (!token.IsCancellationRequested)
                     Log("A Shiny has been detected.");
 
                 //Unfreeze to restart the routine, or log the Shiny species.
@@ -152,15 +147,15 @@ namespace SysBot.Pokemon
                 newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn1, 2, token).ConfigureAwait(false), 0);
 
                 //Stop Conditions logic
-                if (birds && (int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146)
-                        found = true;
-                else if ((!birds && (int)Hub.Config.StopConditions.StopOnSpecies > 0 && (int)newspawn == (int)Hub.Config.StopConditions.StopOnSpecies) ||
-                        (!birds && (int)Hub.Config.StopConditions.StopOnSpecies == 0))
-                            found = true;
+                if (birds && ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146) && !token.IsCancellationRequested)
+                    found = true;
+                else if ((!birds && (int)Hub.Config.LGPE_OverworldScanBot.StopOnSpecies > 0 && (int)newspawn == (int)Hub.Config.LGPE_OverworldScanBot.StopOnSpecies) ||
+                        (!birds && (int)Hub.Config.LGPE_OverworldScanBot.StopOnSpecies == 0))
+                    found = true;
                 else
                     found = false;
 
-                if (!found)
+                if (!found && !token.IsCancellationRequested)
                 {
                     freeze = false;
                     if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
@@ -168,7 +163,7 @@ namespace SysBot.Pokemon
                     else
                         Log($"Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} is not the target, the routine will continue.");
                 }
-                else
+                else if (!token.IsCancellationRequested)
                 {
                     if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
                         Log($"<@{Hub.Config.Discord.UserTag}> Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} found!");
@@ -183,84 +178,10 @@ namespace SysBot.Pokemon
             await LGUnfreeze(token, version).ConfigureAwait(false);
         }
 
-        private async Task Static(CancellationToken token)
-        {
-            Log("Ensure to have a powerful Pokémon in the first slot of your team, with a move that can knock out the enemy in a few turns as first move.");
-            while (!token.IsCancellationRequested)
-            {
-                //Spam A until battle starts
-                while(!await LGIsInBattle(token).ConfigureAwait(false))
-                    await Click(A, 0_500, token).ConfigureAwait(false);
-
-                Log("Battle started, checking details...");
-
-                var pk = await LGReadUntilPresent(StationaryBattleData, 2_000, 0_200, token).ConfigureAwait(false);
-                if (pk != null)
-                    if (await HandleEncounter(pk, IsPKLegendary(pk.Species), token).ConfigureAwait(false))
-                    {
-                        Log("Result found, defeating the enemy.");
-                        //Spam A until the battle ends
-                        while (await LGIsInBattle(token).ConfigureAwait(false) && !await LGIsInCatchScreen(token).ConfigureAwait(false))
-                            await Click(A, 0_500, token).ConfigureAwait(false);
-
-                        await Click(HOME, 0_500, token).ConfigureAwait(false);
-                        return;
-
-                    }
-                Log($"Resetting Static Encounter by restarting the game");
-                await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                await LGOpenGame(Hub.Config, token).ConfigureAwait(false);
-            }
-        }
-
-        private async Task Gift(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                //Click through all the menus until the Gift.
-                while (!await LGIsGiftFound(token).ConfigureAwait(false))
-                    await Click(A, 0_500, token).ConfigureAwait(false);
-
-                Log("A Gift has been found! Checking details...");
-
-                var pk = await LGReadUntilPresent(TradeData, 2_000, 0_200, token, EncryptedSize, false).ConfigureAwait(false);
-                if (pk != null)
-                    if (await HandleEncounter(pk, IsPKLegendary(pk.Species), token).ConfigureAwait(false))
-                        return;
-
-                Log($"Resetting the Gift Encounter by restarting the game");
-                await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                await LGOpenGame(Hub.Config, token).ConfigureAwait(false);
-            }
-        }
-
-        private async Task Trade(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                //Click through all the menus until the trade.
-                while (!await LGIsInTrade(token).ConfigureAwait(false))
-                    await Click(A, 0_500, token).ConfigureAwait(false);
-
-                Log("A trade has started! Checking details...");
-
-                var pk = await LGReadUntilPresent(TradeData, 2_000, 0_200, token, EncryptedSize, false).ConfigureAwait(false);
-                if (pk != null)
-                {
-                    if (await HandleEncounter(pk, false, token).ConfigureAwait(false))
-                        return;
-                }
-
-                Log($"Resetting the trade by restarting the game");
-                await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                await LGOpenGame(Hub.Config, token).ConfigureAwait(false);
-            }
-        }
-
         private async Task Test(CancellationToken token)
         {
 
-            var task = Hub.Config.LetsGoSettings.TestRoutine switch
+            var task = Hub.Config.LGPE_OverworldScanBot.TestRoutine switch
             {
                 LetsGoTest.TestOffsets => TestOffsets(token),
                 LetsGoTest.CatchComboTest => TestCatchCombo(token),
@@ -290,7 +211,7 @@ namespace SysBot.Pokemon
             Log("Testing Shiny Value...");
             var data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PShinyValue : EShinyValue, 4, token).ConfigureAwait(false);
             byte[] compare = new byte[] { 0xE0, 0x02, 0x00, 0x54 };
-            
+
             if (data.SequenceEqual(compare))
                 Log($"OK: {BitConverter.ToString(data)}");
             else
@@ -318,7 +239,7 @@ namespace SysBot.Pokemon
                 }
                 else
                     Log("FAILED: 0x1610EE0 not changed.");
-                if (i >= Hub.Config.LetsGoSettings.FreezingTestCount)
+                if (i >= Hub.Config.LGPE_OverworldScanBot.FreezingTestCount)
                 {
                     Log($"Test completed. MaxMS value: {maxms}");
                     return;
@@ -334,9 +255,9 @@ namespace SysBot.Pokemon
                 species = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
                 count = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
                 Log($"Current catch combo being on {(SpeciesName.GetSpeciesName((int)species, 4)).Replace("Uovo", "None")}, count is at {count}");
-                //Log($"Editing to {Hub.Config.LetsGoSettings.ChainSpecies}, at {Hub.Config.LetsGoSettings.ChainCount}");
-                //await Connection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.LetsGoSettings.ChainSpecies), SpeciesCombo, token).ConfigureAwait(false);
-                //await SwitchConnection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.LetsGoSettings.ChainCount), CatchCombo, token).ConfigureAwait(false);
+                //Log($"Editing to {Hub.Config.LGPE_OverworldScanBot.ChainSpecies}, at {Hub.Config.LGPE_OverworldScanBot.ChainCount}");
+                //await Connection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.LGPE_OverworldScanBot.ChainSpecies), SpeciesCombo, token).ConfigureAwait(false);
+                //await SwitchConnection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.LGPE_OverworldScanBot.ChainCount), CatchCombo, token).ConfigureAwait(false);
             }
         }
         private async Task TestGameReady(CancellationToken token)
@@ -381,42 +302,6 @@ namespace SysBot.Pokemon
                     Log($"Exited wild encounter.");
                 }
             }
-        }
-
-        private async Task<bool> HandleEncounter(PB7 pk, bool legends, CancellationToken token)
-        {
-            encounterCount++;
-
-            //Star/Square Shiny Recognition
-            var showdowntext = ShowdownParsing.GetShowdownText(pk);
-            if (pk.IsShiny && pk.ShinyXor == 0)
-                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
-            else if (pk.IsShiny)
-                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
-
-            Log($"Encounter: {encounterCount}{Environment.NewLine}{showdowntext}{Environment.NewLine}");
-            if (legends)
-                Counts.AddCompletedLegends();
-            else
-                Counts.AddCompletedEncounters();
-
-            if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
-                DumpPokemon(DumpSetting.DumpFolder, legends ? "legends" : "encounters", pk);
-
-            if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
-            {
-                if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                    Log($"<@{Hub.Config.Discord.UserTag}> result found! Stopping routine execution; restart the bot(s) to search again.");
-                else
-                    Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
-                if (Hub.Config.StopConditions.CaptureVideoClip)
-                {
-                    await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
-                    await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
-                }
-                return true;
-            }
-            return false;
         }
         private async Task ResetStick(CancellationToken token)
         {

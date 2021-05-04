@@ -14,7 +14,8 @@ namespace SysBot.Pokemon
         private readonly PokeTradeHub<PK8> Hub;
         private readonly BotCompleteCounts Counts;
         private readonly IDumper DumpSetting;
-        private readonly int[] DesiredIVs;
+        private readonly int[] DesiredMinIVs;
+        private readonly int[] DesiredMaxIVs;
         private readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
 
         public OverworldScan(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
@@ -22,7 +23,7 @@ namespace SysBot.Pokemon
             Hub = hub;
             Counts = Hub.Counts;
             DumpSetting = Hub.Config.Folder;
-            DesiredIVs = StopConditionSettings.InitializeTargetIVs(Hub);
+            StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
         }
 
         private int encounterCount;
@@ -238,7 +239,7 @@ namespace SysBot.Pokemon
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                 DumpPokemon(DumpSetting.DumpFolder, legends ? "legends" : "encounters", pk);
 
-            if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
+            if (StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
             {
                 if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
                     Log($"<@{Hub.Config.Discord.UserTag}> result found! Stopping routine execution; restart the bot(s) to search again.");
@@ -294,7 +295,7 @@ namespace SysBot.Pokemon
 
             while (index < movements.Length - 1)
             {
-                if ((movements.Length > 1 && movements[index + 1] == ',') || movements.Length == 1)
+                if ((movements.Length > 1 && (movements[index + 1] == ',' || movements[index + 1] == '.')) || movements.Length == 1)
                 {
                     word += movements[index];
                     if (word.Equals("UP"))

@@ -16,7 +16,7 @@ namespace SysBot.Pokemon
         [Category(OverworldScan), Description("Milliseconds to wait before every save game. The overworld will be scanned after the game save.")]
         public int WaitMsBeforeSave { get; set; } = 5000;
 
-        [Category(OverworldScan), Description("Examples: \"UP, RIGHT\", \"RIGHT, LEFT, UP\", etc. Every Movement MUST be separated with a comma (\",\")")]
+        [Category(OverworldScan), Description("Examples: \"UP, RIGHT\", \"RIGHT, LEFT, UP\", etc. Every movement MUST be separated with a comma (\",\")")]
         public string MoveOrder { get; set; } = string.Empty;
 
         [Category(OverworldScan), Description("Indicates how long the character will move north before every scan.")]
