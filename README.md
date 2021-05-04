@@ -11,7 +11,6 @@ This fork is not maintained by the PKHeX Dev server.
 Refer to the [Release section](https://github.com/Manu098vm/Sys-EncounterBot.NET/releases) to download the latest release.
 The hunting guides are in the [Wiki](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki).
 
-[sys-botbase](https://github.com/olliz0r/sys-botbase) client for remote control automation of Nintendo Switch consoles.
 The Sys-EncounterBot allows to hunt and reset for almost all the Pokémon encounters in the core games for Nintendo Switch.
 Check the [Wiki](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki) for a detailed explaination on what these bots can do.
 
@@ -26,6 +25,8 @@ Check the [Wiki](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki) for a d
 [architdate](https://github.com/architdate), [Lusamine](https://github.com/Lusamine), [kwsch](https://github.com/kwsch), all the ALM team and all the people involved in the developing/testing of [SysBot.NET](https://github.com/kwsch/SysBot.NET), thanks to which this project would never exist.
 
 [Lusamine](https://github.com/Lusamine), [PP-theSLAYER](https://github.com/PP-theSLAYER), [Zyro670](https://github.com/zyro670), [Lincoln-LM](https://github.com/Lincoln-LM), [Koi-3088](https://github.com/Koi-3088) and KD#0001 for suggestions and explainations on how some game structures work and help in implementations.
+
+[Zaksabeast](https://github.com/zaksabeast) for his great researches on how Shinies are generated in the Let's Go games.
 
 # License
 Refer to the `LICENSE` for details regarding licensing.
