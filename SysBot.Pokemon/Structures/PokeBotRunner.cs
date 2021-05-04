@@ -62,13 +62,13 @@ namespace SysBot.Pokemon
 
         public PokeRoutineExecutor CreateBotFromConfig(PokeBotState cfg) => cfg.NextRoutineType switch
         {
-            PokeRoutineType.LGPEOverworldScan => new OverworldBot(cfg, Hub),
-            PokeRoutineType.LGPEEncounterBot => new Letsgo(cfg, Hub),
-            PokeRoutineType.SWSHOverworldScan => new OverworldScan(cfg, Hub),
-            PokeRoutineType.SWSHEggFetch => new EggBot(cfg, Hub),
-            PokeRoutineType.SWSHFossilBot => new FossilBot(cfg, Hub),
-            PokeRoutineType.SWSHDynamaxAdventure => new DynamaxAdventureBot(cfg, Hub),
-            PokeRoutineType.SWSHEncounterBot => new EncounterBot(cfg, Hub),
+            PokeRoutineType.LGPE_OverworldScan => new OverworldBot(cfg, Hub),
+            PokeRoutineType.LGPE_EncounterBot => new Letsgo(cfg, Hub),
+            PokeRoutineType.SWSH_OverworldScan => new OverworldScan(cfg, Hub),
+            PokeRoutineType.SWSH_EggFetch => new EggBot(cfg, Hub),
+            PokeRoutineType.SWSH_FossilBot => new FossilBot(cfg, Hub),
+            PokeRoutineType.SWSH_DynamaxAdventure => new DynamaxAdventureBot(cfg, Hub),
+            PokeRoutineType.SWSH_EncounterBot => new EncounterBot(cfg, Hub),
             PokeRoutineType.Idle => new Idle(cfg),
             _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
         };

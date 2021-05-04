@@ -152,7 +152,6 @@ namespace SysBot.Pokemon
                     foreach (int[] move in movementslist)
                     {
                         await ResetStick(token).ConfigureAwait(false);
-                        Log("Dentro!");
                         await SetStick(LEFT, (short)(move[0]), (short)(move[1]), move[2], token).ConfigureAwait(false);
                         //Check again is a wild encounter popped up while moving
                         if (await IsInBattle(token).ConfigureAwait(false))

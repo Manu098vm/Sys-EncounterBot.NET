@@ -49,7 +49,7 @@ namespace SysBot.Pokemon
 
             Log("Starting main EggBot loop.");
             Config.IterateNextRoutine();
-            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SWSHEggFetch)
+            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SWSH_EggFetch)
             {
                 // Walk a step left, then right => check if egg was generated on this attempt.
                 // Repeat until an egg is generated.
@@ -99,7 +99,7 @@ namespace SysBot.Pokemon
         {
             Log("Walking around until an egg is ready...");
             int attempts = 0;
-            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SWSHEggFetch)
+            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SWSH_EggFetch)
             {
                 await SetEggStepCounter(Location, token).ConfigureAwait(false);
 

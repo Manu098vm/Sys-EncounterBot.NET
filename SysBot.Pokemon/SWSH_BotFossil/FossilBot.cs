@@ -42,7 +42,7 @@ namespace SysBot.Pokemon
 
             Log("Starting main FossilBot loop.");
             Config.IterateNextRoutine();
-            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SWSHFossilBot)
+            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SWSH_FossilBot)
             {
                 if (encounterCount != 0 && encounterCount % reviveCount == 0)
                 {
