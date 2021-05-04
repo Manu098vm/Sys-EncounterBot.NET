@@ -23,7 +23,7 @@ namespace SysBot.Pokemon
         [Category(StopConditions), Description("Selects the shiny type to stop on.")]
         public TargetShinyType ShinyTarget { get; set; } = TargetShinyType.DisableOption;
 
-        [Category(StopConditions), Description("If set to \"Any\", the bot will target a Pokémon that has any of the Marks listed. Select a certain Mark if you're hunting for it specifically. No restrictions if set to \"None\".")]
+        [Category(StopConditions), Description("If set to \"Any\", the bot will target a Pokémon that has any of the Marks listed. Select a certain Mark if you're hunting for it specifically. No restrictions if set to \"None\". Ignored for LGPE encounters.")]
         public MarkIndex MarkTarget { get; set; } = MarkIndex.None;
 
         [Category(StopConditions), Description("Holds Capture button to record a 30 second clip when a matching Pokémon is found by EncounterBot or Fossilbot.")]

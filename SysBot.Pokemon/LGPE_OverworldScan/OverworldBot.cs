@@ -137,9 +137,7 @@ namespace SysBot.Pokemon
                         freeze = true;
                 }
 
-                if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag) && searchforshiny && !token.IsCancellationRequested)
-                    Log($"<@{Hub.Config.Discord.UserTag}> a Shiny has been detected.");
-                else if (!token.IsCancellationRequested)
+                if (searchforshiny && !token.IsCancellationRequested)
                     Log("A Shiny has been detected.");
 
                 //Unfreeze to restart the routine, or log the Shiny species.
@@ -158,10 +156,7 @@ namespace SysBot.Pokemon
                 if (!found && !token.IsCancellationRequested)
                 {
                     freeze = false;
-                    if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                        Log($"<@{Hub.Config.Discord.UserTag}> Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} is not the target, the routine will continue.");
-                    else
-                        Log($"Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} is not the target, the routine will continue.");
+                    Log($"Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} is not the target, the routine will continue.");
                 }
                 else if (!token.IsCancellationRequested)
                 {

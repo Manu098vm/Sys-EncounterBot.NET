@@ -210,14 +210,14 @@ namespace SysBot.Pokemon
                 {
                     data = await Connection.ReadBytesAsync(offset, 56, token).ConfigureAwait(false);
                     species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
-                    Log($"Target: {target}, Encountered: {species}");
+                    //Log($"Target: {target}, Encountered: {species}");
                     offset += 192;
                     i++;
-                } while (target != 0 && species != 0 && target != species && i <= 300);
-                if (i > 100)
+                } while (target != 0 && species != 0 && target != species && i <= 40);
+                if (i > 40)
                 {
                     data = null;
-                    Log("Above 100");
+                    //Log("Above 100");
                 }
             }
             else if (mondata != null)
@@ -568,7 +568,7 @@ namespace SysBot.Pokemon
             stopwatch.Start();
             while (!await LGIsInTitleScreen(token).ConfigureAwait(false))
             {
-                if(stopwatch.ElapsedMilliseconds > 7000)
+                if(stopwatch.ElapsedMilliseconds > 6000)
                     await DetachController(token).ConfigureAwait(false);
                 await Click(A, 0_500, token).ConfigureAwait(false);
             }
