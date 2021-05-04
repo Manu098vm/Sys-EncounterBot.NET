@@ -46,5 +46,15 @@
         /// Bot will soft reset Gifts
         /// </summary>
         Gifts,
+        /// <summary>
+        /// Bot will move back and forth in a straight vertical path to encounter Pokémon
+        /// </summary>
+        VerticalLine,
+
+        /// <summary>
+        /// Bot will move back and forth in a straight horizontal path to encounter Pokémon
+        /// </summary>
+        HorizontalLine,
+
     }
 }

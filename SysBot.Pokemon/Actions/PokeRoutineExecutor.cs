@@ -210,18 +210,21 @@ namespace SysBot.Pokemon
                 {
                     data = await Connection.ReadBytesAsync(offset, 56, token).ConfigureAwait(false);
                     species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
-                    //Log($"Target: {target}, Encountered: {species}");
+                    Log($"Target: {target}, Encountered: {species}");
                     offset += 192;
                     i++;
-                } while (target != 0 && species != 0 && target != species && i <= 20);
-                if (i == 20)
+                } while (target != 0 && species != 0 && target != species && i <= 300);
+                if (i > 100)
+                {
                     data = null;
+                    Log("Above 100");
+                }
             }
             else if (mondata != null)
             {
                 data = mondata;
                 species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
-                //Log($"Encountered: {species}");
+                Log($"Encountered: {species}");
             }
 
             if (data != null && data[20] == 1)

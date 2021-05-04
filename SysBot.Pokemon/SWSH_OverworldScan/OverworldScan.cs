@@ -186,12 +186,12 @@ namespace SysBot.Pokemon
                 dexn = (Species)144;
                 offset = CrownTundraSnowslideSlopeSpawns;
             }
-            else if (type == ScanMode.G_Moltres)
+            else if (type == ScanMode.G_Zapdos)
             {
                 dexn = (Species)145;
                 offset = WildAreaMotostokeSpawns;
             }
-            else if (type == ScanMode.G_Zapdos)
+            else if (type == ScanMode.G_Moltres)
             {
                 dexn = (Species)146;
                 offset = IsleOfArmorStationSpaws;
