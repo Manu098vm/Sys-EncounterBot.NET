@@ -23,7 +23,7 @@ namespace SysBot.Pokemon
         public int ChainCount { get; set; } = 0;
 
         [Category(LetsGoScan), Description("Set the test you want to attempt. Ignore unless the routine is set to \"TestRoutine\".")]
-        public LetsGoTest TestRoutine { get; set; } = LetsGoTest.TestOffsets;
+        public LetsGoTest TestRoutine { get; set; } = LetsGoTest.Unfreeze;
 
         [Category(LetsGoScan), Description("Set how many attempt the bot will do to check the freezing values. Infinite checking if 0.")]
         public int FreezingTestCount { get; set; } = 10;

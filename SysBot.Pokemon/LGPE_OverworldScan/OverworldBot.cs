@@ -128,7 +128,10 @@ namespace SysBot.Pokemon
                             {
                                 await Click(X, 1_000, token).ConfigureAwait(false);
                                 await Click(HOME, 1_000, token).ConfigureAwait(false);
-                                Log("Stop conditions met, restart the bot(s) to search again.");
+                                if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
+                                    Log($"<@{Hub.Config.Discord.UserTag}> stop conditions met, restart the bot(s) to search again.");
+                                else
+                                    Log("Stop conditions met, restart the bot(s) to search again.");
                                 return;
                             }
                         }
@@ -178,6 +181,7 @@ namespace SysBot.Pokemon
 
             var task = Hub.Config.LGPE_OverworldScanBot.TestRoutine switch
             {
+                LetsGoTest.Unfreeze => LGUnfreeze(token, await LGWhichGameVersion(token).ConfigureAwait(false)),
                 LetsGoTest.TestOffsets => TestOffsets(token),
                 LetsGoTest.CatchComboTest => TestCatchCombo(token),
                 LetsGoTest.CheckGameOpen => TestGameReady(token),
@@ -186,6 +190,7 @@ namespace SysBot.Pokemon
                 _ => TestOffsets(token),
             };
             await task.ConfigureAwait(false);
+            Log("Done.");
             return;
         }
         private async Task TestOffsets(CancellationToken token)

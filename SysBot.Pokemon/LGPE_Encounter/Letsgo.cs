@@ -79,22 +79,39 @@ namespace SysBot.Pokemon
             LetsGoMode mode = Hub.Config.LGPE_Encounter.EncounteringType;
             uint offset = mode == LetsGoMode.Stationary ? StationaryBattleData : PokeData;
             bool isheap = mode == LetsGoMode.Stationary;
+            System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+            long ms = 0;
 
-            if(mode == LetsGoMode.Stationary)
+            if (mode == LetsGoMode.Stationary)
                 Log("Ensure to have a powerful Pokémon in the first slot of your team, with a move that can knock out the enemy in a few turns as first move.");
 
             while (!token.IsCancellationRequested)
             {
-                //Spam A until battle starts
-                while (!await LGIsInBattle(token).ConfigureAwait(false) && !await LGIsGiftFound(token).ConfigureAwait(false) && !await LGIsInTrade(token).ConfigureAwait(false))
-                    await Click(A, 0_500, token).ConfigureAwait(false);
+                stopwatch.Restart();
 
+                //Spam A until battle starts
                 if (mode == LetsGoMode.Stationary)
+                {
+                    while(!await LGIsInBattle(token).ConfigureAwait(false) && !(ms != 0 && stopwatch.ElapsedMilliseconds > ms))
+                        await Click(A, 0_200, token).ConfigureAwait(false);
                     Log("Battle started, checking details...");
+                }
                 else if (mode == LetsGoMode.Trades)
+                {
+                    while(!await LGIsInTrade(token).ConfigureAwait(false) && !(ms != 0 && stopwatch.ElapsedMilliseconds > ms))
+                        await Click(A, 0_200, token).ConfigureAwait(false);
                     Log("Trade started, checking details...");
+                }
                 else if (mode == LetsGoMode.Gifts)
+                {
+                    while(!await LGIsGiftFound(token).ConfigureAwait(false) && !(ms != 0 && stopwatch.ElapsedMilliseconds > ms))
+                        await Click(A, 0_200, token).ConfigureAwait(false);
                     Log("Gift found, checking details...");
+                }
+
+                //Ms taken from a single encounter + margin
+                if (ms == 0)
+                    ms = stopwatch.ElapsedMilliseconds + (long)2500;
 
                 var pk = await LGReadUntilPresent(offset, 2_000, 0_200, token, EncryptedSize, isheap).ConfigureAwait(false);
                 if (pk != null)
@@ -105,9 +122,10 @@ namespace SysBot.Pokemon
                         {
                             Log("Result found, defeating the enemy.");
                             //Spam A until the battle ends
-                            while (await LGIsInBattle(token).ConfigureAwait(false) && !await LGIsInCatchScreen(token).ConfigureAwait(false))
+                            while (!await LGIsInCatchScreen(token).ConfigureAwait(false))
                                 await Click(A, 0_500, token).ConfigureAwait(false);
                         }
+                        await Click(HOME, 1_000, token).ConfigureAwait(false);
                         return;
                     }
                 }
