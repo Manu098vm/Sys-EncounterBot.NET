@@ -49,22 +49,24 @@ namespace SysBot.Pokemon
         private async Task Overworld(CancellationToken token, bool birds = false)
         {
             GameVersion version = await LGWhichGameVersion(token).ConfigureAwait(false);
-            //List<int[]> movementslist = ParseMovements();
-            //bool firstrun = movementslist.Count > 0;
+            List<int[]> movementslist = ParseMovements();
+            bool firstrun = movementslist.Count > 0;
             Stopwatch stopwatch = new Stopwatch();
             uint prev = 0;
             uint newspawn;
             uint catchcombo;
             uint speciescombo;
             int i = 0;
-            //int j = 0;
+            int j = 0;
             bool freeze = false;
             bool searchforshiny = Hub.Config.LGPE_OverworldScanBot.OnlyShiny;
             bool found = false;
 
-            /*Commented out as the movement routine brings lot more disadvantages than advantages.
             if (movementslist.Count > 0)
-                Log("ATTENTION!\nAny wild encounter will broke the movement routine, resulting in the pg moving to unwanted places!\n-----------------------------------------");*/
+                Log($"ATTENTION!{Environment.NewLine}Any wild encounter will broke the movement routine, resulting in the pg moving to unwanted places!{Environment.NewLine}" +
+                    $"----------------------------------------{Environment.NewLine}" +
+                    $"ATTENTION!\nChanging area during the scan routine can cause unexpected behaviour. It his higlhy recommanded to avoid that.{Environment.NewLine}" +
+                    $"-----------------------------------------{Environment.NewLine}");
 
             //Catch combo to increment spawn quality and shiny rate (Thanks to Lincoln-LM for the offsets)
             if ((int)Hub.Config.LGPE_OverworldScanBot.ChainSpecies > 0)
@@ -98,7 +100,6 @@ namespace SysBot.Pokemon
                 {
                     if (await LGCountMilliseconds(Hub.Config, token).ConfigureAwait(false) > 0 || !searchforshiny)
                     {
-                        /*Movement routine commented out as it brings lot more disadvantages than advantages.
                         //The routine need to continue and check the overworld spawns, cannot be stuck at changing stick position.
                         if (stopwatch.ElapsedMilliseconds >= movementslist.ElementAt(j)[2] || firstrun)
                         {
@@ -111,7 +112,7 @@ namespace SysBot.Pokemon
                             if (j == movementslist.Count)
                                 j = 0;
                             stopwatch.Restart();
-                        }*/
+                        }
 
                         //Check is inside an unwanted encounter
                         if (await LGIsInCatchScreen(token).ConfigureAwait(false))
@@ -334,7 +335,6 @@ namespace SysBot.Pokemon
             await SetStick(LEFT, 0, 0, 0_500, token).ConfigureAwait(false); // reset
         }
 
-        /*Commented out as the movement routine brings lot more disadvantages than advantages.
         private List<int[]> ParseMovements()
         {
             List<int[]> buttons = new List<int[]>();
@@ -369,6 +369,6 @@ namespace SysBot.Pokemon
             }
             Log($"Buttons Count: {buttons.Count}");
             return buttons;
-        }*/
+        }
     }
 }

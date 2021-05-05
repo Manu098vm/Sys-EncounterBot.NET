@@ -143,8 +143,7 @@ namespace SysBot.Pokemon
         public async Task<bool> IsArticunoPresent(CancellationToken token) => (await Connection.ReadBytesAsync(IsArticunoInSnowslide, 1, token).ConfigureAwait(false))[0] == 1;
 
         public async Task<byte[]> ReadKCoordinates(CancellationToken token) => await SwitchConnection.ReadBytesLargeAsync(KCoordinatesBlock, 24592, token).ConfigureAwait(false);
-        //public async Task<byte[]> ReadKCoordinates(CancellationToken token) => await Connection.ReadBytesAsync(KCoordinatesBlock, 24592, token).ConfigureAwait(false);
-
+        
         public async Task<List<PK8>> ReadOwPokemonFromBlock(byte[] KCoordinates, SAV8 sav, CancellationToken token)
         {
             List<PK8> PK8s = new List<PK8>();
@@ -211,21 +210,16 @@ namespace SysBot.Pokemon
                 {
                     data = await Connection.ReadBytesAsync(offset, 56, token).ConfigureAwait(false);
                     species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
-                    //Log($"Target: {target}, Encountered: {species}");
                     offset += 192;
                     i++;
                 } while (target != 0 && species != 0 && target != species && i <= 40);
                 if (i > 40)
-                {
                     data = null;
-                    //Log("Above 100");
-                }
             }
             else if (mondata != null)
             {
                 data = mondata;
                 species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
-                Log($"Encountered: {species}");
             }
 
             if (data != null && data[20] == 1)
@@ -264,10 +258,7 @@ namespace SysBot.Pokemon
                 int ivs = data[18];
                 uint seed = BitConverter.ToUInt32(data.Slice(24, 4), 0);
 
-                //Log($"Stats in RAM: Shinyness {shinyness}, IVs {ivs}, Seed: {String.Format("{0:X}", seed)}");
-
                 pk = OverworldSWSHRNG.CalculateFromSeed(pk, shinyness, ivs, seed);
-
                 return pk;
             }
             else
