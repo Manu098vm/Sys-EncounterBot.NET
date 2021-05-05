@@ -288,7 +288,7 @@ namespace SysBot.Pokemon
         private List<int[]> ParseMovements()
         {
             List<int[]> buttons = new List<int[]>();
-            string movements = Hub.Config.SWSH_OverworldScanBot.MoveOrder.ToUpper() + ",";
+            string movements = Hub.Config.SWSH_OverworldScanBot.MovementOrder.ToUpper() + ",";
             int index = 0;
             string word = "";
 

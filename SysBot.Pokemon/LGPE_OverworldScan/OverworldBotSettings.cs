@@ -22,6 +22,22 @@ namespace SysBot.Pokemon
         [Category(LetsGoScan), Description("Force the current chain to be at the entered value. Ignored if 0.")]
         public int ChainCount { get; set; } = 0;
 
+        //Commented out as the movement routine brings lot more disadvantages than advantages.
+        /*[Category(LetsGoScan), Description("Examples: \"UP, RIGHT\", \"RIGHT, LEFT, UP\", etc. Every movement MUST be separated with a comma (\",\"). Ignored if empty.")]
+        public string MovementOrder { get; set; } = string.Empty;
+
+        [Category(LetsGoScan), Description("Indicates how long the character will move north during the scans.")]
+        public int MoveUpMs { get; set; } = 5000;
+
+        [Category(LetsGoScan), Description("Indicates how long the character will move east during the scans.")]
+        public int MoveRightMs { get; set; } = 5000;
+
+        [Category(LetsGoScan), Description("Indicates how long the character will move south during the scans.")]
+        public int MoveDownMs { get; set; } = 5000;
+
+        [Category(LetsGoScan), Description("Indicates how long the character will move west during the scans.")]
+        public int MoveLeftMs { get; set; } = 5000;*/
+
         [Category(LetsGoScan), Description("Set the test you want to attempt. Ignore unless the routine is set to \"TestRoutine\".")]
         public LetsGoTest TestRoutine { get; set; } = LetsGoTest.Unfreeze;
 

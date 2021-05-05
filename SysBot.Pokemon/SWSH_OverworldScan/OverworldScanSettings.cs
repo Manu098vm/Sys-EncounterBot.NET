@@ -17,18 +17,18 @@ namespace SysBot.Pokemon
         public int WaitMsBeforeSave { get; set; } = 5000;
 
         [Category(OverworldScan), Description("Examples: \"UP, RIGHT\", \"RIGHT, LEFT, UP\", etc. Every movement MUST be separated with a comma (\",\")")]
-        public string MoveOrder { get; set; } = string.Empty;
+        public string MovementOrder { get; set; } = string.Empty;
 
         [Category(OverworldScan), Description("Indicates how long the character will move north before every scan.")]
         public int MoveUpMs { get; set; } = 5000;
 
-        [Category(OverworldScan), Description("Indicates how long the character will move north before every scan.")]
+        [Category(OverworldScan), Description("Indicates how long the character will move east before every scan.")]
         public int MoveRightMs { get; set; } = 5000;
 
-        [Category(OverworldScan), Description("Indicates how long the character will move north before every scan.")]
+        [Category(OverworldScan), Description("Indicates how long the character will move south before every scan.")]
         public int MoveDownMs { get; set; } = 5000;
 
-        [Category(OverworldScan), Description("Indicates how long the character will move north before every scan.")]
+        [Category(OverworldScan), Description("Indicates how long the character will move west before every scan.")]
         public int MoveLeftMs { get; set; } = 5000;
     }
 }

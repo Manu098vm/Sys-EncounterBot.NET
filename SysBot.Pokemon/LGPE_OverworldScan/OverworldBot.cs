@@ -3,6 +3,8 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Diagnostics;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
@@ -47,14 +49,22 @@ namespace SysBot.Pokemon
         private async Task Overworld(CancellationToken token, bool birds = false)
         {
             GameVersion version = await LGWhichGameVersion(token).ConfigureAwait(false);
+            //List<int[]> movementslist = ParseMovements();
+            //bool firstrun = movementslist.Count > 0;
+            Stopwatch stopwatch = new Stopwatch();
             uint prev = 0;
             uint newspawn;
             uint catchcombo;
             uint speciescombo;
             int i = 0;
+            //int j = 0;
             bool freeze = false;
             bool searchforshiny = Hub.Config.LGPE_OverworldScanBot.OnlyShiny;
             bool found = false;
+
+            /*Commented out as the movement routine brings lot more disadvantages than advantages.
+            if (movementslist.Count > 0)
+                Log("ATTENTION!\nAny wild encounter will broke the movement routine, resulting in the pg moving to unwanted places!\n-----------------------------------------");*/
 
             //Catch combo to increment spawn quality and shiny rate (Thanks to Lincoln-LM for the offsets)
             if ((int)Hub.Config.LGPE_OverworldScanBot.ChainSpecies > 0)
@@ -88,17 +98,31 @@ namespace SysBot.Pokemon
                 {
                     if (await LGCountMilliseconds(Hub.Config, token).ConfigureAwait(false) > 0 || !searchforshiny)
                     {
+                        /*Movement routine commented out as it brings lot more disadvantages than advantages.
+                        //The routine need to continue and check the overworld spawns, cannot be stuck at changing stick position.
+                        if (stopwatch.ElapsedMilliseconds >= movementslist.ElementAt(j)[2] || firstrun)
+                        {
+                            if (firstrun)
+                                firstrun = false;
+                            //Log($"Moved for {stopwatch.ElapsedMilliseconds}ms.");
+                            await ResetStick(token).ConfigureAwait(false);
+                            await SetStick(RIGHT, (short)(movementslist.ElementAt(j)[0]), (short)(movementslist.ElementAt(j)[1]), 0_001, token).ConfigureAwait(false);
+                            j++;
+                            if (j == movementslist.Count)
+                                j = 0;
+                            stopwatch.Restart();
+                        }*/
+
                         //Check is inside an unwanted encounter
                         if (await LGIsInCatchScreen(token).ConfigureAwait(false))
                         {
-                            //TODO HANDLE ENCOUNTER
                             Log($"Unwanted encounter detected!");
-                            int j = 0;
+                            int y = 0;
                             while (await LGIsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested)
                             {
-                                j++;
+                                y++;
                                 await Task.Delay(8_000, token).ConfigureAwait(false);
-                                if (j > 2)
+                                if (y > 2)
                                     await Click(B, 1_200, token).ConfigureAwait(false);
                                 await Click(B, 1_200, token).ConfigureAwait(false);
                                 await Click(A, 1_000, token).ConfigureAwait(false);
@@ -173,7 +197,8 @@ namespace SysBot.Pokemon
                 }
 
             }
-            await LGUnfreeze(token, version).ConfigureAwait(false);
+            if(searchforshiny)
+                await LGUnfreeze(token, version).ConfigureAwait(false);
         }
 
         private async Task Test(CancellationToken token)
@@ -308,5 +333,42 @@ namespace SysBot.Pokemon
             // If aborting the sequence, we might have the stick set at some position. Clear it just in case.
             await SetStick(LEFT, 0, 0, 0_500, token).ConfigureAwait(false); // reset
         }
+
+        /*Commented out as the movement routine brings lot more disadvantages than advantages.
+        private List<int[]> ParseMovements()
+        {
+            List<int[]> buttons = new List<int[]>();
+            string movements = Hub.Config.LGPE_OverworldScanBot.MovementOrder.ToUpper() + ",";
+            int index = 0;
+            string word = "";
+
+            while (index < movements.Length - 1)
+            {
+                if ((movements.Length > 1 && (movements[index + 1] == ',' || movements[index + 1] == '.')) || movements.Length == 1)
+                {
+                    word += movements[index];
+                    if (word.Equals("UP"))
+                        buttons.Add(new int[] { 0, 30_000, Hub.Config.LGPE_OverworldScanBot.MoveUpMs });
+                    else if (word.Equals("RIGHT"))
+                        buttons.Add(new int[] { 30_000, 0, Hub.Config.LGPE_OverworldScanBot.MoveRightMs });
+                    else if (word.Equals("DOWN"))
+                        buttons.Add(new int[] { 0, -30_000, Hub.Config.LGPE_OverworldScanBot.MoveDownMs });
+                    else if (word.Equals("LEFT"))
+                        buttons.Add(new int[] { -30_000, 0, Hub.Config.LGPE_OverworldScanBot.MoveLeftMs });
+                    movements.Remove(0, 1);
+                    word = "";
+                }
+                else if (movements[index] == ',' || movements[index] == '.' || movements[index] == ' ' || movements[index] == '\n' || movements[index] == '\t' || movements[index] == '\0')
+                    movements.Remove(0, 1);
+                else
+                {
+                    word += movements[index];
+                    movements.Remove(0, 1);
+                }
+                index++;
+            }
+            Log($"Buttons Count: {buttons.Count}");
+            return buttons;
+        }*/
     }
 }
