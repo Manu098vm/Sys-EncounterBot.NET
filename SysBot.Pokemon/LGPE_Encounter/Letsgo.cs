@@ -62,15 +62,18 @@ namespace SysBot.Pokemon
                 while (!await LGIsInCatchScreen(token).ConfigureAwait(false) && !await LGIsGiftFound(token).ConfigureAwait(false) && !await LGIsInBattle(token).ConfigureAwait(false) && !await LGIsInTrade(token).ConfigureAwait(false))
                     await Task.Delay(1_000, token).ConfigureAwait(false);
 
-                Log("Pokémon found! Checking details...");
-                var pk = await LGReadUntilPresent(PokeData, 2_000, 0_200, token, EncryptedSize, false).ConfigureAwait(false);
-                if (pk == null)
-                    pk = await LGReadUntilPresent(StationaryBattleData, 2_000, 0_200, token, EncryptedSize, true).ConfigureAwait(false);
+                if (!await LGIsInTitleScreen(token).ConfigureAwait(false))
+                {
+                    Log("Pokémon found! Checking details...");
+                    var pk = await LGReadUntilPresent(PokeData, 2_000, 0_200, token, EncryptedSize, false).ConfigureAwait(false);
+                    if (pk == null)
+                        pk = await LGReadUntilPresent(StationaryBattleData, 2_000, 0_200, token, EncryptedSize, true).ConfigureAwait(false);
 
-                if (pk == null)
-                    Log("Check error. Either a wrong offset is used, or the RAM is shifted.");
-                else
-                    await HandleEncounter(pk, IsPKLegendary(pk.Species), token);
+                    if (pk == null)
+                        Log("Check error. Either a wrong offset is used, or the RAM is shifted.");
+                    else
+                        await HandleEncounter(pk, IsPKLegendary(pk.Species), token);
+                }
             }
         }
 

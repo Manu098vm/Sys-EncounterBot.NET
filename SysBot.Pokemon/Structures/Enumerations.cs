@@ -17,12 +17,9 @@
 
     public enum LetsGoTest
     {
-        TestOffsets,
         Unfreeze,
-        CatchComboTest,
+        TestOffsets,
         EscapeFromBattle,
-        CheckGameOpen,
-        CheckIsInBattle,
     }
 
     public enum MarkIndex

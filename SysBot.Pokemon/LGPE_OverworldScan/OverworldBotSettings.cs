@@ -22,7 +22,7 @@ namespace SysBot.Pokemon
         [Category(LetsGoScan), Description("Force the current chain to be at the entered value. Ignored if 0.")]
         public int ChainCount { get; set; } = 0;
 
-        [Category(LetsGoScan), Description("Examples: \"UP, RIGHT\", \"RIGHT, LEFT, UP\", etc. Every movement MUST be separated with a comma (\",\"). Ignored if empty.")]
+        [Category(LetsGoScan), Description("Example: \"UP, RIGHT\". Every movement MUST be separated with a comma. Ignored if empty. Unexpected behaviour can occur if a shiny is detected while changing area. It his recommended to avoid that.")]
         public string MovementOrder { get; set; } = string.Empty;
 
         [Category(LetsGoScan), Description("Indicates how long the character will move north during the scans.")]

@@ -466,7 +466,7 @@ namespace SysBot.Pokemon
 
         public bool IsPKLegendary(int species) => Enum.IsDefined(typeof(Legendary), (Legendary)species);
         
-        public async Task<bool> LGIsInTitleScreen(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInTitleScreen, 1, token).ConfigureAwait(false))[0] == 1;
+        public async Task<bool> LGIsInTitleScreen(CancellationToken token) => !((await SwitchConnection.ReadBytesMainAsync(IsInTitleScreen, 1, token).ConfigureAwait(false))[0] == 1);
         public async Task<bool> LGIsInBattle(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInBattleScenario, 1, token).ConfigureAwait(false))[0] > 0;
         public async Task<bool> LGIsInCatchScreen(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInOverworld, 1, token).ConfigureAwait(false))[0] != 0;
         public async Task<bool> LGIsInTrade(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInTrade, 1, token).ConfigureAwait(false))[0] != 0;
@@ -558,7 +558,7 @@ namespace SysBot.Pokemon
 
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            while (!await LGIsInTitleScreen(token).ConfigureAwait(false))
+            while (await LGIsInTitleScreen(token).ConfigureAwait(false))
             {
                 if(stopwatch.ElapsedMilliseconds > 6000)
                     await DetachController(token).ConfigureAwait(false);

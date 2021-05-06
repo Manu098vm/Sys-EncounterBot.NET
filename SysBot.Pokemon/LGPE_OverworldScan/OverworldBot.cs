@@ -65,7 +65,7 @@ namespace SysBot.Pokemon
             if (movementslist.Count > 0)
                 Log($"ATTENTION!{Environment.NewLine}Any wild encounter will broke the movement routine, resulting in the pg moving to unwanted places!{Environment.NewLine}" +
                     $"----------------------------------------{Environment.NewLine}" +
-                    $"ATTENTION!\nChanging area during the scan routine can cause unexpected behaviour. It his higlhy recommanded to avoid that.{Environment.NewLine}" +
+                    $"ATTENTION!\nUnexpected behaviour can occur if a shiny is detected while changing area. It his higlhy recommended to avoid that.{Environment.NewLine}" +
                     $"-----------------------------------------{Environment.NewLine}");
 
             //Catch combo to increment spawn quality and shiny rate (Thanks to Lincoln-LM for the offsets)
@@ -117,6 +117,7 @@ namespace SysBot.Pokemon
                         //Check is inside an unwanted encounter
                         if (await LGIsInCatchScreen(token).ConfigureAwait(false))
                         {
+                            await ResetStick(token).ConfigureAwait(false);
                             Log($"Unwanted encounter detected!");
                             int y = 0;
                             while (await LGIsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested)
@@ -188,6 +189,7 @@ namespace SysBot.Pokemon
                 }
                 else if (!token.IsCancellationRequested)
                 {
+                    await ResetStick(token).ConfigureAwait(false);
                     if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
                         Log($"<@{Hub.Config.Discord.UserTag}> Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} found!");
                     else
@@ -198,7 +200,8 @@ namespace SysBot.Pokemon
                 }
 
             }
-            if(searchforshiny)
+            await ResetStick(token).ConfigureAwait(false);
+            if (searchforshiny)
                 await LGUnfreeze(token, version).ConfigureAwait(false);
         }
 
@@ -209,9 +212,6 @@ namespace SysBot.Pokemon
             {
                 LetsGoTest.Unfreeze => LGUnfreeze(token, await LGWhichGameVersion(token).ConfigureAwait(false)),
                 LetsGoTest.TestOffsets => TestOffsets(token),
-                LetsGoTest.CatchComboTest => TestCatchCombo(token),
-                LetsGoTest.CheckGameOpen => TestGameReady(token),
-                LetsGoTest.CheckIsInBattle => TestBattle(token),
                 LetsGoTest.EscapeFromBattle => TestEscape(token),
                 _ => TestOffsets(token),
             };
@@ -270,40 +270,6 @@ namespace SysBot.Pokemon
                     Log($"Test completed. MaxMS value: {maxms}");
                     return;
                 }
-            }
-        }
-        private async Task TestCatchCombo(CancellationToken token)
-        {
-            uint species;
-            uint count;
-            while (!token.IsCancellationRequested)
-            {
-                species = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
-                count = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
-                Log($"Current catch combo being on {(SpeciesName.GetSpeciesName((int)species, 4)).Replace("Uovo", "None")}, count is at {count}");
-                //Log($"Editing to {Hub.Config.LGPE_OverworldScanBot.ChainSpecies}, at {Hub.Config.LGPE_OverworldScanBot.ChainCount}");
-                //await Connection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.LGPE_OverworldScanBot.ChainSpecies), SpeciesCombo, token).ConfigureAwait(false);
-                //await SwitchConnection.WriteBytesAsync(BitConverter.GetBytes((uint)Hub.Config.LGPE_OverworldScanBot.ChainCount), CatchCombo, token).ConfigureAwait(false);
-            }
-        }
-        private async Task TestGameReady(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                if (await LGIsInTitleScreen(token).ConfigureAwait(false))
-                    Log("Game is Opened");
-                else
-                    Log("Game is Closed");
-            }
-        }
-        private async Task TestBattle(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                if (await LGIsInBattle(token).ConfigureAwait(false))
-                    Log("In Battle Scenario!");
-                else
-                    Log("Not in Battle Scenario!");
             }
         }
         private async Task TestEscape(CancellationToken token)
