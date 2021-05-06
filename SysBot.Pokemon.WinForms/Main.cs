@@ -26,11 +26,20 @@ namespace SysBot.Pokemon.WinForms
             {
                 var lines = File.ReadAllText(ConfigPath);
                 var prog = JsonConvert.DeserializeObject<ProgramConfig>(lines);
-                RunningEnvironment = new PokeBotRunnerImpl(prog.Hub);
-                foreach (var bot in prog.Bots)
+                if (prog != null)
                 {
-                    bot.Initialize();
-                    AddBot(bot);
+                    RunningEnvironment = new PokeBotRunnerImpl(prog.Hub);
+                    foreach (var bot in prog.Bots)
+                    {
+                        bot.Initialize();
+                        AddBot(bot);
+                    }
+                }
+                else
+                {
+                    var hub = new PokeTradeHubConfig();
+                    RunningEnvironment = new PokeBotRunnerImpl(hub);
+                    hub.Folder.CreateDefaults(WorkingDirectory);
                 }
             }
             else
