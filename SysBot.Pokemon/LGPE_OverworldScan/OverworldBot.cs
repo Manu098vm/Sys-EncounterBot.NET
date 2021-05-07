@@ -34,7 +34,7 @@ namespace SysBot.Pokemon
             // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
 
-            var task = Hub.Config.LGPE_OverworldScanBot.Routine switch
+            var task = Hub.Config.LGPE_OverworldScan.Routine switch
             {
                 LGPEOverworldMode.OverworldSpawn => Overworld(token),
                 LGPEOverworldMode.WildBirds => Overworld(token, true),
@@ -59,7 +59,7 @@ namespace SysBot.Pokemon
             int i = 0;
             int j = 0;
             bool freeze = false;
-            bool searchforshiny = Hub.Config.LGPE_OverworldScanBot.OnlyShiny;
+            bool searchforshiny = Hub.Config.LGPE_OverworldScan.OnlyShiny;
             bool found = false;
 
             if (movementslist.Count > 0)
@@ -69,24 +69,24 @@ namespace SysBot.Pokemon
                     $"-----------------------------------------{Environment.NewLine}");
 
             //Catch combo to increment spawn quality and shiny rate (Thanks to Lincoln-LM for the offsets)
-            if ((int)Hub.Config.LGPE_OverworldScanBot.ChainSpecies > 0)
+            if ((int)Hub.Config.LGPE_OverworldScan.ChainSpecies > 0)
             {
                 speciescombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
-                if ((speciescombo != (uint)Hub.Config.LGPE_OverworldScanBot.ChainSpecies) && (Hub.Config.LGPE_OverworldScanBot.ChainSpecies != 0))
+                if ((speciescombo != (uint)Hub.Config.LGPE_OverworldScan.ChainSpecies) && (Hub.Config.LGPE_OverworldScan.ChainSpecies != 0))
                 {
-                    Log($"Current catch combo being on {(speciescombo == 0 ? "None" : SpeciesName.GetSpeciesName((int)speciescombo, 2))}, changing to {Hub.Config.LGPE_OverworldScanBot.ChainSpecies}.");
-                    await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes((uint)Hub.Config.LGPE_OverworldScanBot.ChainSpecies), await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), token).ConfigureAwait(false);
+                    Log($"Current catch combo being on {(speciescombo == 0 ? "None" : SpeciesName.GetSpeciesName((int)speciescombo, 2))}, changing to {Hub.Config.LGPE_OverworldScan.ChainSpecies}.");
+                    await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes((uint)Hub.Config.LGPE_OverworldScan.ChainSpecies), await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), token).ConfigureAwait(false);
                     speciescombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
                     Log($"Current catch combo being now on {(speciescombo == 0 ? "None" : SpeciesName.GetSpeciesName((int)speciescombo, 2))}.");
                 }
             }
-            if (Hub.Config.LGPE_OverworldScanBot.ChainCount > 0)
+            if (Hub.Config.LGPE_OverworldScan.ChainCount > 0)
             {
                 catchcombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
-                if (catchcombo < (uint)Hub.Config.LGPE_OverworldScanBot.ChainCount)
+                if (catchcombo < (uint)Hub.Config.LGPE_OverworldScan.ChainCount)
                 {
-                    Log($"Current catch combo being {catchcombo}, incrementing to {Hub.Config.LGPE_OverworldScanBot.ChainCount}.");
-                    await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes((uint)Hub.Config.LGPE_OverworldScanBot.ChainCount), await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), token).ConfigureAwait(false);
+                    Log($"Current catch combo being {catchcombo}, incrementing to {Hub.Config.LGPE_OverworldScan.ChainCount}.");
+                    await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes((uint)Hub.Config.LGPE_OverworldScan.ChainCount), await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), token).ConfigureAwait(false);
                     catchcombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
                     Log($"Current catch combo being now {catchcombo}.");
                 }
@@ -148,8 +148,8 @@ namespace SysBot.Pokemon
                             }
                             prev = newspawn;
                             if (!searchforshiny &&
-                                ((!birds && (int)newspawn == (int)Hub.Config.LGPE_OverworldScanBot.StopOnSpecies) ||
-                                (!birds && (int)Hub.Config.LGPE_OverworldScanBot.StopOnSpecies == 0) ||
+                                ((!birds && (int)newspawn == (int)Hub.Config.LGPE_OverworldScan.StopOnSpecies) ||
+                                (!birds && (int)Hub.Config.LGPE_OverworldScan.StopOnSpecies == 0) ||
                                 (birds && ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146))))
                             {
                                 await Click(X, 1_000, token).ConfigureAwait(false);
@@ -176,8 +176,8 @@ namespace SysBot.Pokemon
                 //Stop Conditions logic
                 if (birds && ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146) && !token.IsCancellationRequested)
                     found = true;
-                else if ((!birds && (int)Hub.Config.LGPE_OverworldScanBot.StopOnSpecies > 0 && (int)newspawn == (int)Hub.Config.LGPE_OverworldScanBot.StopOnSpecies) ||
-                        (!birds && (int)Hub.Config.LGPE_OverworldScanBot.StopOnSpecies == 0))
+                else if ((!birds && (int)Hub.Config.LGPE_OverworldScan.StopOnSpecies > 0 && (int)newspawn == (int)Hub.Config.LGPE_OverworldScan.StopOnSpecies) ||
+                        (!birds && (int)Hub.Config.LGPE_OverworldScan.StopOnSpecies == 0))
                     found = true;
                 else
                     found = false;
@@ -208,7 +208,7 @@ namespace SysBot.Pokemon
         private async Task Test(CancellationToken token)
         {
 
-            var task = Hub.Config.LGPE_OverworldScanBot.TestRoutine switch
+            var task = Hub.Config.LGPE_OverworldScan.TestRoutine switch
             {
                 LetsGoTest.Unfreeze => LGUnfreeze(token, await LGWhichGameVersion(token).ConfigureAwait(false)),
                 LetsGoTest.TestOffsets => TestOffsets(token),
@@ -265,7 +265,7 @@ namespace SysBot.Pokemon
                 }
                 else
                     Log("FAILED: 0x1610EE0 not changed.");
-                if (i >= Hub.Config.LGPE_OverworldScanBot.FreezingTestCount)
+                if (i >= Hub.Config.LGPE_OverworldScan.FreezingTestCount)
                 {
                     Log($"Test completed. MaxMS value: {maxms}");
                     return;
@@ -304,7 +304,7 @@ namespace SysBot.Pokemon
         private List<int[]> ParseMovements()
         {
             List<int[]> buttons = new List<int[]>();
-            string movements = Hub.Config.LGPE_OverworldScanBot.MovementOrder.ToUpper() + ",";
+            string movements = Hub.Config.LGPE_OverworldScan.MovementOrder.ToUpper() + ",";
             int index = 0;
             string word = "";
 
@@ -314,13 +314,13 @@ namespace SysBot.Pokemon
                 {
                     word += movements[index];
                     if (word.Equals("UP"))
-                        buttons.Add(new int[] { 0, 30_000, Hub.Config.LGPE_OverworldScanBot.MoveUpMs });
+                        buttons.Add(new int[] { 0, 30_000, Hub.Config.LGPE_OverworldScan.MoveUpMs });
                     else if (word.Equals("RIGHT"))
-                        buttons.Add(new int[] { 30_000, 0, Hub.Config.LGPE_OverworldScanBot.MoveRightMs });
+                        buttons.Add(new int[] { 30_000, 0, Hub.Config.LGPE_OverworldScan.MoveRightMs });
                     else if (word.Equals("DOWN"))
-                        buttons.Add(new int[] { 0, -30_000, Hub.Config.LGPE_OverworldScanBot.MoveDownMs });
+                        buttons.Add(new int[] { 0, -30_000, Hub.Config.LGPE_OverworldScan.MoveDownMs });
                     else if (word.Equals("LEFT"))
-                        buttons.Add(new int[] { -30_000, 0, Hub.Config.LGPE_OverworldScanBot.MoveLeftMs });
+                        buttons.Add(new int[] { -30_000, 0, Hub.Config.LGPE_OverworldScan.MoveLeftMs });
                     movements.Remove(0, 1);
                     word = "";
                 }

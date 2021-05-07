@@ -1,0 +1,3 @@
+1. If you want to bot on Sword/Shield, download [the official sys-botbase](https://github.com/olliz0r/sys-botbase/releases). If you want to bot on Let's Go Pikachu/Eevee, download [sys-botbase from my fork](https://github.com/Manu098vm/sys-botbase/releases). Copy the the ``atmosphere`` folder to the root of your SD card.
+1. Download [ldn-mitm](https://github.com/spacemeowx2/ldn_mitm/releases) and copy the contents to the root of your SD card.
+1. Reboot your Switch to CFW and go to the internet settings. Take a note of the IP Address of your Nintendo Switch, this should be added to the configuration when setting up a bot together with port 6000.

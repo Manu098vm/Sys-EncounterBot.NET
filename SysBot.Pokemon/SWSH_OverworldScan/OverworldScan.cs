@@ -39,7 +39,7 @@ namespace SysBot.Pokemon
             // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
 
-            var task = Hub.Config.SWSH_OverworldScanBot.EncounteringType switch
+            var task = Hub.Config.SWSH_OverworldScan.EncounteringType switch
             {
                 ScanMode.G_Articuno => DoSeededEncounter(token),
                 ScanMode.G_Zapdos => DoSeededEncounter(token),
@@ -57,7 +57,7 @@ namespace SysBot.Pokemon
         private async Task FlyToRerollSeed(CancellationToken token)
         {
             bool exit = false;
-            ScanMode encounter = Hub.Config.SWSH_OverworldScanBot.EncounteringType;
+            ScanMode encounter = Hub.Config.SWSH_OverworldScan.EncounteringType;
 
             while (!exit)
             {
@@ -139,15 +139,15 @@ namespace SysBot.Pokemon
                 }
                 else
                 {
-                    if (Hub.Config.SWSH_OverworldScanBot.GetOnOffBike)
+                    if (Hub.Config.SWSH_OverworldScan.GetOnOffBike)
                     {
                         await Click(PLUS, 0_600, token).ConfigureAwait(false);
                         await Click(PLUS, 5_500, token).ConfigureAwait(false);
                     }
 
                     //Movements/Delay/Actions routines
-                    if (Hub.Config.SWSH_OverworldScanBot.WaitMsBeforeSave > 0)
-                        await Task.Delay(Hub.Config.SWSH_OverworldScanBot.WaitMsBeforeSave, token).ConfigureAwait(false);
+                    if (Hub.Config.SWSH_OverworldScan.WaitMsBeforeSave > 0)
+                        await Task.Delay(Hub.Config.SWSH_OverworldScan.WaitMsBeforeSave, token).ConfigureAwait(false);
 
                     foreach (int[] move in movementslist)
                     {
@@ -177,7 +177,7 @@ namespace SysBot.Pokemon
         }
         private async Task DoSeededEncounter(CancellationToken token)
         {
-            ScanMode type = Hub.Config.SWSH_OverworldScanBot.EncounteringType;
+            ScanMode type = Hub.Config.SWSH_OverworldScan.EncounteringType;
             SAV8 sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
             Species dexn = 0;
             uint offset = 0x00;
@@ -288,7 +288,7 @@ namespace SysBot.Pokemon
         private List<int[]> ParseMovements()
         {
             List<int[]> buttons = new List<int[]>();
-            string movements = Hub.Config.SWSH_OverworldScanBot.MovementOrder.ToUpper() + ",";
+            string movements = Hub.Config.SWSH_OverworldScan.MovementOrder.ToUpper() + ",";
             int index = 0;
             string word = "";
 
@@ -298,13 +298,13 @@ namespace SysBot.Pokemon
                 {
                     word += movements[index];
                     if (word.Equals("UP"))
-                        buttons.Add(new int[] { 0, 30_000, Hub.Config.SWSH_OverworldScanBot.MoveUpMs });
+                        buttons.Add(new int[] { 0, 30_000, Hub.Config.SWSH_OverworldScan.MoveUpMs });
                     else if (word.Equals("RIGHT"))
-                        buttons.Add(new int[] { 30_000, 0, Hub.Config.SWSH_OverworldScanBot.MoveRightMs });
+                        buttons.Add(new int[] { 30_000, 0, Hub.Config.SWSH_OverworldScan.MoveRightMs });
                     else if (word.Equals("DOWN"))
-                        buttons.Add(new int[] { 0, -30_000, Hub.Config.SWSH_OverworldScanBot.MoveDownMs });
+                        buttons.Add(new int[] { 0, -30_000, Hub.Config.SWSH_OverworldScan.MoveDownMs });
                     else if (word.Equals("LEFT"))
-                        buttons.Add(new int[] { -30_000, 0, Hub.Config.SWSH_OverworldScanBot.MoveLeftMs });
+                        buttons.Add(new int[] { -30_000, 0, Hub.Config.SWSH_OverworldScan.MoveLeftMs });
                     movements.Remove(0, 1);
                     word = "";
                 }

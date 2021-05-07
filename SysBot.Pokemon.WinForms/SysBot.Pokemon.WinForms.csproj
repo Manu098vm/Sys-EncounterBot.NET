@@ -6,7 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <PackageId>SysBot.Pokemon.WinForms</PackageId>
     <Company>Project Pokémon</Company>
-    <Authors>Kaphotics</Authors>
+    <Authors>Kaphotics, Architdate, Lusamine, SkyLink98</Authors>
     <Product>SysBot.Pokemon.WinForms</Product>
     <Description>Nintendo Switch Pokémon Bot Manager</Description>
     <ApplicationIcon>icon.ico</ApplicationIcon>
