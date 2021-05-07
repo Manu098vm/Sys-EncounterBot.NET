@@ -101,17 +101,20 @@ namespace SysBot.Pokemon
                     if (await LGCountMilliseconds(Hub.Config, token).ConfigureAwait(false) > 0 || !searchforshiny)
                     {
                         //The routine need to continue and check the overworld spawns, cannot be stuck at changing stick position.
-                        if (stopwatch.ElapsedMilliseconds >= movementslist.ElementAt(j)[2] || firstrun)
+                        if (movementslist.Count > 0)
                         {
-                            if (firstrun)
-                                firstrun = false;
-                            //Log($"Moved for {stopwatch.ElapsedMilliseconds}ms.");
-                            await ResetStick(token).ConfigureAwait(false);
-                            await SetStick(RIGHT, (short)(movementslist.ElementAt(j)[0]), (short)(movementslist.ElementAt(j)[1]), 0_001, token).ConfigureAwait(false);
-                            j++;
-                            if (j == movementslist.Count)
-                                j = 0;
-                            stopwatch.Restart();
+                            if (stopwatch.ElapsedMilliseconds >= movementslist.ElementAt(j)[2] || firstrun)
+                            {
+                                if (firstrun)
+                                    firstrun = false;
+                                //Log($"Moved for {stopwatch.ElapsedMilliseconds}ms.");
+                                await ResetStick(token).ConfigureAwait(false);
+                                await SetStick(RIGHT, (short)(movementslist.ElementAt(j)[0]), (short)(movementslist.ElementAt(j)[1]), 0_001, token).ConfigureAwait(false);
+                                j++;
+                                if (j == movementslist.Count)
+                                    j = 0;
+                                stopwatch.Restart();
+                            }
                         }
 
                         //Check is inside an unwanted encounter
