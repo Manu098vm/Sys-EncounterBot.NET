@@ -44,7 +44,7 @@ namespace SysBot.Pokemon
             await DetachController(token).ConfigureAwait(false);
         }
 
-        private async Task TestOffsets(CancellationToken token)
+        /*private async Task TestOffsets(CancellationToken token)
         {
             byte[] value1 = await SwitchConnection.ReadBytesMainAsync(0x2566790, 4, token).ConfigureAwait(false);
             byte[] value2 = await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false);
@@ -83,9 +83,9 @@ namespace SysBot.Pokemon
                 {
                     Log($"3rd Screen Value changed its value. Prev value \"{BitConverter.ToString(value4)}\", new value \"{BitConverter.ToString(appoggio4)}\"");
                     value4 = appoggio4;
-                }*/
+                }
             }
-        }
+        }*/
 
         private async Task DoDynamaxAdventure(CancellationToken token)
         {
