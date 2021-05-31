@@ -44,6 +44,49 @@ namespace SysBot.Pokemon
             await DetachController(token).ConfigureAwait(false);
         }
 
+        private async Task TestOffsets(CancellationToken token)
+        {
+            byte[] value1 = await SwitchConnection.ReadBytesMainAsync(0x2566790, 4, token).ConfigureAwait(false);
+            byte[] value2 = await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false);
+            byte[] value3 = await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token).ConfigureAwait(false);
+            //byte[] value4 = await Connection.ReadBytesAsync(CurrentScreenLairOffset, 4, token).ConfigureAwait(false);
+            byte[] appoggio1;
+            byte[] appoggio2;
+            byte[] appoggio3;
+            //byte[] appoggio4;
+
+            Log($"Starting test routine...\n(Supposed) Flag: {BitConverter.ToString(value1)}\nScreen Value 1: {BitConverter.ToString(value2)}\nScreen Value 2: {BitConverter.ToString(value3)}");
+
+            while (!token.IsCancellationRequested)
+            {
+                appoggio1 = await SwitchConnection.ReadBytesMainAsync(0x2566790, 4, token).ConfigureAwait(false);
+                appoggio2 = await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false);
+                appoggio3 = await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token).ConfigureAwait(false);
+                //appoggio4 = await Connection.ReadBytesAsync(CurrentScreenLairOffset, 4, token).ConfigureAwait(false);
+
+                if (!appoggio1.SequenceEqual(value1))
+                {
+                    Log($"(Supposed) Flag changed its value. Prev value \"{BitConverter.ToString(value1)}\", new value \"{BitConverter.ToString(appoggio1)}\"");
+                    value1 = appoggio1;
+                }
+                if (!appoggio2.SequenceEqual(value2))
+                {
+                    Log($"1st Screen Value changed its value. Prev value \"{BitConverter.ToString(value2)}\", new value \"{BitConverter.ToString(appoggio2)}\"");
+                    value2 = appoggio2;
+                }
+                if (!appoggio3.SequenceEqual(value3))
+                {
+                    Log($"2nd Screen Value changed its value. Prev value \"{BitConverter.ToString(value3)}\", new value \"{BitConverter.ToString(appoggio3)}\"");
+                    value3 = appoggio3;
+                }
+                /*if (!appoggio4.SequenceEqual(value4))
+                {
+                    Log($"3rd Screen Value changed its value. Prev value \"{BitConverter.ToString(value4)}\", new value \"{BitConverter.ToString(appoggio4)}\"");
+                    value4 = appoggio4;
+                }*/
+            }
+        }
+
         private async Task DoDynamaxAdventure(CancellationToken token)
         {
             //Initialization
@@ -87,7 +130,7 @@ namespace SysBot.Pokemon
                     Log($"{mon} ready to be hunted.");
                 }
                 else {
-                    Log($"________________________________{Environment.NewLine}ATTENTION!" +
+                    Log($"{Environment.NewLine}________________________________{Environment.NewLine}ATTENTION!" +
                         $"{Environment.NewLine}{mon} may not be your first path pokemon. Ignore this message if the Pokémon on the Stop Condition matches the Pokémon on your current Lair Path." +
                         $"{Environment.NewLine}________________________________");
                 }
@@ -110,7 +153,9 @@ namespace SysBot.Pokemon
 
                 //Talk to the Lady
                 while (!await IsInLairWait(token).ConfigureAwait(false))
-                    await Click(A, 0_200, token).ConfigureAwait(false);
+                    await Click(A, 0_500, token).ConfigureAwait(false);
+
+                await Task.Delay(2_000, token).ConfigureAwait(false);
 
                 //Select Solo Adventure
                 await Click(DDOWN, 0_800, token).ConfigureAwait(false);

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
@@ -63,9 +64,10 @@ namespace SysBot.Pokemon
             bool found = false;
 
             if (movementslist.Count > 0)
-                Log($"ATTENTION!{Environment.NewLine}Any wild encounter will broke the movement routine, resulting in the pg moving to unwanted places!{Environment.NewLine}" +
+                Log($"{Environment.NewLine}----------------------------------------{Environment.NewLine}" +
+                    $"ATTENTION{Environment.NewLine}Any wild battles will broke the movement routine, resulting in the pg moving to unwanted areas!{Environment.NewLine}" +
                     $"----------------------------------------{Environment.NewLine}" +
-                    $"ATTENTION!\nUnexpected behaviour can occur if a shiny is detected while changing area. It his higlhy recommended to avoid that.{Environment.NewLine}" +
+                    $"ATTENTION{Environment.NewLine}Unexpected behaviour can occur if a Pokémon is detected while changing area. It is higlhy recommended to avoid that.{Environment.NewLine}" +
                     $"-----------------------------------------{Environment.NewLine}");
 
             //Catch combo to increment spawn quality and shiny rate (Thanks to Lincoln-LM for the offsets)
@@ -80,6 +82,7 @@ namespace SysBot.Pokemon
                     Log($"Current catch combo being now on {(speciescombo == 0 ? "None" : SpeciesName.GetSpeciesName((int)speciescombo, 2))}.");
                 }
             }
+
             if (Hub.Config.LGPE_OverworldScan.ChainCount > 0)
             {
                 catchcombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
@@ -92,6 +95,15 @@ namespace SysBot.Pokemon
                 }
             }
 
+            //Force the Fortune Teller Nature value
+            if (Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature != Nature.Random)
+            {
+                await LGEnableNatureTeller(token).ConfigureAwait(false);
+                await LGEditWildNature(Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature, token).ConfigureAwait(false);
+                Log($"Nature Teller services Enabled, Nature set to {Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature}.");
+            }
+
+            //Main Loop
             while (!token.IsCancellationRequested)
             {
                 if (searchforshiny)
@@ -210,7 +222,6 @@ namespace SysBot.Pokemon
 
         private async Task Test(CancellationToken token)
         {
-
             var task = Hub.Config.LGPE_OverworldScan.TestRoutine switch
             {
                 LetsGoTest.Unfreeze => LGUnfreeze(token, await LGWhichGameVersion(token).ConfigureAwait(false)),

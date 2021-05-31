@@ -22,6 +22,9 @@ namespace SysBot.Pokemon
         [Category(LetsGoScan), Description("Force the current chain to be at the entered value. Ignored if 0.")]
         public int ChainCount { get; set; } = 0;
 
+        [Category(LetsGoScan), Description("Set the fortune teller nature. All the wild and stationary Pokémon will have this nature. Ignored if random.")]
+        public PKHeX.Core.Nature SetFortuneTellerNature { get; set; } = PKHeX.Core.Nature.Random;
+
         [Category(LetsGoScan), Description("Example: \"UP, RIGHT\". Every movement MUST be separated with a comma. Ignored if empty. Unexpected behaviour can occur if a shiny is detected while changing area. It his recommended to avoid that.")]
         public string MovementOrder { get; set; } = string.Empty;
 

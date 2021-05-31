@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
@@ -53,44 +54,6 @@ namespace SysBot.Pokemon
             await ResetStick(token).ConfigureAwait(false);
             await DetachController(token).ConfigureAwait(false);
         }
-
-        private async Task FlyToRerollSeed(CancellationToken token)
-        {
-            bool exit = false;
-            ScanMode encounter = Hub.Config.SWSH_OverworldScan.EncounteringType;
-
-            while (!exit)
-            {
-                await Click(X, 2_000, token).ConfigureAwait(false);
-                await Click(PLUS, 5_000, token).ConfigureAwait(false);
-
-                if (encounter == ScanMode.G_Moltres || encounter == ScanMode.IoA_Wailord)
-                    await Click(DLEFT, 0_500, token).ConfigureAwait(false);
-                else if (encounter == ScanMode.G_Articuno)
-                {
-                    await PressAndHold(DDOWN, 0_150, 1_000, token).ConfigureAwait(false);
-                    await PressAndHold(DRIGHT, 0_090, 1_000, token).ConfigureAwait(false);
-                }
-
-                for (int i = 0; i < 5; i++)
-                    await Click(A, 1_000, token).ConfigureAwait(false);
-
-                await Task.Delay(2_500, token).ConfigureAwait(false);
-
-                if (encounter != ScanMode.G_Articuno || (encounter == ScanMode.G_Articuno && await IsArticunoPresent(token).ConfigureAwait(false)))
-                    exit = true;
-                else
-                    Log("Articuno not found on path.");
-            }
-
-            //Save the game
-            await Click(X, 2_000, token).ConfigureAwait(false);
-            await Click(R, 2_000, token).ConfigureAwait(false);
-            await Click(A, 5_000, token).ConfigureAwait(false);
-
-            Log("Game saved, seed rerolled.");
-        }
-
         private async Task Overworld(CancellationToken token)
         {
             await ResetStick(token).ConfigureAwait(false);
@@ -204,6 +167,7 @@ namespace SysBot.Pokemon
 
             while (!token.IsCancellationRequested && offset != 0)
             {
+                await FlyToRerollSeed(token).ConfigureAwait(false);
                 var pkm = await ReadOwPokemon(dexn, offset, null, sav, token).ConfigureAwait(false);
                 if (pkm != null && await HandleEncounter(pkm, IsPKLegendary(pkm.Species), token).ConfigureAwait(false))
                 {
@@ -213,10 +177,44 @@ namespace SysBot.Pokemon
                     await Click(X, 2_000, token).ConfigureAwait(false);
                     Log($"The overworld encounter has been found. The progresses has been saved and the game is paused, you can now go and catch {SpeciesName.GetSpeciesName((int)dexn, 2)}");
                     return;
+                }                    
+            } 
+        }
+        private async Task FlyToRerollSeed(CancellationToken token)
+        {
+            bool exit = false;
+            ScanMode encounter = Hub.Config.SWSH_OverworldScan.EncounteringType;
+
+            while (!exit)
+            {
+                await Click(X, 2_000, token).ConfigureAwait(false);
+                await Click(PLUS, 5_000, token).ConfigureAwait(false);
+
+                if (encounter == ScanMode.G_Moltres || encounter == ScanMode.IoA_Wailord)
+                    await Click(DLEFT, 0_500, token).ConfigureAwait(false);
+                else if (encounter == ScanMode.G_Articuno)
+                {
+                    await PressAndHold(DDOWN, 0_150, 1_000, token).ConfigureAwait(false);
+                    await PressAndHold(DRIGHT, 0_090, 1_000, token).ConfigureAwait(false);
                 }
+
+                for (int i = 0; i < 5; i++)
+                    await Click(A, 1_000, token).ConfigureAwait(false);
+
+                await Task.Delay(4_000, token).ConfigureAwait(false);
+
+                if (encounter != ScanMode.G_Articuno || (encounter == ScanMode.G_Articuno && await IsArticunoPresent(token).ConfigureAwait(false)))
+                    exit = true;
                 else
-                    await FlyToRerollSeed(token).ConfigureAwait(false);
+                    Log("Articuno not found on path. Flying to reset Articuno location.");
             }
+
+            //Save the game
+            await Click(X, 2_000, token).ConfigureAwait(false);
+            await Click(R, 2_000, token).ConfigureAwait(false);
+            await Click(A, 5_000, token).ConfigureAwait(false);
+
+            Log("Game saved, checking details from KCoord block...");
         }
         private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)
         {
@@ -236,7 +234,7 @@ namespace SysBot.Pokemon
                 Counts.AddCompletedEncounters();
 
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
-                DumpPokemon(DumpSetting.DumpFolder, legends ? "legends" : "encounters", pk);
+                DumpPokemon(DumpSetting.DumpFolder, legends ? "OverworldLegends" : "OverworldEncounters", pk);
 
             if (StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
             {

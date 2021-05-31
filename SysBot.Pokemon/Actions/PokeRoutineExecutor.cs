@@ -426,21 +426,13 @@ namespace SysBot.Pokemon
             return BitConverter.ToUInt32(data, 0);
         }
         
-        
-
         public async Task<bool> IsInBattle(CancellationToken token)
         {
             var data = await Connection.ReadBytesAsync(Version == GameVersion.SH ? InBattleRaidOffsetSH : InBattleRaidOffsetSW, 1, token).ConfigureAwait(false);
             return data[0] == (Version == GameVersion.SH ? 0x40 : 0x41);
         }
 
-        public async Task<bool> IsInLairWait(CancellationToken token)
-        {
-            byte[] menu = BitConverter.GetBytes(CurrentScreen_LairMenu);
-            byte[] docked = await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token).ConfigureAwait(false);
-            byte[] handheld = await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token).ConfigureAwait(false);
-            return (menu.SequenceEqual(handheld) || menu.SequenceEqual(docked));
-        }
+        public async Task<bool> IsInLairWait(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(LairWait, 1, token).ConfigureAwait(false))[0] == 0;
 
         public async Task<bool> IsInLairEndList(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(LairRewards, 1, token).ConfigureAwait(false))[0] != 0;
 
@@ -471,7 +463,7 @@ namespace SysBot.Pokemon
         public async Task<bool> LGIsInCatchScreen(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInOverworld, 1, token).ConfigureAwait(false))[0] != 0;
         public async Task<bool> LGIsInTrade(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInTrade, 1, token).ConfigureAwait(false))[0] != 0;
         public async Task<bool> LGIsGiftFound(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsGiftFound, 1, token).ConfigureAwait(false))[0] > 0;
-        public async Task<uint> LGEncounteredWild(CancellationToken token) => BitConverter.ToUInt16((await Connection.ReadBytesAsync(CatchingSpecies, 2, token).ConfigureAwait(false)),0);
+        public async Task<uint> LGEncounteredWild(CancellationToken token) => BitConverter.ToUInt16(await Connection.ReadBytesAsync(CatchingSpecies, 2, token).ConfigureAwait(false),0);
         public async Task<GameVersion> LGWhichGameVersion(CancellationToken token)
         {
             byte[] data = await Connection.ReadBytesAsync(LGGameVersion, 1, token).ConfigureAwait(false);
@@ -483,7 +475,9 @@ namespace SysBot.Pokemon
                 return GameVersion.Invalid;
         }
 
-        //returns [milliseconds for the value to change, value1, value2]
+        public async Task LGEnableNatureTeller(CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes(0x04), NatureTellerEnabled, token).ConfigureAwait(false);
+        public async Task LGEditWildNature(Nature target, CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes((uint)target), WildNature, token).ConfigureAwait(false);
+
         public async Task<long> LGCountMilliseconds(PokeTradeHubConfig config, CancellationToken token)
         {
             long WaitMS = config.LGPE_OverworldScan.MaxMs;

@@ -90,6 +90,16 @@ namespace SysBot.Pokemon
 
             while (!token.IsCancellationRequested)
             {
+
+                //Force the Fortune Teller Nature value
+                if (Hub.Config.LGPE_Encounter.SetFortuneTellerNature != Nature.Random)
+                {
+                    await Task.Delay(2_000, token).ConfigureAwait(false);
+                    await LGEnableNatureTeller(token).ConfigureAwait(false);
+                    await LGEditWildNature(Hub.Config.LGPE_Encounter.SetFortuneTellerNature, token).ConfigureAwait(false);
+                    Log($"Nature Teller services Enabled, Nature set to {Hub.Config.LGPE_Encounter.SetFortuneTellerNature}.");
+                }
+
                 stopwatch.Restart();
 
                 //Spam A until battle starts
@@ -124,9 +134,17 @@ namespace SysBot.Pokemon
                         if (mode == LetsGoMode.Stationary)
                         {
                             Log("Result found, defeating the enemy.");
+                            stopwatch.Restart();
                             //Spam A until the battle ends
                             while (!await LGIsInCatchScreen(token).ConfigureAwait(false))
+                            {
+                                if (stopwatch.ElapsedMilliseconds > 60000)
+                                {
+                                    Log("Enemy could not be defeated. Target has been lost. Use a pokemon with a more powerful move in the first slot next time.");
+                                    return;
+                                }
                                 await Click(A, 0_500, token).ConfigureAwait(false);
+                            }
                         }
                         await Click(HOME, 1_000, token).ConfigureAwait(false);
                         return;
