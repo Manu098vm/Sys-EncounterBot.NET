@@ -37,32 +37,32 @@ namespace SysBot.Pokemon
             // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
 
-            var task = DoDynamaxAdventure(token);
+            var task = TestOffsets(token);
             await task.ConfigureAwait(false);
 
             await ResetStick(token).ConfigureAwait(false);
             await DetachController(token).ConfigureAwait(false);
         }
 
-        /*private async Task TestOffsets(CancellationToken token)
+        private async Task TestOffsets(CancellationToken token)
         {
-            byte[] value1 = await SwitchConnection.ReadBytesMainAsync(0x2566790, 4, token).ConfigureAwait(false);
-            byte[] value2 = await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false);
-            byte[] value3 = await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token).ConfigureAwait(false);
-            //byte[] value4 = await Connection.ReadBytesAsync(CurrentScreenLairOffset, 4, token).ConfigureAwait(false);
+            byte[] value1 = await Connection.ReadBytesAsync(0x376BB11C, 4, token).ConfigureAwait(false);
+            byte[] value2 = await Connection.ReadBytesAsync(0x376BB15C, 4, token).ConfigureAwait(false);
+            byte[] value3 = await Connection.ReadBytesAsync(0x376BB17C, 4, token).ConfigureAwait(false);
+            byte[] value4 = await Connection.ReadBytesAsync(0x376BD13C, 4, token).ConfigureAwait(false);
             byte[] appoggio1;
             byte[] appoggio2;
             byte[] appoggio3;
-            //byte[] appoggio4;
+            byte[] appoggio4;
 
             Log($"Starting test routine...\n(Supposed) Flag: {BitConverter.ToString(value1)}\nScreen Value 1: {BitConverter.ToString(value2)}\nScreen Value 2: {BitConverter.ToString(value3)}");
 
             while (!token.IsCancellationRequested)
             {
-                appoggio1 = await SwitchConnection.ReadBytesMainAsync(0x2566790, 4, token).ConfigureAwait(false);
-                appoggio2 = await Connection.ReadBytesAsync(CurrentScreenOffset, 4, token).ConfigureAwait(false);
-                appoggio3 = await Connection.ReadBytesAsync(CurrentLairScreenOffset, 4, token).ConfigureAwait(false);
-                //appoggio4 = await Connection.ReadBytesAsync(CurrentScreenLairOffset, 4, token).ConfigureAwait(false);
+                appoggio1 = await Connection.ReadBytesAsync(0x376BB11C, 4, token).ConfigureAwait(false);
+                appoggio2 = await Connection.ReadBytesAsync(0x376BB15C, 4, token).ConfigureAwait(false);
+                appoggio3 = await Connection.ReadBytesAsync(0x376BB17C, 4, token).ConfigureAwait(false);
+                appoggio4 = await Connection.ReadBytesAsync(0x376BD13C, 4, token).ConfigureAwait(false);
 
                 if (!appoggio1.SequenceEqual(value1))
                 {
@@ -79,13 +79,13 @@ namespace SysBot.Pokemon
                     Log($"2nd Screen Value changed its value. Prev value \"{BitConverter.ToString(value3)}\", new value \"{BitConverter.ToString(appoggio3)}\"");
                     value3 = appoggio3;
                 }
-                /*if (!appoggio4.SequenceEqual(value4))
+                if (!appoggio4.SequenceEqual(value4))
                 {
                     Log($"3rd Screen Value changed its value. Prev value \"{BitConverter.ToString(value4)}\", new value \"{BitConverter.ToString(appoggio4)}\"");
                     value4 = appoggio4;
                 }
             }
-        }*/
+        }
 
         private async Task DoDynamaxAdventure(CancellationToken token)
         {

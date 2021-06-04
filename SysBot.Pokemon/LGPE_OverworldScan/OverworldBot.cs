@@ -100,7 +100,7 @@ namespace SysBot.Pokemon
             {
                 await LGEnableNatureTeller(token).ConfigureAwait(false);
                 await LGEditWildNature(Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature, token).ConfigureAwait(false);
-                Log($"Nature Teller services Enabled, Nature set to {Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature}.");
+                Log($"Fortune Teller enabled, Nature set to {Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature}.");
             }
 
             //Main Loop
@@ -181,9 +181,6 @@ namespace SysBot.Pokemon
                         freeze = true;
                 }
 
-                if (searchforshiny && !token.IsCancellationRequested)
-                    Log("A Shiny has been detected.");
-
                 //Unfreeze to restart the routine, or log the Shiny species.
                 await LGUnfreeze(token, version).ConfigureAwait(false);
                 newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn1, 2, token).ConfigureAwait(false), 0);
@@ -197,18 +194,19 @@ namespace SysBot.Pokemon
                 else
                     found = false;
 
-                if (!found && !token.IsCancellationRequested)
+                if (searchforshiny && !token.IsCancellationRequested)
                 {
-                    freeze = false;
-                    Log($"Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} is not the target, the routine will continue.");
+                    i++;
+                    Log($"New spawn ({i}): {newspawn} Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
+
                 }
                 else if (!token.IsCancellationRequested)
                 {
                     await ResetStick(token).ConfigureAwait(false);
                     if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                        Log($"<@{Hub.Config.Discord.UserTag}> Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} found!");
+                        Log($"<@{Hub.Config.Discord.UserTag}> Shiny Target {SpeciesName.GetSpeciesName((int)newspawn, 4)} found!");
                     else
-                        Log($"Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)} found!");
+                        Log($"Shiny Target {SpeciesName.GetSpeciesName((int)newspawn, 4)} found!");
                     await Click(X, 1_000, token).ConfigureAwait(false);
                     await Click(HOME, 1_000, token).ConfigureAwait(false);
                     return;

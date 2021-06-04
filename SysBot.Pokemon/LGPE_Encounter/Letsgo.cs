@@ -97,7 +97,7 @@ namespace SysBot.Pokemon
                     await Task.Delay(2_000, token).ConfigureAwait(false);
                     await LGEnableNatureTeller(token).ConfigureAwait(false);
                     await LGEditWildNature(Hub.Config.LGPE_Encounter.SetFortuneTellerNature, token).ConfigureAwait(false);
-                    Log($"Nature Teller services Enabled, Nature set to {Hub.Config.LGPE_Encounter.SetFortuneTellerNature}.");
+                    Log($"Fortune Teller enabled, Nature set to {Hub.Config.LGPE_Encounter.SetFortuneTellerNature}.");
                 }
 
                 stopwatch.Restart();
