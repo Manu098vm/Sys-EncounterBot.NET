@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
@@ -166,11 +165,10 @@ namespace SysBot.Pokemon
                         freeze = true;
                 }
 
-                //Unfreeze to restart the routine, or log the Shiny species.
                 await LGUnfreeze(token, version).ConfigureAwait(false);
                 newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn, 2, token).ConfigureAwait(false), 0);
 
-                //Stop Conditions logic
+                //Stop Conditions
                 if (birds && ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146) && !token.IsCancellationRequested)
                     found = true;
                 else if ((!birds && (int)Hub.Config.LGPE_OverworldScan.StopOnSpecies > 0 && (int)newspawn == (int)Hub.Config.LGPE_OverworldScan.StopOnSpecies) ||
@@ -179,17 +177,15 @@ namespace SysBot.Pokemon
                 else
                     found = false;
 
-                if (searchforshiny && !token.IsCancellationRequested)
-                {
-                    encounterCount++;
-                    if (IsPKLegendary((int)newspawn))
-                        Counts.AddLGPELegendaryScans();
-                    else
-                        Counts.AddLGPEOverworldScans();
-                    Log($"New spawn ({encounterCount}): {newspawn} Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
+                encounterCount++;
+                if (IsPKLegendary((int)newspawn))
+                    Counts.AddLGPELegendaryScans();
+                else
+                    Counts.AddLGPEOverworldScans();
 
-                }
-                else if (!token.IsCancellationRequested)
+                if (!found && !token.IsCancellationRequested)
+                    Log($"New spawn ({encounterCount}): {newspawn} Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
+                else if (found && !token.IsCancellationRequested)
                 {
                     await ResetStick(token).ConfigureAwait(false);
                     if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
