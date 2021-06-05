@@ -56,5 +56,9 @@
         /// </summary>
         HorizontalLine,
 
+        /// <summary>
+        /// Bot will soft reset for in-game trades
+        /// </summary>
+        Trades,
     }
 }

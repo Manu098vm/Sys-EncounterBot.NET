@@ -50,6 +50,7 @@ namespace SysBot.Pokemon
                 EncounterMode.Keldeo => DoKeldeoEncounter(token),
                 EncounterMode.VerticalLine => WalkInLine(token),
                 EncounterMode.HorizontalLine => WalkInLine(token),
+                EncounterMode.Trades => DoTrades(token),
                 _ => DoLiveStatsChecking(token),
             };
             await task.ConfigureAwait(false);
@@ -88,15 +89,37 @@ namespace SysBot.Pokemon
                         pk = await ReadUntilPresent(encounterOffset, 2_000, 0_200, token).ConfigureAwait(false);
 
                     if (pk != null)
-                    {
                         if (await HandleEncounter(pk, IsPKLegendary(pk.Species), token).ConfigureAwait(false))
                             return;
-                    }
 
                     Log($"Resetting {type} by restarting the game");
                 }
 
                 skipRoutine = false;
+                await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                await StartGame(Hub.Config, token).ConfigureAwait(false);
+            }
+        }
+
+        private async Task DoTrades(CancellationToken token)
+        {
+            System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
+            Log("Be sure to have the requested Pokémon in Box 1 Slot 1!");
+            while (!token.IsCancellationRequested)
+            {
+                await SetCurrentBox(0, token).ConfigureAwait(false);
+
+                Log("Skipping dialogue...");
+                stopwatch.Restart();
+                while (stopwatch.ElapsedMilliseconds < 6000 || !await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                    await Click(A, 0_400, token).ConfigureAwait(false);
+
+                Log("Pokémon received. Checking details...");
+                var pk = await ReadBoxPokemon(0, 0, token).ConfigureAwait(false);
+                if (pk != null)
+                    if (await HandleEncounter(pk, IsPKLegendary(pk.Species), token).ConfigureAwait(false))
+                        return;
+
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
             }
