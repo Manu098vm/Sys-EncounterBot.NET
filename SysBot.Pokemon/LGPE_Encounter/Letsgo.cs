@@ -56,7 +56,15 @@ namespace SysBot.Pokemon
         {
             while (!token.IsCancellationRequested)
             {
-               while (await LGIsInCatchScreen(token).ConfigureAwait(false) || await LGIsGiftFound(token).ConfigureAwait(false) || await LGIsInBattle(token).ConfigureAwait(false) || await LGIsInTrade(token).ConfigureAwait(false))
+
+                if (Hub.Config.LGPE_Encounter.SetFortuneTellerNature != Nature.Random && !await LGIsNatureTellerEnabled(token).ConfigureAwait(false))
+                {
+                    await LGEnableNatureTeller(token).ConfigureAwait(false);
+                    await LGEditWildNature(Hub.Config.LGPE_Encounter.SetFortuneTellerNature, token).ConfigureAwait(false);
+                    Log($"Fortune Teller enabled, Nature set to {await LGReadWildNature(token).ConfigureAwait(false)}.");
+                }
+
+                while (await LGIsInCatchScreen(token).ConfigureAwait(false) || await LGIsGiftFound(token).ConfigureAwait(false) || await LGIsInBattle(token).ConfigureAwait(false) || await LGIsInTrade(token).ConfigureAwait(false))
                     await Task.Delay(1_000, token).ConfigureAwait(false);
 
                 while (!await LGIsInCatchScreen(token).ConfigureAwait(false) && !await LGIsGiftFound(token).ConfigureAwait(false) && !await LGIsInBattle(token).ConfigureAwait(false) && !await LGIsInTrade(token).ConfigureAwait(false))
@@ -97,7 +105,7 @@ namespace SysBot.Pokemon
                     await Task.Delay(2_000, token).ConfigureAwait(false);
                     await LGEnableNatureTeller(token).ConfigureAwait(false);
                     await LGEditWildNature(Hub.Config.LGPE_Encounter.SetFortuneTellerNature, token).ConfigureAwait(false);
-                    Log($"Fortune Teller enabled, Nature set to {Hub.Config.LGPE_Encounter.SetFortuneTellerNature}.");
+                    Log($"Fortune Teller enabled, Nature set to {await LGReadWildNature(token).ConfigureAwait(false)}.");
                 }
 
                 stopwatch.Restart();
@@ -175,7 +183,10 @@ namespace SysBot.Pokemon
                 Counts.AddCompletedEncounters();
 
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
+            {
                 DumpPokemon(DumpSetting.DumpFolder, legends ? "legends" : "encounters", pk);
+                Counts.AddCompletedDumps();
+            }
 
             if (StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
             {

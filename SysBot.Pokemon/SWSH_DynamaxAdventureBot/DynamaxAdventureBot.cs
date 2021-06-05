@@ -37,7 +37,7 @@ namespace SysBot.Pokemon
             // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
 
-            var task = TestOffsets(token);
+            var task = DoDynamaxAdventure(token);
             await task.ConfigureAwait(false);
 
             await ResetStick(token).ConfigureAwait(false);
@@ -228,7 +228,10 @@ namespace SysBot.Pokemon
                     else if (found[1] == 0)
                         Log($"Lost at battle n. 4, adventure n. {adventureCompleted}.");
                     else
+                    {
                         Log($"Adventure n. {adventureCompleted} completed.");
+                        Counts.AddCompletedDynamaxAdventures();
+                    }
 
                     //Ending routine
                     if ((Hub.Config.SWSH_DynaAdventure.KeepShinies && found[0] > 0) || found[0] == 4)
@@ -316,7 +319,10 @@ namespace SysBot.Pokemon
                 Counts.AddCompletedEncounters();
 
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
+            {
                 DumpPokemon(DumpSetting.DumpFolder, legends ? "legends" : "encounters", pk);
+                Counts.AddCompletedDumps();
+            }
 
             if (StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
             {

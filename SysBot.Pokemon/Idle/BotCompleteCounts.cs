@@ -12,6 +12,11 @@ namespace SysBot.Pokemon
         private int CompletedEncounters;
         private int CompletedLegends;
         private int CompletedDumps;
+        private int CompletedDynamaxAdventures;
+        private int SWSHOverworldScans;
+        private int SWSHLegendaryScans;
+        private int LGPEOverworldScans;
+        private int LGPELegendaryScans;
 
         public BotCompleteCounts(CountSettings config)
         {
@@ -25,6 +30,11 @@ namespace SysBot.Pokemon
             CompletedFossils = Config.CompletedFossils;
             CompletedEncounters = Config.CompletedEncounters;
             CompletedLegends = Config.CompletedLegends;
+            CompletedDynamaxAdventures = Config.CompletedDynamaxAdventures;
+            SWSHOverworldScans = Config.SWSHOverworldScans;
+            SWSHLegendaryScans = Config.SWSHLegendaryScans;
+            LGPEOverworldScans = Config.LGPEOverworldScans;
+            LGPELegendaryScans = Config.LGPELegendaryScans;
         }
 
         public void AddCompletedEggs()
@@ -56,6 +66,36 @@ namespace SysBot.Pokemon
             Config.CompletedDumps = CompletedDumps;
         }
 
+        public void AddCompletedDynamaxAdventures()
+        {
+            Interlocked.Increment(ref CompletedDynamaxAdventures);
+            Config.CompletedDynamaxAdventures = CompletedDynamaxAdventures;
+        }
+
+        public void AddSWSHOverworldScans()
+        {
+            Interlocked.Increment(ref SWSHOverworldScans);
+            Config.SWSHOverworldScans = SWSHOverworldScans;
+        }
+
+        public void AddSWSHLegendaryScans()
+        {
+            Interlocked.Increment(ref SWSHLegendaryScans);
+            Config.SWSHLegendaryScans = SWSHLegendaryScans;
+        }
+
+        public void AddLGPEOverworldScans()
+        {
+            Interlocked.Increment(ref LGPEOverworldScans);
+            Config.LGPEOverworldScans = LGPEOverworldScans;
+        }
+        
+        public void AddLGPELegendaryScans()
+        {
+            Interlocked.Increment(ref LGPELegendaryScans);
+            Config.LGPELegendaryScans = LGPELegendaryScans;
+        }
+
         public IEnumerable<string> Summary()
         {
             if (CompletedDumps != 0)
@@ -68,6 +108,14 @@ namespace SysBot.Pokemon
                 yield return $"Wild Encounters: {CompletedEncounters}";
             if (CompletedLegends != 0)
                 yield return $"Legendary Encounters: {CompletedLegends}";
+            if(SWSHOverworldScans != 0 )
+                yield return $"SWSH Overworld Scans: {SWSHOverworldScans}";
+            if (SWSHLegendaryScans != 0)
+                yield return $"SWSH Legendary Scans: {SWSHLegendaryScans}";
+            if (LGPEOverworldScans != 0)
+                yield return $"LGPE Overworld Scans: {LGPEOverworldScans}";
+            if (LGPELegendaryScans != 0)
+                yield return $"LGPE Legendary Scans: {LGPELegendaryScans}";
         }
     }
 }

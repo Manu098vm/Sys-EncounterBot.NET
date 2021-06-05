@@ -72,7 +72,7 @@ namespace SysBot.Pokemon
                     foreach (PK8 pkm in PK8s)
                     {
                         //Log($"{(Species)pkm.Species}");
-                        if (await HandleEncounter(pkm, IsPKLegendary(pkm.Species), token).ConfigureAwait(false))
+                        if (await LogPKMs(pkm, IsPKLegendary(pkm.Species), token).ConfigureAwait(false))
                         {
                             //Save the game to update KCoordinates block
                             if (!await IsInBattle(token).ConfigureAwait(false))
@@ -169,7 +169,7 @@ namespace SysBot.Pokemon
             {
                 await FlyToRerollSeed(token).ConfigureAwait(false);
                 var pkm = await ReadOwPokemon(dexn, offset, null, sav, token).ConfigureAwait(false);
-                if (pkm != null && await HandleEncounter(pkm, IsPKLegendary(pkm.Species), token).ConfigureAwait(false))
+                if (pkm != null && await LogPKMs(pkm, IsPKLegendary(pkm.Species), token).ConfigureAwait(false))
                 {
                     await Click(X, 2_000, token).ConfigureAwait(false);
                     await Click(R, 2_000, token).ConfigureAwait(false);
@@ -216,22 +216,27 @@ namespace SysBot.Pokemon
 
             Log("Game saved, checking details from KCoord block...");
         }
-        private async Task<bool> HandleEncounter(PK8 pk, bool legends, CancellationToken token)
+        private async Task<bool> LogPKMs(PK8 pk, bool legends, CancellationToken token)
         {
             encounterCount++;
+            string text = "";
 
-            //Star/Square Shiny Recognition
-            var showdowntext = ShowdownParsing.GetShowdownText(pk);
-            if (pk.IsShiny && pk.ShinyXor == 0)
-                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
-            else if (pk.IsShiny)
-                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
+            if (Hub.Config.StopConditions.StopOnSpecies != 0 && pk.Species == (int)Hub.Config.StopConditions.StopOnSpecies)
+            {
+                _ = $"Scan {encounterCount}:\n{ShowdownParsing.GetShowdownText(pk)}";
+                if (pk.IsShiny && pk.ShinyXor == 0)
+                    _ = text.Replace("Shiny: Yes", "Shiny: Square");
+                else if (pk.IsShiny)
+                    _ = text.Replace("Shiny: Yes", "Shiny: Star");
+                _ = $"{text}\n{GetRibbonsList(pk)}";
+            } else
+                _ = $"Scan {encounterCount}: {(pk.IsShiny ? "Shiny " : "")}{pk.Nickname}.";
 
-            Log($"Scan: {encounterCount}{Environment.NewLine}{showdowntext}{Environment.NewLine}{GetRibbonsList(pk)}{Environment.NewLine}");
+            Log($"Scan: {text}");
             if (legends)
-                Counts.AddCompletedLegends();
+                Counts.AddSWSHLegendaryScans();
             else
-                Counts.AddCompletedEncounters();
+                Counts.AddSWSHOverworldScans();
 
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                 DumpPokemon(DumpSetting.DumpFolder, legends ? "OverworldLegends" : "OverworldEncounters", pk);

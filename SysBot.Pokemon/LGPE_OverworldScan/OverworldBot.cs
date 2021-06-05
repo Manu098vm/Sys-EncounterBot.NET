@@ -23,6 +23,8 @@ namespace SysBot.Pokemon
             Counts = Hub.Counts;
         }
 
+        private int encounterCount;
+
         public override async Task MainLoop(CancellationToken token)
         {
             //TODO: IdentifyTrainer routine for let's go instead of SwSh
@@ -58,7 +60,6 @@ namespace SysBot.Pokemon
             uint catchcombo;
             uint speciescombo;
             int i = 0;
-            int j = 0;
             bool freeze = false;
             bool searchforshiny = Hub.Config.LGPE_OverworldScan.OnlyShiny;
             bool found = false;
@@ -95,14 +96,6 @@ namespace SysBot.Pokemon
                 }
             }
 
-            //Force the Fortune Teller Nature value
-            if (Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature != Nature.Random)
-            {
-                await LGEnableNatureTeller(token).ConfigureAwait(false);
-                await LGEditWildNature(Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature, token).ConfigureAwait(false);
-                Log($"Fortune Teller enabled, Nature set to {Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature}.");
-            }
-
             //Main Loop
             while (!token.IsCancellationRequested)
             {
@@ -110,56 +103,48 @@ namespace SysBot.Pokemon
                     await LGZaksabeast(token, version).ConfigureAwait(false);
                 while (freeze == false && !token.IsCancellationRequested && !found)
                 {
+                    //Force the Fortune Teller Nature value, value is reset at the end of the day
+                    if (Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature != Nature.Random && !await LGIsNatureTellerEnabled(token).ConfigureAwait(false)) 
+                    {
+                        await LGEnableNatureTeller(token).ConfigureAwait(false);
+                        await LGEditWildNature(Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature, token).ConfigureAwait(false);
+                        Log($"Fortune Teller enabled, Nature set to {await LGReadWildNature(token).ConfigureAwait(false)}.");
+                    }
+
                     if (await LGCountMilliseconds(Hub.Config, token).ConfigureAwait(false) > 0 || !searchforshiny)
                     {
-                        //The routine need to continue and check the overworld spawns, cannot be stuck at changing stick position.
+                        //PG Movements. The routine need to continue and check the overworld spawns, cannot be stuck at changing stick position.
                         if (movementslist.Count > 0)
                         {
-                            if (stopwatch.ElapsedMilliseconds >= movementslist.ElementAt(j)[2] || firstrun)
+                            if (stopwatch.ElapsedMilliseconds >= movementslist.ElementAt(i)[2] || firstrun)
                             {
                                 if (firstrun)
                                     firstrun = false;
-                                //Log($"Moved for {stopwatch.ElapsedMilliseconds}ms.");
                                 await ResetStick(token).ConfigureAwait(false);
-                                await SetStick(RIGHT, (short)(movementslist.ElementAt(j)[0]), (short)(movementslist.ElementAt(j)[1]), 0_001, token).ConfigureAwait(false);
-                                j++;
-                                if (j == movementslist.Count)
-                                    j = 0;
+                                await SetStick(RIGHT, (short)(movementslist.ElementAt(i)[0]), (short)(movementslist.ElementAt(i)[1]), 0_001, token).ConfigureAwait(false);
+                                i++;
+                                if (i == movementslist.Count)
+                                    i = 0;
                                 stopwatch.Restart();
                             }
                         }
 
                         //Check is inside an unwanted encounter
                         if (await LGIsInCatchScreen(token).ConfigureAwait(false))
-                        {
-                            await ResetStick(token).ConfigureAwait(false);
-                            Log($"Unwanted encounter detected!");
-                            int y = 0;
-                            while (await LGIsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested)
-                            {
-                                y++;
-                                await Task.Delay(8_000, token).ConfigureAwait(false);
-                                if (y > 2)
-                                    await Click(B, 1_200, token).ConfigureAwait(false);
-                                await Click(B, 1_200, token).ConfigureAwait(false);
-                                await Click(A, 1_000, token).ConfigureAwait(false);
-                                await Task.Delay(6_500, token).ConfigureAwait(false);
-                            }
-                            Log($"Exited wild encounter.");
-                        }
+                            await EscapeWildEncounter(token).ConfigureAwait(false);
 
                         //Check new spawns
-                        newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn1, 2, token).ConfigureAwait(false), 0);
+                        newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn, 2, token).ConfigureAwait(false), 0);
                         if (newspawn != prev)
                         {
                             if (newspawn != 0)
                             {
-                                i++;
+                                encounterCount++;
                                 if (IsPKLegendary((int)newspawn))
-                                    Counts.AddCompletedLegends();
+                                    Counts.AddLGPELegendaryScans();
                                 else
-                                    Counts.AddCompletedEncounters();
-                                Log($"New spawn ({i}): {newspawn} {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
+                                    Counts.AddLGPEOverworldScans();
+                                Log($"New spawn ({encounterCount}): {newspawn} {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
                             }
                             prev = newspawn;
                             if (!searchforshiny &&
@@ -183,7 +168,7 @@ namespace SysBot.Pokemon
 
                 //Unfreeze to restart the routine, or log the Shiny species.
                 await LGUnfreeze(token, version).ConfigureAwait(false);
-                newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn1, 2, token).ConfigureAwait(false), 0);
+                newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn, 2, token).ConfigureAwait(false), 0);
 
                 //Stop Conditions logic
                 if (birds && ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146) && !token.IsCancellationRequested)
@@ -196,8 +181,12 @@ namespace SysBot.Pokemon
 
                 if (searchforshiny && !token.IsCancellationRequested)
                 {
-                    i++;
-                    Log($"New spawn ({i}): {newspawn} Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
+                    encounterCount++;
+                    if (IsPKLegendary((int)newspawn))
+                        Counts.AddLGPELegendaryScans();
+                    else
+                        Counts.AddLGPEOverworldScans();
+                    Log($"New spawn ({encounterCount}): {newspawn} Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
 
                 }
                 else if (!token.IsCancellationRequested)
@@ -287,25 +276,26 @@ namespace SysBot.Pokemon
         private async Task TestEscape(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
-            {
                 if (await LGIsInCatchScreen(token).ConfigureAwait(false))
-                {
-                    //TODO HANDLE ENCOUNTER
-                    Log($"Unwanted encounter detected!");
-                    int j = 0;
-                    while (await LGIsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested)
-                    {
-                        j++;
-                        await Task.Delay(8_000, token).ConfigureAwait(false);
-                        if (j > 2)
-                            await Click(B, 1_200, token).ConfigureAwait(false);
-                        await Click(B, 1_200, token).ConfigureAwait(false);
-                        await Click(A, 1_000, token).ConfigureAwait(false);
-                        await Task.Delay(6_500, token).ConfigureAwait(false);
-                    }
-                    Log($"Exited wild encounter.");
-                }
+                    await EscapeWildEncounter(token).ConfigureAwait(false);
+        }
+
+        private async Task EscapeWildEncounter(CancellationToken token)
+        {
+            await ResetStick(token).ConfigureAwait(false);
+            Log($"Unwanted encounter detected!");
+            int i = 0;
+            while (await LGIsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested)
+            {
+                i++;
+                await Task.Delay(8_000, token).ConfigureAwait(false);
+                if (i > 2)
+                    await Click(B, 1_200, token).ConfigureAwait(false);
+                await Click(B, 1_200, token).ConfigureAwait(false);
+                await Click(A, 1_000, token).ConfigureAwait(false);
+                await Task.Delay(6_500, token).ConfigureAwait(false);
             }
+            Log($"Exited wild encounter.");
         }
         private async Task ResetStick(CancellationToken token)
         {
@@ -345,7 +335,6 @@ namespace SysBot.Pokemon
                 }
                 index++;
             }
-            Log($"Buttons Count: {buttons.Count}");
             return buttons;
         }
     }

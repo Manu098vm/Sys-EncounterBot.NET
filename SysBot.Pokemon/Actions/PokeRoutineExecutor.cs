@@ -234,8 +234,6 @@ namespace SysBot.Pokemon
                     OT_Name = TrainerData.OT,
                     TID = TrainerData.TID,
                     SID = TrainerData.SID,
-                    TrainerID7 = TrainerData.TrainerID7,
-                    TrainerSID7 = TrainerData.TrainerSID7,
                     OT_Gender = TrainerData.Gender,
                     HT_Name = TrainerData.OT,
                     HT_Gender = TrainerData.Gender,
@@ -475,6 +473,8 @@ namespace SysBot.Pokemon
                 return GameVersion.Invalid;
         }
 
+        public async Task<bool> LGIsNatureTellerEnabled(CancellationToken token) => (await Connection.ReadBytesAsync(NatureTellerEnabled, 1, token).ConfigureAwait(false))[0] == 0x04;
+        public async Task<Nature> LGReadWildNature(CancellationToken token) => (Nature)BitConverter.ToUInt16(await Connection.ReadBytesAsync(WildNature, 2, token).ConfigureAwait(false), 0);
         public async Task LGEnableNatureTeller(CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes(0x04), NatureTellerEnabled, token).ConfigureAwait(false);
         public async Task LGEditWildNature(Nature target, CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes((uint)target), WildNature, token).ConfigureAwait(false);
 
@@ -510,10 +510,9 @@ namespace SysBot.Pokemon
         public async Task LGZaksabeast(CancellationToken token, GameVersion version)
         {
             uint offset = version == GameVersion.GP ? PGeneratingFunction1 : EGeneratingFunction1;
-            //This is basically the Zaksabeast code ported for the newest Let's GO Eevee version. 
+            //This is basically the Zaksabeast code ported for the newest Let's game version. 
             byte[] inject = new byte[] { 0xE9, 0x03, 0x00, 0x2A, 0x60, 0x12, 0x40, 0xB9, 0xE1, 0x03, 0x09, 0x2A, 0x69, 0x06, 0x00, 0xF9, 0xDC, 0xFD, 0xFF, 0x97, 0x40, 0x00, 0x00, 0x36, 0x00, 0x00, 0x00, 0x14 };
             await SwitchConnection.WriteBytesMainAsync(inject, offset, token).ConfigureAwait(false);
-
         }
         public async Task LGUnfreeze(CancellationToken token, GameVersion version)
         {
@@ -534,7 +533,6 @@ namespace SysBot.Pokemon
             //Standard shiny odds
             byte[] inject = new byte[] { 0xE0, 0x02, 0x00, 0x54 };
             await SwitchConnection.WriteBytesMainAsync(inject, offset, token).ConfigureAwait(false);
-
         }
 
         public async Task LGOpenGame(PokeTradeHubConfig config, CancellationToken token)
@@ -542,7 +540,6 @@ namespace SysBot.Pokemon
             // Open game.
             await Click(A, 1_000 + config.Timings.ExtraTimeLoadProfile, token).ConfigureAwait(false);
 
-            // Menus here can go in the order: Update Prompt -> Profile -> DLC check -> Unable to use DLC.
             //  The user can optionally turn on the setting if they know of a breaking system update incoming.
             if (config.Timings.AvoidSystemUpdate)
             {

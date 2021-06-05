@@ -17,10 +17,25 @@ namespace SysBot.Pokemon
         [Category(Count), Description("Fossil Pokémon Revived")]
         public int CompletedFossils { get; set; }
 
-        [Category(Count), Description("Encountered Wild Pokémon")]
+        [Category(Count), Description("Encountered Pokémon")]
         public int CompletedEncounters { get; set; }
 
         [Category(Count), Description("Encountered Legendary Pokémon")]
         public int CompletedLegends { get; set; }
+
+        [Category(Count), Description("Completed Dynamax Adventures")]
+        public int CompletedDynamaxAdventures { get; set; }
+
+        [Category(Count), Description("SwSh Overworld Scans")]
+        public int SWSHOverworldScans { get; set; }
+
+        [Category(Count), Description("SwSh Overworld Legendary Scans")]
+        public int SWSHLegendaryScans { get; set; }
+
+        [Category(Count), Description("LGPE Overworld Spawns")]
+        public int LGPEOverworldScans { get; set; }
+
+        [Category(Count), Description("LGPE Overworld Legendary Spawns")]
+        public int LGPELegendaryScans { get; set; }
     }
 }

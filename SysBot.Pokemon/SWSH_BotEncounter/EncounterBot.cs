@@ -316,7 +316,10 @@ namespace SysBot.Pokemon
                 Counts.AddCompletedEncounters();
 
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
+            {
                 DumpPokemon(DumpSetting.DumpFolder, legends ? "legends" : "encounters", pk);
+                Counts.AddCompletedDumps();
+            }
 
             if (StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
             {

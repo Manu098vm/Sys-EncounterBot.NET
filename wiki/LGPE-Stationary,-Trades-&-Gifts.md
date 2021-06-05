@@ -6,6 +6,8 @@ Go in front of the Pokémon you want to hunt and save the game.
 
 Be sure to be in the overworld without any dialogue or menu opened before starting the bot.
 
+If you're hunting for stationaries, be sure to have a strong pokemon in the first slot of your team, with a strong move in its first moves slot.
+
 ## Bot Setup
 First, download the Sys-EncounterBot: https://github.com/Manu098vm/Sys-EncounterBot.NET/releases.
 
