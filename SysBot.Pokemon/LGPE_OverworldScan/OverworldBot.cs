@@ -26,14 +26,12 @@ namespace SysBot.Pokemon
 
         public override async Task MainLoop(CancellationToken token)
         {
-            //TODO: IdentifyTrainer routine for let's go instead of SwSh
             Log("Identifying trainer data of the host console.");
             await LGIdentifyTrainer(token).ConfigureAwait(false);
 
             Log("Starting main EncounterBot loop.");
             Config.IterateNextRoutine();
 
-            // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
 
             var task = Hub.Config.LGPE_OverworldScan.Routine switch
@@ -61,7 +59,7 @@ namespace SysBot.Pokemon
             int i = 0;
             bool freeze = false;
             bool searchforshiny = Hub.Config.LGPE_OverworldScan.OnlyShiny;
-            bool found = false;
+            bool found;
 
             if (movementslist.Count > 0)
                 Log($"{Environment.NewLine}----------------------------------------{Environment.NewLine}" +
@@ -73,24 +71,24 @@ namespace SysBot.Pokemon
             //Catch combo to increment spawn quality and shiny rate (Thanks to Lincoln-LM for the offsets)
             if ((int)Hub.Config.LGPE_OverworldScan.ChainSpecies > 0)
             {
-                speciescombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
+                speciescombo = await LGReadSpeciesCombo(token).ConfigureAwait(false);
                 if ((speciescombo != (uint)Hub.Config.LGPE_OverworldScan.ChainSpecies) && (Hub.Config.LGPE_OverworldScan.ChainSpecies != 0))
                 {
                     Log($"Current catch combo being on {(speciescombo == 0 ? "None" : SpeciesName.GetSpeciesName((int)speciescombo, 2))}, changing to {Hub.Config.LGPE_OverworldScan.ChainSpecies}.");
-                    await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes((uint)Hub.Config.LGPE_OverworldScan.ChainSpecies), await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), token).ConfigureAwait(false);
-                    speciescombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
+                    await LGEditSpeciesCombo((uint)Hub.Config.LGPE_OverworldScan.ChainSpecies, token).ConfigureAwait(false);
+                    speciescombo = await LGReadSpeciesCombo(token).ConfigureAwait(false);
                     Log($"Current catch combo being now on {(speciescombo == 0 ? "None" : SpeciesName.GetSpeciesName((int)speciescombo, 2))}.");
                 }
             }
-
+                
             if (Hub.Config.LGPE_OverworldScan.ChainCount > 0)
             {
-                catchcombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
+                catchcombo = await LGReadComboCount(token).ConfigureAwait(false);
                 if (catchcombo < (uint)Hub.Config.LGPE_OverworldScan.ChainCount)
                 {
                     Log($"Current catch combo being {catchcombo}, incrementing to {Hub.Config.LGPE_OverworldScan.ChainCount}.");
-                    await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes((uint)Hub.Config.LGPE_OverworldScan.ChainCount), await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), token).ConfigureAwait(false);
-                    catchcombo = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
+                    await LGEditComboCount((uint)Hub.Config.LGPE_OverworldScan.ChainCount, token).ConfigureAwait(false);
+                    catchcombo = await LGReadComboCount(token).ConfigureAwait(false);
                     Log($"Current catch combo being now {catchcombo}.");
                 }
             }
@@ -100,18 +98,20 @@ namespace SysBot.Pokemon
             {
                 if (searchforshiny)
                     await LGZaksabeast(token, version).ConfigureAwait(false);
-                while (freeze == false && !token.IsCancellationRequested && !found)
-                {
-                    //Force the Fortune Teller Nature value, value is reset at the end of the day
-                    if (Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature != Nature.Random && !await LGIsNatureTellerEnabled(token).ConfigureAwait(false)) 
-                    {
-                        await LGEnableNatureTeller(token).ConfigureAwait(false);
-                        await LGEditWildNature(Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature, token).ConfigureAwait(false);
-                        Log($"Fortune Teller enabled, Nature set to {await LGReadWildNature(token).ConfigureAwait(false)}.");
-                    }
 
+                //Main Loop
+                while (!freeze && !token.IsCancellationRequested)
+                {
                     if (await LGCountMilliseconds(Hub.Config, token).ConfigureAwait(false) > 0 || !searchforshiny)
                     {
+                        //Force the Fortune Teller Nature value, value is reset at the end of the day
+                        if (Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature != Nature.Random && !await LGIsNatureTellerEnabled(token).ConfigureAwait(false))
+                        {
+                            await LGEnableNatureTeller(token).ConfigureAwait(false);
+                            await LGEditWildNature(Hub.Config.LGPE_OverworldScan.SetFortuneTellerNature, token).ConfigureAwait(false);
+                            Log($"Fortune Teller enabled, Nature set to {await LGReadWildNature(token).ConfigureAwait(false)}.");
+                        }
+
                         //PG Movements. The routine need to continue and check the overworld spawns, cannot be stuck at changing stick position.
                         if (movementslist.Count > 0)
                         {
@@ -166,6 +166,7 @@ namespace SysBot.Pokemon
                 }
 
                 await LGUnfreeze(token, version).ConfigureAwait(false);
+                freeze = false;
                 newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn, 2, token).ConfigureAwait(false), 0);
 
                 //Stop Conditions

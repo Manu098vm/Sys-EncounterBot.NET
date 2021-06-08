@@ -477,7 +477,14 @@ namespace SysBot.Pokemon
         public async Task<Nature> LGReadWildNature(CancellationToken token) => (Nature)BitConverter.ToUInt16(await Connection.ReadBytesAsync(WildNature, 2, token).ConfigureAwait(false), 0);
         public async Task LGEnableNatureTeller(CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes(0x04), NatureTellerEnabled, token).ConfigureAwait(false);
         public async Task LGEditWildNature(Nature target, CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes((uint)target), WildNature, token).ConfigureAwait(false);
-
+        public async Task<uint> LGReadSpeciesCombo(CancellationToken token) =>
+            BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
+        public async Task<uint> LGReadComboCount(CancellationToken token) =>
+            BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), 2, token).ConfigureAwait(false), 0);
+        public async Task LGEditSpeciesCombo(uint species, CancellationToken token) =>
+            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(species), await ParsePointer(SpeciesComboPointer, token).ConfigureAwait(false), token).ConfigureAwait(false);
+        public async Task LGEditComboCount(uint count, CancellationToken token) =>
+            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(count), await ParsePointer(CatchComboPointer, token).ConfigureAwait(false), token).ConfigureAwait(false);
         public async Task<long> LGCountMilliseconds(PokeTradeHubConfig config, CancellationToken token)
         {
             long WaitMS = config.LGPE_OverworldScan.MaxMs;
