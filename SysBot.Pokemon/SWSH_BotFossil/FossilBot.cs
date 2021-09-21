@@ -61,7 +61,17 @@ namespace SysBot.Pokemon
                 else
                 {
                     encounterCount++;
-                    Log($"Encounter: {encounterCount}:{Environment.NewLine}{ShowdownParsing.GetShowdownText(pk)}{Environment.NewLine}");
+                    var showdowntext = ShowdownParsing.GetShowdownText(pk);
+                    if (pk.IsShiny)
+                    {
+                        Counts.AddShinyEncounters();
+                        if (pk.ShinyXor == 0)
+                            showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
+                        else
+                            showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
+                    }
+
+                    Log($"Encounter: {encounterCount}:{Environment.NewLine}{showdowntext}{Environment.NewLine}");
                     if (DumpSetting.Dump)
                     {
                         DumpPokemon(DumpSetting.DumpFolder, "fossil", pk);

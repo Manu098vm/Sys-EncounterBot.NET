@@ -17,6 +17,7 @@ namespace SysBot.Pokemon
         private int SWSHLegendaryScans;
         private int LGPEOverworldScans;
         private int LGPELegendaryScans;
+        private int ShinyEncounters;
 
         public BotCompleteCounts(CountSettings config)
         {
@@ -35,6 +36,7 @@ namespace SysBot.Pokemon
             SWSHLegendaryScans = Config.SWSHLegendaryScans;
             LGPEOverworldScans = Config.LGPEOverworldScans;
             LGPELegendaryScans = Config.LGPELegendaryScans;
+            ShinyEncounters = Config.ShinyEncounters;
         }
 
         public void AddCompletedEggs()
@@ -96,6 +98,12 @@ namespace SysBot.Pokemon
             Config.LGPELegendaryScans = LGPELegendaryScans;
         }
 
+        public void AddShinyEncounters()
+		{
+            Interlocked.Increment(ref ShinyEncounters);
+            Config.ShinyEncounters = ShinyEncounters;
+		}
+
         public IEnumerable<string> Summary()
         {
             if (CompletedDumps != 0)
@@ -116,6 +124,8 @@ namespace SysBot.Pokemon
                 yield return $"LGPE Overworld Scans: {LGPEOverworldScans}";
             if (LGPELegendaryScans != 0)
                 yield return $"LGPE Legendary Scans: {LGPELegendaryScans}";
+            if (ShinyEncounters != 0)
+                yield return $"Total count of Shiny Pokémon encountered through the bot routines: {ShinyEncounters}";
         }
     }
 }

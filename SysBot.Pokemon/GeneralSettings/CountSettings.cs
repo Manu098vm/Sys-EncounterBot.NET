@@ -37,5 +37,8 @@ namespace SysBot.Pokemon
 
         [Category(Count), Description("LGPE Overworld Legendary Spawns")]
         public int LGPELegendaryScans { get; set; }
+
+        [Category(Count), Description("Total count of Shiny Pokémons encountered through the bot routines.")]
+        public int ShinyEncounters { get; set; }
     }
 }

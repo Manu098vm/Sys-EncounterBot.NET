@@ -171,10 +171,14 @@ namespace SysBot.Pokemon
 
             //Star/Square Shiny Recognition
             var showdowntext = ShowdownParsing.GetShowdownText(pk);
-            if (pk.IsShiny && pk.ShinyXor == 0)
-                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
-            else if (pk.IsShiny)
-                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
+            if (pk.IsShiny)
+            {
+                Counts.AddShinyEncounters();
+                if (pk.ShinyXor == 0)
+                    showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
+                else
+                    showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
+            }
 
             Log($"Encounter: {encounterCount}{Environment.NewLine}{showdowntext}{Environment.NewLine}");
             if (legends)
@@ -191,7 +195,7 @@ namespace SysBot.Pokemon
             if (StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
             {
                 if (!String.IsNullOrEmpty(Hub.Config.Discord.UserTag))
-                    Log($"<@{Hub.Config.Discord.UserTag}> result found! Stopping routine execution; restart the bot(s) to search again.");
+                    Log($"<@{Hub.Config.Discord.UserTag}> result found!");
                 else
                     Log("Result found!");
                 if (Hub.Config.StopConditions.CaptureVideoClip)

@@ -218,8 +218,10 @@ namespace SysBot.Pokemon
         private async Task<bool> LogPKMs(PK8 pk, bool legends, CancellationToken token)
         {
             encounterCount++;
-            string text = "";
+            if (pk.IsShiny)
+                Counts.AddShinyEncounters();
 
+            string text = "";
             if (Hub.Config.StopConditions.StopOnSpecies != 0 && pk.Species == (int)Hub.Config.StopConditions.StopOnSpecies)
             {
                 _ = $"Scan {encounterCount}:\n{ShowdownParsing.GetShowdownText(pk)}";

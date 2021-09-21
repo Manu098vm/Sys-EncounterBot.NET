@@ -179,6 +179,7 @@ namespace SysBot.Pokemon
                     found = false;
 
                 encounterCount++;
+                Counts.AddShinyEncounters();
                 if (IsPKLegendary((int)newspawn))
                     Counts.AddLGPELegendaryScans();
                 else

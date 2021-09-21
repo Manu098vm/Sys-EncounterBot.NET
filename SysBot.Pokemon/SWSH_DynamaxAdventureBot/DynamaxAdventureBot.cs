@@ -307,10 +307,14 @@ namespace SysBot.Pokemon
 
             //Star/Square Shiny Recognition
             var showdowntext = ShowdownParsing.GetShowdownText(pk);
-            if (pk.IsShiny && pk.ShinyXor == 0)
-                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
-            else if (pk.IsShiny)
-                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
+            if (pk.IsShiny)
+            {
+                Counts.AddShinyEncounters();
+                if (pk.ShinyXor == 0)
+                    showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
+                else
+                    showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
+            }
 
             Log($"Encounter: {encounterCount}{Environment.NewLine}{Environment.NewLine}{showdowntext}{Environment.NewLine}");
             if (legends)
