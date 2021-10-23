@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsets;
+using System.Windows.Forms;
 
 namespace SysBot.Pokemon
 {
@@ -385,23 +386,10 @@ namespace SysBot.Pokemon
             // Switch Logo lag, skip cutscene, game load screen
             await Task.Delay(10_000 + config.Timings.ExtraTimeLoadGame, token).ConfigureAwait(false);
 
-            for (int i = 0; i < 4; i++)
-                await Click(A, 1_000, token).ConfigureAwait(false);
-
-            var timer = 60_000;
-            while (!await IsOnOverworld(config, token).ConfigureAwait(false))
+            while (!(await IsOnOverworld(config, token).ConfigureAwait(false) || await IsInBattle(token)))
             {
-                await Task.Delay(0_200, token).ConfigureAwait(false);
-                timer -= 0_250;
-                // We haven't made it back to overworld after a minute, so press A every 6 seconds hoping to restart the game.
-                // Don't risk it if hub is set to avoid updates.
-                if (timer <= 0 && !config.Timings.AvoidSystemUpdate)
-                {
-                    Log("Still not in the game, initiating rescue protocol!");
-                    while (!await IsOnOverworld(config, token).ConfigureAwait(false))
-                        await Click(A, 6_000, token).ConfigureAwait(false);
-                    break;
-                }
+                await Click(A, 0_500, token).ConfigureAwait(false);
+                await Task.Delay(2_000, token).ConfigureAwait(false);
             }
 
             Log("Back in the overworld!");
@@ -439,15 +427,34 @@ namespace SysBot.Pokemon
         
         public async Task<bool> IsInBattle(CancellationToken token)
         {
-            var data = await Connection.ReadBytesAsync(Version == GameVersion.SH ? InBattleRaidOffsetSH : InBattleRaidOffsetSW, 1, token).ConfigureAwait(false);
-            return data[0] == (Version == GameVersion.SH ? 0x40 : 0x41);
+            try
+            {
+                var data = await Connection.ReadBytesAsync(Version == GameVersion.SH ? InBattleRaidOffsetSH : InBattleRaidOffsetSW, 1, token).ConfigureAwait(false);
+                return data[0] == (Version == GameVersion.SH ? 0x40 : 0x41);
+            } catch
+			{
+                Log("Error in reading Battle array bytes from console.");
+                MessageBox.Show("Error in reading Battle array bytes from console.");
+                return false;
+            }
         }
 
         public async Task<bool> IsInLairWait(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(LairWait, 1, token).ConfigureAwait(false))[0] == 0;
 
         public async Task<bool> IsInLairEndList(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(LairRewards, 1, token).ConfigureAwait(false))[0] != 0;
 
-        public async Task<bool> SWSHIsGiftFound(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(GiftFound, 1, token).ConfigureAwait(false))[0] > 0;
+        public async Task<bool> SWSHIsGiftFound(CancellationToken token)
+        {
+            try
+            {
+                return (await SwitchConnection.ReadBytesMainAsync(GiftFound, 1, token).ConfigureAwait(false))[0] > 0;
+            } catch
+			{
+                Log("Error in reading Gift array bytes from console.");
+                MessageBox.Show("Error in reading Gift array bytes from console.");
+                return false;
+            }
+        }
 
         public async Task<bool> IsOnOverworld(PokeTradeHubConfig config, CancellationToken token)
         {

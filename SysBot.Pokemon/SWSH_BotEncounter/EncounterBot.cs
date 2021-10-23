@@ -2,6 +2,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
@@ -34,10 +35,11 @@ namespace SysBot.Pokemon
 
             Log("Starting main EncounterBot loop.");
             Config.IterateNextRoutine();
+            Log("CIAOO");
 
             // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
-
+            Log("HEHE");
             var task = Hub.Config.SWSH_Encounter.EncounteringType switch
             {
                 EncounterMode.LiveStatsChecking => DoLiveStatsChecking(token),
@@ -50,6 +52,7 @@ namespace SysBot.Pokemon
                 EncounterMode.Keldeo => DoKeldeoEncounter(token),
                 EncounterMode.VerticalLine => WalkInLine(token),
                 EncounterMode.HorizontalLine => WalkInLine(token),
+                EncounterMode.Gifts => DoRestartingEncounter(token),
                 EncounterMode.Trades => DoTrades(token),
                 _ => DoLiveStatsChecking(token),
             };
@@ -76,6 +79,9 @@ namespace SysBot.Pokemon
                         await ResetStick(token).ConfigureAwait(false);
                     }
 
+                    Log("Here, Click A");
+                    await Click(A, 0_300, token).ConfigureAwait(false);
+
                     //Click through all the menus until the encounter.
                     while (!await IsInBattle(token).ConfigureAwait(false) && !await SWSHIsGiftFound(token).ConfigureAwait(false))
                         await Click(A, 0_300, token).ConfigureAwait(false);
@@ -83,10 +89,13 @@ namespace SysBot.Pokemon
                     Log("An encounter found! Checking details...");
 
                     PK8? pk;
-                    if(type == EncounterMode.Gifts)
+                    if (type == EncounterMode.Gifts)
                         pk = await ReadUntilPresent(await ParsePointer(PokeGift, token), 2_000, 0_200, token).ConfigureAwait(false);
                     else
-                        pk = await ReadUntilPresent(encounterOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                    {
+						pk = await ReadUntilPresent(encounterOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                        pk = null;
+                    }
 
                     if (pk != null)
                         if (await HandleEncounter(pk, IsPKLegendary(pk.Species), token).ConfigureAwait(false))
