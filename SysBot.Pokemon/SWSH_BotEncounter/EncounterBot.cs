@@ -35,11 +35,9 @@ namespace SysBot.Pokemon
 
             Log("Starting main EncounterBot loop.");
             Config.IterateNextRoutine();
-            Log("CIAOO");
 
             // Clear out any residual stick weirdness.
             await ResetStick(token).ConfigureAwait(false);
-            Log("HEHE");
             var task = Hub.Config.SWSH_Encounter.EncounteringType switch
             {
                 EncounterMode.LiveStatsChecking => DoLiveStatsChecking(token),
@@ -47,7 +45,7 @@ namespace SysBot.Pokemon
                 EncounterMode.Regigigas => DoRestartingEncounter(token),
                 EncounterMode.Spiritomb => DoRestartingEncounter(token),
                 EncounterMode.SwordsJustice => DoRestartingEncounter(token),
-                EncounterMode.Eternatus => DoRestartingEncounter(token),
+                EncounterMode.Eternatus => DoEternatusEncounter(token),
                 EncounterMode.Dogs_or_Calyrex => DoDogEncounter(token),
                 EncounterMode.Keldeo => DoKeldeoEncounter(token),
                 EncounterMode.VerticalLine => WalkInLine(token),
@@ -64,7 +62,7 @@ namespace SysBot.Pokemon
         private async Task DoRestartingEncounter(CancellationToken token)
         {
             EncounterMode type = Hub.Config.SWSH_Encounter.EncounteringType;
-            uint encounterOffset = (type == EncounterMode.Regigigas || type == EncounterMode.Eternatus) ? RaidPokemonOffset : WildPokemonOffset;
+            uint encounterOffset = type == EncounterMode.Regigigas ? RaidPokemonOffset : WildPokemonOffset;
             bool skipRoutine = (type == EncounterMode.Spiritomb || type == EncounterMode.SwordsJustice);
 
             while (!token.IsCancellationRequested)
@@ -73,13 +71,6 @@ namespace SysBot.Pokemon
                 {
                     Log($"Looking for {type}...");
 
-                    if (type == EncounterMode.Eternatus)
-                    {
-                        await SetStick(LEFT, 0, 20_000, 1_000, token).ConfigureAwait(false);
-                        await ResetStick(token).ConfigureAwait(false);
-                    }
-
-                    Log("Here, Click A");
                     await Click(A, 0_300, token).ConfigureAwait(false);
 
                     //Click through all the menus until the encounter.
@@ -92,10 +83,7 @@ namespace SysBot.Pokemon
                     if (type == EncounterMode.Gifts)
                         pk = await ReadUntilPresent(await ParsePointer(PokeGift, token), 2_000, 0_200, token).ConfigureAwait(false);
                     else
-                    {
 						pk = await ReadUntilPresent(encounterOffset, 2_000, 0_200, token).ConfigureAwait(false);
-                        pk = null;
-                    }
 
                     if (pk != null)
                         if (await HandleEncounter(pk, IsPKLegendary(pk.Species), token).ConfigureAwait(false))
@@ -105,6 +93,26 @@ namespace SysBot.Pokemon
                 }
 
                 skipRoutine = false;
+                await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                await StartGame(Hub.Config, token).ConfigureAwait(false);
+            }
+        }
+
+        private async Task DoEternatusEncounter(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await SetStick(LEFT, 0, 20_000, 1_000, token).ConfigureAwait(false);
+                await ResetStick(token).ConfigureAwait(false);
+
+                var pk = await ReadUntilPresent(RaidPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                if (pk != null)
+                {
+                    if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
+                        return;
+                }
+
+                Connection.Log("Resetting Eternatus by restarting the game");
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
             }
