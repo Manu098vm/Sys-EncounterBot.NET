@@ -427,34 +427,15 @@ namespace SysBot.Pokemon
         
         public async Task<bool> IsInBattle(CancellationToken token)
         {
-            try
-            {
-                var data = await Connection.ReadBytesAsync(Version == GameVersion.SH ? InBattleRaidOffsetSH : InBattleRaidOffsetSW, 1, token).ConfigureAwait(false);
-                return data[0] == (Version == GameVersion.SH ? 0x40 : 0x41);
-            } catch
-			{
-                Log("Error in reading Battle array bytes from console.");
-                MessageBox.Show("Error in reading Battle array bytes from console.");
-                return false;
-            }
+            var data = await Connection.ReadBytesAsync(Version == GameVersion.SH ? InBattleRaidOffsetSH : InBattleRaidOffsetSW, 1, token).ConfigureAwait(false);
+            return data[0] == (Version == GameVersion.SH ? 0x40 : 0x41);
         }
 
         public async Task<bool> IsInLairWait(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(LairWait, 1, token).ConfigureAwait(false))[0] == 0;
 
         public async Task<bool> IsInLairEndList(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(LairRewards, 1, token).ConfigureAwait(false))[0] != 0;
 
-        public async Task<bool> SWSHIsGiftFound(CancellationToken token)
-        {
-            try
-            {
-                return (await SwitchConnection.ReadBytesMainAsync(GiftFound, 1, token).ConfigureAwait(false))[0] > 0;
-            } catch
-			{
-                Log("Error in reading Gift array bytes from console.");
-                MessageBox.Show("Error in reading Gift array bytes from console.");
-                return false;
-            }
-        }
+        public async Task<bool> SWSHIsGiftFound(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(GiftFound, 1, token).ConfigureAwait(false))[0] > 0;
 
         public async Task<bool> IsOnOverworld(PokeTradeHubConfig config, CancellationToken token)
         {

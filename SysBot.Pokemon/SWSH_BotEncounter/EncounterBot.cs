@@ -62,7 +62,7 @@ namespace SysBot.Pokemon
         private async Task DoRestartingEncounter(CancellationToken token)
         {
             EncounterMode type = Hub.Config.SWSH_Encounter.EncounteringType;
-            uint encounterOffset = type == EncounterMode.Regigigas ? RaidPokemonOffset : WildPokemonOffset;
+            uint encounterOffset = (type == EncounterMode.Regigigas) ? RaidPokemonOffset : WildPokemonOffset;
             bool skipRoutine = (type == EncounterMode.Spiritomb || type == EncounterMode.SwordsJustice);
 
             while (!token.IsCancellationRequested)
@@ -74,7 +74,7 @@ namespace SysBot.Pokemon
                     await Click(A, 0_300, token).ConfigureAwait(false);
 
                     //Click through all the menus until the encounter.
-                    while (!await IsInBattle(token).ConfigureAwait(false) && !await SWSHIsGiftFound(token).ConfigureAwait(false))
+                    while (!(await IsInBattle(token).ConfigureAwait(false) || await SWSHIsGiftFound(token).ConfigureAwait(false)))
                         await Click(A, 0_300, token).ConfigureAwait(false);
 
                     Log("An encounter found! Checking details...");
@@ -86,8 +86,12 @@ namespace SysBot.Pokemon
 						pk = await ReadUntilPresent(encounterOffset, 2_000, 0_200, token).ConfigureAwait(false);
 
                     if (pk != null)
+                    {
                         if (await HandleEncounter(pk, IsPKLegendary(pk.Species), token).ConfigureAwait(false))
                             return;
+                    }
+                    else
+                        Log("Can not read data from given offset.");
 
                     Log($"Resetting {type} by restarting the game");
                 }

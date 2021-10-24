@@ -11,6 +11,7 @@ namespace SysBot.Pokemon
     {
         private readonly PokeTradeHub<PK8> Hub;
         private readonly BotCompleteCounts Counts;
+        //private ISaveFileProvider SaveFileEditor { get; set; } = null!;
         private readonly IDumper DumpSetting;
         private readonly int[] DesiredMinIVs;
         private readonly int[] DesiredMaxIVs;
@@ -21,6 +22,7 @@ namespace SysBot.Pokemon
             Counts = Hub.Counts;
             DumpSetting = Hub.Config.Folder;
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
+            //SaveFileEditor = (ISaveFileProvider)Array.Find(args, z => z is ISaveFileProvider);
         }
 
         private int encounterCount;
@@ -30,6 +32,7 @@ namespace SysBot.Pokemon
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
 
+            //Check Item counts
             Log("Checking item counts...");
             var pouchData = await Connection.ReadBytesAsync(ItemTreasureAddress, 80, token).ConfigureAwait(false);
             var counts = FossilCount.GetFossilCounts(pouchData);
@@ -39,6 +42,9 @@ namespace SysBot.Pokemon
                 Log("Insufficient fossil pieces. Please obtain at least one of each required fossil piece first.");
                 return;
             }
+
+            //Check free box space
+            
 
             Log("Starting main FossilBot loop.");
             Config.IterateNextRoutine();
