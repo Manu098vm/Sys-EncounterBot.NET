@@ -259,7 +259,7 @@ namespace SysBot.Pokemon.Discord
                 var delta = time - lastLogged;
                 var gap = TimeSpan.FromSeconds(Interval) - delta;
 
-                bool noQueue = !Hub.Queues.Info.GetCanQueue();
+                bool noQueue = true;
                 if (gap <= TimeSpan.Zero)
                 {
                     var idle = noQueue ? UserStatus.DoNotDisturb : UserStatus.Idle;
@@ -292,7 +292,6 @@ namespace SysBot.Pokemon.Discord
 
             // Restore Logging
             LogModule.RestoreLogging(_client, Hub.Config.Discord);
-            TradeStartModule<T>.RestoreTradeStarting(_client);
 
             // Don't let it load more than once in case of Discord hiccups.
             await Log(new LogMessage(LogSeverity.Info, "LoadLoggingAndEcho()", "Logging and Echo channels loaded!")).ConfigureAwait(false);

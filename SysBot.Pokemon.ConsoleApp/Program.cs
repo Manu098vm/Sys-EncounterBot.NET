@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using PKHeX.Core;
 using SysBot.Base;
-using SysBot.Pokemon.Z3;
 
 namespace SysBot.Pokemon.ConsoleApp
 {
@@ -29,7 +28,6 @@ namespace SysBot.Pokemon.ConsoleApp
             {
                 var lines = File.ReadAllText(ConfigPath);
                 var cfg = JsonConvert.DeserializeObject<ProgramConfig>(lines, GetSettings()) ?? new ProgramConfig();
-                PokeTradeBot.SeedChecker = new Z3SeedSearchHandler<PK8>();
                 BotContainer.RunBots(cfg);
             }
 #pragma warning disable CA1031 // Do not catch general exception types
@@ -96,7 +94,7 @@ namespace SysBot.Pokemon.ConsoleApp
         private static IPokeBotRunner GetRunner(ProgramConfig prog) => prog.Mode switch
         {
             ProgramMode.SWSH => new PokeBotRunnerImpl<PK8>(prog.Hub, new BotFactory8()),
-            ProgramMode.BDSP => new PokeBotRunnerImpl<PB8>(prog.Hub, new BotFactory8BS()),
+            //ProgramMode.BDSP => new PokeBotRunnerImpl<PB8>(prog.Hub, new BotFactory8BS()),
             _ => throw new IndexOutOfRangeException("Unsupported mode."),
         };
 

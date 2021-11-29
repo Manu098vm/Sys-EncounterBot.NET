@@ -1,49 +1,33 @@
-# SysBot.NET
+# Sys-EncounterBot.NET
 ![License](https://img.shields.io/badge/License-AGPLv3-blue.svg)
 
-## Support Discord:
+## Disclaimer:
+I am doing this project for personal use and, above all, as a learning tool. Some bots are a proof of concept and they may work for me but not for you. If you run into any problems or have any suggestions, feel free to contact me, but please note that I may not be able to offer the support you are looking for. This is by no means a polished product.
+## Support:
+For support on setting up your own instance of Sys-EncounterBot.NET, feel free to [join my Discord](https://discord.gg/WFbcUd6U8d)!
+This fork is not maintained by the PKHeX Dev server.
 
-For support on setting up your own instance of SysBot.NET, feel free to join the discord! (Beware of un-official discords who claim to be official)
+Refer to the [Release section](https://github.com/Manu098vm/Sys-EncounterBot.NET/releases) to download the latest release.
+The hunting guides are in the [Wiki](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki).
 
-[<img src="https://canary.discordapp.com/api/guilds/401014193211441153/widget.png?style=banner2">](https://discord.gg/tDMvSRv)
+The Sys-EncounterBot allows to hunt and reset for almost all the Pokémon encounters in the core games for Nintendo Switch.
+Check the [Wiki](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki) for a detailed explaination on what these bots can do.
 
-[sys-botbase](https://github.com/olliz0r/sys-botbase) client for remote control automation of Nintendo Switch consoles.
+## Credits
 
-## SysBot.Base:
-- Base logic library to be built upon in game-specific projects.
-- Contains a synchronous and asynchronous Bot connection class to interact with sys-botbase.
+[olliz0r](https://github.com/olliz0r) and [berichan](https://github.com/berichan) for [sys-botbase](https://github.com/olliz0r/sys-botbase)
 
-## SysBot.Tests:
-- Unit Tests for ensuring logic behaves as intended :)
+[fishguy6564](https://github.com/fishguy6564) and [Koi-3088](https://github.com/Koi-3088) for [usb-botbase](https://github.com/fishguy6564/USB-Botbase)
 
-# Example Implementations
+[kwsch](https://github.com/kwsch) for [PKHeX](https://github.com/kwsch/PKHeX)
 
-The driving force to develop this project is automated bots for Nintendo Switch Pokémon games. An example implementation is provided in this repo to demonstrate interesting tasks this framework is capable of performing. Refer to the [Wiki](https://github.com/kwsch/SysBot.NET/wiki) for more details on the supported Pokémon features.
+[architdate](https://github.com/architdate), [Lusamine](https://github.com/Lusamine), [kwsch](https://github.com/kwsch), all the ALM team and all the people involved in the developing/testing of [SysBot.NET](https://github.com/kwsch/SysBot.NET), thanks to which this project would never exist.
 
-## SysBot.Pokemon:
-- Class library using SysBot.Base to contain logic related to creating & running Sword/Shield bots.
+[Lusamine](https://github.com/Lusamine), [PP-theSLAYER](https://github.com/PP-theSLAYER), [Zyro670](https://github.com/zyro670), [Lincoln-LM](https://github.com/Lincoln-LM), [Koi-3088](https://github.com/Koi-3088) and KD#0001 for suggestions and explainations on how some game structures work and help in implementations.
 
-## SysBot.Pokemon.WinForms:
-- Simple GUI Launcher for adding, starting, and stopping Pokémon bots (as described above).
-- Configuration of program settings is performed in-app and is saved as a local json file.
+[Zaksabeast](https://github.com/zaksabeast) for his great researches on how Shinies are generated in the Let's Go games.
 
-## SysBot.Pokemon.Discord:
-- Discord interface for remotely interacting with the WinForms GUI.
-- Provide a discord login token and the Roles that are allowed to interact with your bots.
-- Commands are provided to manage & join the distribution queue.
 
-## SysBot.Pokemon.Twitch:
-- Twitch.tv interface for remotely announcing when the distribution starts.
-- Provide a Twitch login token, username, and channel for login.
-
-## SysBot.Pokemon.YouTube:
-- YouTube.com interface for remotely announcing when the distribution starts.
-- Provide a YouTube login ClientID, ClientSecret, and ChannelID for login.
-
-Uses [Discord.Net](https://github.com/discord-net/Discord.Net) , [TwitchLib](https://github.com/TwitchLib/TwitchLib) and [StreamingClientLibary](https://github.com/SaviorXTanren/StreamingClientLibrary) as a dependency via Nuget.
-
-## Other Dependencies
-Pokémon API logic is provided by [PKHeX](https://github.com/kwsch/PKHeX/), and template generation is provided by [AutoMod](https://github.com/architdate/PKHeX-Plugins/).
 
 # License
-Refer to the `License.md` for details regarding licensing.
+Refer to the `LICENSE` for details regarding licensing.

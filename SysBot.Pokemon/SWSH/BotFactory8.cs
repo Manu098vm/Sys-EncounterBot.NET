@@ -7,44 +7,27 @@ namespace SysBot.Pokemon
     {
         public override PokeRoutineExecutorBase CreateBot(PokeTradeHub<PK8> Hub, PokeBotState cfg) => cfg.NextRoutineType switch
         {
-            PokeRoutineType.FlexTrade or PokeRoutineType.Idle
-                or PokeRoutineType.SurpriseTrade
-                or PokeRoutineType.LinkTrade
-                or PokeRoutineType.Clone
-                or PokeRoutineType.Dump
-                or PokeRoutineType.SeedCheck
-                => new PokeTradeBot(Hub, cfg),
-
-            PokeRoutineType.EggFetch => new EggBot(cfg, Hub),
-            PokeRoutineType.FossilBot => new FossilBot(cfg, Hub),
-            PokeRoutineType.RaidBot => new RaidBot(cfg, Hub),
-            PokeRoutineType.EncounterLine => new EncounterBotLine(cfg, Hub),
-            PokeRoutineType.Reset => new EncounterBotReset(cfg, Hub),
-            PokeRoutineType.Dogbot => new EncounterBotDog(cfg, Hub),
-
+            PokeRoutineType.LGPE_OverworldScan => new OverworldBot(cfg, Hub),
+            PokeRoutineType.LGPE_EncounterBot => new Letsgo(cfg, Hub),
+            PokeRoutineType.SWSH_OverworldScan => new OverworldScan(cfg, Hub),
+            PokeRoutineType.SWSH_EggBot => new EggBot(cfg, Hub),
+            PokeRoutineType.SWSH_FossilBot => new FossilBot(cfg, Hub),
+            PokeRoutineType.SWSH_DynamaxAdventure => new DynamaxAdventureBot(cfg, Hub),
+            PokeRoutineType.SWSH_EncounterBot => new EncounterBot(cfg, Hub),
             PokeRoutineType.RemoteControl => new RemoteControlBot(cfg),
             _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
         };
 
         public override bool SupportsRoutine(PokeRoutineType type) => type switch
         {
-            PokeRoutineType.FlexTrade or PokeRoutineType.Idle
-                or PokeRoutineType.SurpriseTrade
-                or PokeRoutineType.LinkTrade
-                or PokeRoutineType.Clone
-                or PokeRoutineType.Dump
-                or PokeRoutineType.SeedCheck
-                => true,
-
-            PokeRoutineType.EggFetch => true,
-            PokeRoutineType.FossilBot => true,
-            PokeRoutineType.RaidBot => true,
-            PokeRoutineType.EncounterLine => true,
-            PokeRoutineType.Reset => true,
-            PokeRoutineType.Dogbot => true,
-
+            PokeRoutineType.LGPE_OverworldScan => true,
+            PokeRoutineType.LGPE_EncounterBot => true,
+            PokeRoutineType.SWSH_OverworldScan => true,
+            PokeRoutineType.SWSH_EggBot => true,
+            PokeRoutineType.SWSH_FossilBot => true,
+            PokeRoutineType.SWSH_DynamaxAdventure => true,
+            PokeRoutineType.SWSH_EncounterBot => true,
             PokeRoutineType.RemoteControl => true,
-
             _ => false,
         };
     }

@@ -32,8 +32,7 @@ namespace SysBot.Pokemon.Discord
                 x.Name = "Summary";
                 x.Value =
                     $"Bot Count: {botCount}\n" +
-                    $"Bot State: {SummarizeBots(allBots)}\n" +
-                    $"Pool Count: {hub.Ledy.Pool.Count}\n";
+                    $"Bot State: {SummarizeBots(allBots)}\n";
                 x.IsInline = false;
             });
 
@@ -49,52 +48,7 @@ namespace SysBot.Pokemon.Discord
                 x.IsInline = false;
             });
 
-            var queues = hub.Queues.AllQueues;
-            int count = 0;
-            foreach (var q in queues)
-            {
-                var c = q.Count;
-                if (c == 0)
-                    continue;
-
-                var nextMsg = GetNextName(q);
-                builder.AddField(x =>
-                {
-                    x.Name = $"{q.Type} Queue";
-                    x.Value =
-                        $"Next: {nextMsg}\n" +
-                        $"Count: {c}\n";
-                    x.IsInline = false;
-                });
-                count += c;
-            }
-
-            if (count == 0)
-            {
-                builder.AddField(x =>
-                {
-                    x.Name = "Queues are empty.";
-                    x.Value = "Nobody in line!";
-                    x.IsInline = false;
-                });
-            }
-
             await ReplyAsync("Bot Status", false, builder.Build()).ConfigureAwait(false);
-        }
-
-        private static string GetNextName(PokeTradeQueue<T> q)
-        {
-            var next = q.TryPeek(out var detail, out _);
-            if (!next)
-                return "None!";
-
-            var name = detail.Trainer.TrainerName;
-
-            // show detail of trade if possible
-            var nick = detail.TradeData.Nickname;
-            if (!string.IsNullOrEmpty(nick))
-                name += $" - {nick}";
-            return name;
         }
 
         private static string SummarizeBots(IReadOnlyCollection<RoutineExecutor<PokeBotState>> bots)

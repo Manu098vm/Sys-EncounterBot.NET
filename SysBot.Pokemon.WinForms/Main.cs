@@ -9,7 +9,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json.Serialization;
-using SysBot.Pokemon.Z3;
 
 namespace SysBot.Pokemon.WinForms
 {
@@ -23,7 +22,6 @@ namespace SysBot.Pokemon.WinForms
         {
             InitializeComponent();
 
-            PokeTradeBot.SeedChecker = new Z3SeedSearchHandler<PK8>();
             if (File.Exists(Program.ConfigPath))
             {
                 var lines = File.ReadAllText(Program.ConfigPath);
@@ -50,7 +48,7 @@ namespace SysBot.Pokemon.WinForms
         private static IPokeBotRunner GetRunner(ProgramConfig cfg) => cfg.Mode switch
         {
             ProgramMode.SWSH => new PokeBotRunnerImpl<PK8>(cfg.Hub, new BotFactory8()),
-            ProgramMode.BDSP => new PokeBotRunnerImpl<PB8>(cfg.Hub, new BotFactory8BS()),
+            //ProgramMode.BDSP => new PokeBotRunnerImpl<PB8>(cfg.Hub, new BotFactory8BS()),
             _ => throw new IndexOutOfRangeException("Unsupported mode."),
         };
 
@@ -307,5 +305,10 @@ namespace SysBot.Pokemon.WinForms
         {
             TB_IP.Visible = CB_Protocol.SelectedIndex == 0;
         }
-    }
+
+		private void CB_Routine_SelectedIndexChanged(object sender, EventArgs e)
+		{
+
+		}
+	}
 }
