@@ -8,20 +8,20 @@ namespace SysBot.Pokemon
     /// Centralizes logic for trade bot coordination.
     /// </summary>
     /// <typeparam name="T">Type of <see cref="PKM"/> to distribute.</typeparam>
-    public class PokeTradeHub<T> where T : PKM, new()
+    public class PokeBotHub<T> where T : PKM, new()
     {
-        public PokeTradeHub(PokeTradeHubConfig config)
+        public PokeBotHub(PokeBotHubConfig config)
         {
             Config = config;
+            Counts = new BotCompleteCounts(config.Counts);
         }
 
-        public readonly PokeTradeHubConfig Config;
+        public readonly PokeBotHubConfig Config;
         public readonly BotSynchronizer BotSync;
+        public readonly BotCompleteCounts Counts;
 
         /// <summary> Trade Bots only, used to delegate multi-player tasks </summary>
         public readonly ConcurrentPool<PokeRoutineExecutorBase> Bots = new();
         public bool TradeBotsReady => !Bots.All(z => z.Config.CurrentRoutineType == PokeRoutineType.Idle);
-
-
     }
 }

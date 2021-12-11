@@ -1,7 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using PKHeX.Core;
-using PKHeX.Core.Searching;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
@@ -10,30 +9,48 @@ namespace SysBot.Pokemon
 {
     public sealed class EncounterBotReset : EncounterBot
     {
-        public EncounterBotReset(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg, hub)
+        public EncounterBotReset(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg, hub)
         {
         }
 
         protected override async Task EncounterLoop(SAV8SWSH sav, CancellationToken token)
         {
-            var monoffset = GetResetOffset(Hub.Config.Encounter.EncounteringType);
-            var pkoriginal = monoffset is BoxStartOffset ? await ReadBoxPokemon(0, 0, token).ConfigureAwait(false) : new PK8();
+            var type = Hub.Config.SWSH_Encounter.EncounteringType;
+            var monoffset = await GetResetOffset(type, token).ConfigureAwait(false);
+            var isgift = false;
+            var skiproutine = IsStrongSpawn(type);
+
+            if(type is EncounterMode.Trades)
+                Log("Be sure to have the requested Pokémon in Box 1 Slot 1!");
 
             while (!token.IsCancellationRequested)
             {
-                PK8? pknew;
-
-                Log("Looking for a Pokémon...");
-                do
+                if(!skiproutine)
                 {
-                    await DoExtraCommands(token, Hub.Config.Encounter.EncounteringType).ConfigureAwait(false);
-                    pknew = await ReadUntilPresent(monoffset, 0_050, 0_050, BoxFormatSlotSize, token).ConfigureAwait(false);
-                } while (pknew is null || SearchUtil.HashByDetails(pkoriginal) == SearchUtil.HashByDetails(pknew));
+                    PK8? pk;
+                    Log($"Looking for {type}...");
 
-                if (await HandleEncounter(pknew, token).ConfigureAwait(false))
-                    return;
+                    do
+                    {
+                        await DoExtraCommands(token, type).ConfigureAwait(false);
 
-                Log("No match, resetting the game...");
+                        if (type is EncounterMode.Gifts) { 
+                            isgift = await IsGiftFound(token).ConfigureAwait(false);
+                            if (isgift)
+                                monoffset = await GetResetOffset(type, token).ConfigureAwait(false); //Reload pointed address when gift is found
+                        }
+
+                        pk = await ReadUntilPresent(monoffset, 0_050, 0_050, BoxFormatSlotSize, token).ConfigureAwait(false);
+                    } while (pk is null || isgift);
+
+                    //SearchUtil.HashByDetails(pkoriginal) == SearchUtil.HashByDetails(pknew)
+
+                    if (await HandleEncounter(pk, token).ConfigureAwait(false))
+                        return;
+
+                    Log("No match, resetting the game...");
+                }
+                skiproutine = false;
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
             }
@@ -47,20 +64,47 @@ namespace SysBot.Pokemon
                     await SetStick(LEFT, 0, 20_000, 0_500, token).ConfigureAwait(false);
                     await ResetStick(token).ConfigureAwait(false);
                     break;
+                case EncounterMode.Trades:
+                    await DoTrades(token).ConfigureAwait(false);
+                    break;
                 default:
                     await Click(A, 0_050, token).ConfigureAwait(false);
                     break;
             }
         }
 
-        private uint GetResetOffset(EncounterMode mode)
+        private async Task DoTrades(CancellationToken token)
+        {
+            System.Diagnostics.Stopwatch stopwatch = new();
+            await SetCurrentBox(0, token).ConfigureAwait(false);
+            while (!token.IsCancellationRequested)
+            {
+                Log("Skipping dialogue...");
+                stopwatch.Restart();
+                while (stopwatch.ElapsedMilliseconds < 6000 || !await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                    await Click(A, 0_400, token).ConfigureAwait(false);
+                Log("Pokémon received. Checking details...");
+            }
+        }
+
+        private async Task<uint> GetResetOffset(EncounterMode mode, CancellationToken token)
         {
             return mode switch
             {
-                EncounterMode.Gift => BoxStartOffset,
+                EncounterMode.Gifts => await GetAddressFromPointer(Pointers.GiftPokemon, token).ConfigureAwait(false),
+                EncounterMode.Trades => BoxStartOffset,
                 EncounterMode.Regigigas or EncounterMode.Eternatus => RaidPokemonOffset,
                 EncounterMode.MotostokeGym => LegendaryPokemonOffset,
                 _ => WildPokemonOffset,
+            };
+        }
+
+        private bool IsStrongSpawn(EncounterMode mode)
+        {
+            return mode switch
+            {
+                EncounterMode.StrongSpawn or EncounterMode.Spiritomb or EncounterMode.SwordsJustice => true,
+                _ => false,
             };
         }
     }

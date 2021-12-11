@@ -10,7 +10,8 @@ namespace SysBot.Pokemon
 {
     public class EggBot : PokeRoutineExecutor8, IEncounterBot
     {
-        private readonly PokeTradeHub<PK8> Hub;
+        private readonly PokeBotHub<PK8> Hub;
+        private readonly BotCompleteCounts Count;
         private readonly IDumper DumpSetting;
         private readonly int[] DesiredMinIVs;
         private readonly int[] DesiredMaxIVs;
@@ -18,10 +19,11 @@ namespace SysBot.Pokemon
         private readonly EggSettings Settings;
         public ICountSettings Counts => Settings;
 
-        public EggBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
+        public EggBot(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
-            Settings = Hub.Config.Egg;
+            Settings = Hub.Config.SWSH_Eggs;
+            Count = Hub.Counts;
             DumpSetting = Hub.Config.Folder;
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
         }
@@ -35,7 +37,7 @@ namespace SysBot.Pokemon
 
         public override async Task MainLoop(CancellationToken token)
         {
-            await InitializeHardware(Hub.Config.Egg, token).ConfigureAwait(false);
+            await InitializeHardware(Hub.Config.SWSH_Eggs, token).ConfigureAwait(false);
 
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
@@ -44,7 +46,7 @@ namespace SysBot.Pokemon
 
             Log("Starting main EggBot loop.");
             Config.IterateNextRoutine();
-            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.EggFetch)
+            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SWSH_EggBot)
             {
                 try
                 {
@@ -67,7 +69,7 @@ namespace SysBot.Pokemon
         {
             // If aborting the sequence, we might have the stick set at some position. Clear it just in case.
             await SetStick(LEFT, 0, 0, 0, CancellationToken.None).ConfigureAwait(false); // reset
-            await CleanExit(Hub.Config.Egg, CancellationToken.None).ConfigureAwait(false);
+            await CleanExit(Hub.Config.SWSH_Eggs, CancellationToken.None).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -102,24 +104,30 @@ namespace SysBot.Pokemon
 
             encounterCount++;
             var print = Hub.Config.StopConditions.GetPrintName(pk);
+            if (pk.IsShiny)
+            {
+                Count.AddShinyEncounters();
+                if (pk.ShinyXor == 0)
+                    print = print.Replace("Shiny: Yes", "Shiny: Square");
+                else
+                    print = print.Replace("Shiny: Yes", "Shiny: Star");
+            }
             Log($"Encounter: {encounterCount}{Environment.NewLine}{print}{Environment.NewLine}");
             Settings.AddCompletedEggs();
+            Count.AddCompletedEggs();
 
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
+            {
                 DumpPokemon(DumpSetting.DumpFolder, "egg", pk);
+                Count.AddCompletedDumps();
+            }
 
             if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
                 return true;
 
             // no need to take a video clip of us receiving an egg.
             var mode = Settings.ContinueAfterMatch;
-            var msg = $"Result found!\n{print}\n" + mode switch
-            {
-                ContinueAfterMatch.Continue             => "Continuing...",
-                ContinueAfterMatch.PauseWaitAcknowledge => "Waiting for instructions to continue.",
-                ContinueAfterMatch.StopExit             => "Stopping routine execution; restart the bot to search again.",
-                _ => throw new ArgumentOutOfRangeException(),
-            };
+            var msg = $"Result found!\n{print}\nStopping routine execution; restart the bot to search again.";
 
             if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
                 msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
@@ -128,8 +136,6 @@ namespace SysBot.Pokemon
 
             if (mode == ContinueAfterMatch.StopExit)
                 return false;
-            if (mode == ContinueAfterMatch.Continue)
-                return true;
 
             IsWaiting = true;
             while (IsWaiting)
@@ -159,7 +165,7 @@ namespace SysBot.Pokemon
         {
             Log("Walking around until an egg is ready...");
             int attempts = 0;
-            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.EggFetch)
+            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SWSH_EggBot)
             {
                 await SetEggStepCounter(Location, token).ConfigureAwait(false);
 

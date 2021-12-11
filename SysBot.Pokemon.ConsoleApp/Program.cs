@@ -41,7 +41,7 @@ namespace SysBot.Pokemon.ConsoleApp
 
         private static void ExitNoConfig()
         {
-            var bot = new PokeBotState { Connection = new SwitchConnectionConfig { IP = "192.168.0.1", Port = 6000 }, InitialRoutine = PokeRoutineType.FlexTrade };
+            var bot = new PokeBotState { Connection = new SwitchConnectionConfig { IP = "192.168.0.1", Port = 6000 }, InitialRoutine = PokeRoutineType.SWSH_EncounterBot };
             var cfg = new ProgramConfig { Bots = new[] { bot } };
             var created = JsonConvert.SerializeObject(cfg, GetSettings());
             File.WriteAllText(ConfigPath, created);
@@ -93,8 +93,8 @@ namespace SysBot.Pokemon.ConsoleApp
 
         private static IPokeBotRunner GetRunner(ProgramConfig prog) => prog.Mode switch
         {
-            ProgramMode.SWSH => new PokeBotRunnerImpl<PK8>(prog.Hub, new BotFactory8()),
-            //ProgramMode.BDSP => new PokeBotRunnerImpl<PB8>(prog.Hub, new BotFactory8BS()),
+            ProgramMode.Switch => new PokeBotRunnerImpl<PK8>(prog.Hub, new BotFactory8()),
+            //ProgramMode.3DS => new PokeBotRunnerImpl<PK7>(prog.Hub, new BotFactory7()),
             _ => throw new IndexOutOfRangeException("Unsupported mode."),
         };
 

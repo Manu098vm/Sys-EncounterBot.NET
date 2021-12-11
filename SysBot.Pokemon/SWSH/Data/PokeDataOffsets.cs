@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace SysBot.Pokemon
 {
@@ -14,6 +15,12 @@ namespace SysBot.Pokemon
         public const uint IsConnectedOffset = 0x30c7cca8;
         public const uint TextSpeedOffset = 0x450690A0;
         public const uint ItemTreasureAddress = 0x45068970;
+        public const uint LairSpeciesSelector = 0x50B129A0;
+        public const uint LairSpeciesSelector2 = 0x50B12278;
+        public const uint demageOutputOffset = 0x007E37F0;
+        public const uint LairRewards = 0x2977BC0;
+        public const uint LairWait = 0x2566790; //main
+        public const uint GiftFound = 0x297870C; //main
 
         // Raid Offsets
         // The dex number of the Pokémon the host currently has chosen. 
@@ -104,13 +111,6 @@ namespace SysBot.Pokemon
         public const uint CurrentScreen_RaidParty = 0xFF1461DB;
         #endregion
 
-        public static uint GetTrainerNameOffset(TradeMethod tradeMethod) => tradeMethod switch
-        {
-            TradeMethod.LinkTrade => LinkTradePartnerNameOffset,
-            TradeMethod.SurpriseTrade => SurpriseTradePartnerNameOffset,
-            _ => throw new ArgumentException(nameof(tradeMethod)),
-        };
-
         public static uint GetDaycareStepCounterOffset(SwordShieldDaycare daycare) => daycare switch
         {
             SwordShieldDaycare.WildArea => DayCare_Wildarea_Step_Counter,
@@ -123,13 +123,6 @@ namespace SysBot.Pokemon
             SwordShieldDaycare.WildArea => DayCare_Wildarea_Egg_Is_Ready,
             SwordShieldDaycare.Route5 => DayCare_Route5_Egg_Is_Ready,
             _ => throw new ArgumentException(nameof(daycare)),
-        };
-
-        public static uint GetTrainerTIDSIDOffset(TradeMethod tradeMethod) => tradeMethod switch
-        {
-            TradeMethod.LinkTrade => LinkTradePartnerTIDSIDOffset,
-            TradeMethod.SurpriseTrade => SurpriseTradePartnerTIDSIDOffset,
-            _ => throw new ArgumentException(nameof(tradeMethod)),
         };
 
         public static uint GetOverworldOffset(ConsoleLanguageParameter value) => value switch

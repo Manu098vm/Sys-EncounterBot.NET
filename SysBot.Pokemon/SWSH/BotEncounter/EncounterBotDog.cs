@@ -9,7 +9,7 @@ namespace SysBot.Pokemon
 {
     public sealed class EncounterBotDog : EncounterBot
     {
-        public EncounterBotDog(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg, hub)
+        public EncounterBotDog(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg, hub)
         {
         }
 

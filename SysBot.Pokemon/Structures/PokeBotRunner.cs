@@ -8,7 +8,7 @@ namespace SysBot.Pokemon
 {
     public interface IPokeBotRunner
     {
-        PokeTradeHubConfig Config { get; }
+        PokeBotHubConfig Config { get; }
         bool RunOnce { get; }
         bool IsRunning { get; }
 
@@ -26,21 +26,21 @@ namespace SysBot.Pokemon
 
     public abstract class PokeBotRunner<T> : BotRunner<PokeBotState>, IPokeBotRunner where T : PKM, new()
     {
-        public readonly PokeTradeHub<T> Hub;
+        public readonly PokeBotHub<T> Hub;
         private readonly BotFactory<T> Factory;
 
-        public PokeTradeHubConfig Config => Hub.Config;
+        public PokeBotHubConfig Config => Hub.Config;
 
-        protected PokeBotRunner(PokeTradeHub<T> hub, BotFactory<T> factory)
+        protected PokeBotRunner(PokeBotHub<T> hub, BotFactory<T> factory)
         {
             Hub = hub;
             Factory = factory;
         }
 
-        protected PokeBotRunner(PokeTradeHubConfig config, BotFactory<T> factory)
+        protected PokeBotRunner(PokeBotHubConfig config, BotFactory<T> factory)
         {
             Factory = factory;
-            Hub = new PokeTradeHub<T>(config);
+            Hub = new PokeBotHub<T>(config);
         }
 
         protected virtual void AddIntegrations() { }

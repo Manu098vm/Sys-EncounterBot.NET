@@ -4,7 +4,7 @@
 
 namespace SysBot.Pokemon
 {
-    public sealed class PokeTradeHubConfig : BaseConfig
+    public sealed class PokeBotHubConfig : BaseConfig
     {
         private const string Bots = nameof(Bots);
         private const string Integration = nameof(Integration);
@@ -18,6 +18,10 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("ConsoleLanguageSpecific screen detection method only. Set your Switch console language here for bots to work properly. All consoles should be using the same language.")]
         public ConsoleLanguageParameter ConsoleLanguage { get; set; }
 
+        [Category(Operation)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public CountSettings Counts { get; set; } = new();
+
         [Category(Operation), Description("Stop conditions.")]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public StopConditionSettings StopConditions { get; set; } = new();
@@ -29,15 +33,23 @@ namespace SysBot.Pokemon
         // Bots
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public EggSettings Egg { get; set; } = new();
+        public RNGSettings BDSP_RNG { get; set; } = new();
 
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public FossilSettings Fossil { get; set; } = new();
+        public EggSettings SWSH_Eggs { get; set; } = new();
 
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public EncounterSettings Encounter { get; set; } = new();
+        public FossilSettings SWSH_Fossil { get; set; } = new();
+
+        [Category(Bots)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public EncounterSettings SWSH_Encounter { get; set; } = new();
+
+        [Category(Bots)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public MaxLairSettings SWSH_MaxLair { get; set; } = new();
 
         // Integration
 

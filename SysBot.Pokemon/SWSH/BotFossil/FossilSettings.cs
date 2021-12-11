@@ -14,18 +14,6 @@ namespace SysBot.Pokemon
         [Category(Fossil), Description("Species of fossil Pokémon to hunt for.")]
         public FossilSpecies Species { get; set; } = FossilSpecies.Dracozolt;
 
-        /// <summary>
-        /// Toggle for injecting fossil pieces.
-        /// </summary>
-        [Category(Fossil), Description("Toggle for injecting fossil pieces.")]
-        public bool InjectWhenEmpty { get; set; } = false;
-
-        /// <summary>
-        /// Toggle for continuing to revive fossils after condition has been met.
-        /// </summary>
-        [Category(Fossil), Description("When enabled, the bot will continue after finding a suitable match.")]
-        public ContinueAfterMatch ContinueAfterMatch { get; set; } = ContinueAfterMatch.StopExit;
-
         [Category(Fossil), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; } = false;
 

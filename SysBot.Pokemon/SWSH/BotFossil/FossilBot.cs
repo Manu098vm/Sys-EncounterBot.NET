@@ -2,7 +2,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using SysBot.Base;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsets;
 
@@ -10,42 +9,30 @@ namespace SysBot.Pokemon
 {
     public class FossilBot : PokeRoutineExecutor8, IEncounterBot
     {
-        private readonly PokeTradeHub<PK8> Hub;
+        private readonly PokeBotHub<PK8> Hub;
         private readonly FossilSettings Settings;
+        private readonly BotCompleteCounts Count;
         private readonly IDumper DumpSetting;
         private readonly int[] DesiredMinIVs;
         private readonly int[] DesiredMaxIVs;
+        protected SWSH.PokeDataPointers Pointers { get; private set; } = new SWSH.PokeDataPointers();
         public ICountSettings Counts => Settings;
 
-        public FossilBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
+        public FossilBot(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
-            Settings = Hub.Config.Fossil;
+            Settings = Hub.Config.SWSH_Fossil;
+            Count = Hub.Counts;
             DumpSetting = Hub.Config.Folder;
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
         }
 
         private int encounterCount;
 
-        private const int InjectBox = 0;
-        private const int InjectSlot = 0;
-
-        private static readonly PK8 Blank = new();
-
         public override async Task MainLoop(CancellationToken token)
         {
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
-            await SetCurrentBox(0, token).ConfigureAwait(false);
-
-            var existing = await ReadBoxPokemon(InjectBox, InjectSlot, token).ConfigureAwait(false);
-            if (existing.Species != 0 && existing.ChecksumValid)
-            {
-                Log("Destination slot is occupied! Dumping the Pokémon found there...");
-                DumpPokemon(DumpSetting.DumpFolder, "saved", existing);
-            }
-            Log("Clearing destination slot to start the bot.");
-            await SetBoxPokemon(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
 
             Log("Checking item counts...");
             var pouchData = await Connection.ReadBytesAsync(ItemTreasureAddress, 80, token).ConfigureAwait(false);
@@ -57,10 +44,12 @@ namespace SysBot.Pokemon
                 return;
             }
 
+            //TODO: Check free box space
+
             try
             {
                 await InitializeHardware(Settings, token).ConfigureAwait(false);
-                Log($"Starting main {nameof(FossilBot)} loop.");
+                Log($"Starting main FossilBot loop.");
                 Config.IterateNextRoutine();
                 await InnerLoop(reviveCount, pouchData, counts, token).ConfigureAwait(false);
             }
@@ -77,75 +66,68 @@ namespace SysBot.Pokemon
 
         private async Task InnerLoop(int reviveCount, byte[] pouchData, FossilCount counts, CancellationToken token)
         {
-            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.FossilBot)
+            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SWSH_FossilBot)
             {
                 if (encounterCount != 0 && encounterCount % reviveCount == 0)
                 {
                     Log($"Ran out of fossils to revive {Settings.Species}.");
-                    if (Settings.InjectWhenEmpty)
-                    {
-                        Log("Restoring original pouch data.");
-                        await Connection.WriteBytesAsync(pouchData, ItemTreasureAddress, token).ConfigureAwait(false);
-                        await Task.Delay(500, token).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        Log("Restart the game and the bot(s) or set \"Inject Fossils\" to True in the config.");
-                        return;
-                    }
+                    Log("Restarting the game to restore the puch data.");
+                    await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                    await StartGame(Hub.Config, token).ConfigureAwait(false);
                 }
 
-                Log("Clearing destination slot.");
-                await SetBoxPokemon(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
                 await ReviveFossil(counts, token).ConfigureAwait(false);
                 Log("Fossil revived. Checking details...");
 
-                var pk = await ReadBoxPokemon(InjectBox, InjectSlot, token).ConfigureAwait(false);
-                if (pk.Species == 0 || !pk.ChecksumValid)
+                var pk = await ReadUntilPresentPointer(Pointers.GiftPokemon, 2_000, 0_200, BoxFormatSlotSize, token).ConfigureAwait(false);
+                if (pk == null)
+                    Log("RAM may be shifted, please restart the game and the bot.");
+                else
                 {
-                    Log("Invalid data detected in destination slot. Restarting loop.");
-                    continue;
+                    encounterCount++;
+                    var showdowntext = ShowdownParsing.GetShowdownText(pk);
+                    if (pk.IsShiny)
+                    {
+                        Count.AddShinyEncounters();
+                        if (pk.ShinyXor == 0)
+                            showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
+                        else
+                            showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
+                        showdowntext = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {showdowntext}";
+
+
+                    Log($"Encounter: {encounterCount}:{Environment.NewLine}{showdowntext}{Environment.NewLine}");
+                    if (DumpSetting.Dump)
+                    {
+                        DumpPokemon(DumpSetting.DumpFolder, "fossil", pk);
+                        Count.AddCompletedDumps();
+                    }
+
+                    Settings.AddCompletedFossils();
+
+                    if (StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
+                    {
+                        if (Hub.Config.StopConditions.CaptureVideoClip)
+                        {
+                            await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
+                            await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
+                        }
+
+                        Log("Result found! Stopping routine execution; restart the bot(s) to search again.");
+                        await DetachController(token).ConfigureAwait(false);
+                        return;
+                    }
+
+                    IsWaiting = true;
+                    while (IsWaiting)
+                        await Task.Delay(1_000, token).ConfigureAwait(false);
+
+                    while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                        await Click(B, 0_200, token).ConfigureAwait(false);
                 }
-
-                encounterCount++;
-                var print = Hub.Config.StopConditions.GetPrintName(pk);
-                Log($"Encounter: {encounterCount}{Environment.NewLine}{print}{Environment.NewLine}");
-                if (DumpSetting.Dump)
-                    DumpPokemon(DumpSetting.DumpFolder, "fossil", pk);
-
-                Settings.AddCompletedFossils();
-
-                if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
-                    continue;
-
-                if (Hub.Config.StopConditions.CaptureVideoClip)
-                {
-                    await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
-                    await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
-                }
-
-                var mode = Settings.ContinueAfterMatch;
-                var msg = $"Result found!\n{print}\n" + mode switch
-                {
-                    ContinueAfterMatch.Continue             => "Continuing...",
-                    ContinueAfterMatch.PauseWaitAcknowledge => "Waiting for instructions to continue.",
-                    ContinueAfterMatch.StopExit             => "Stopping routine execution; restart the bot to search again.",
-                    _ => throw new ArgumentOutOfRangeException(),
-                };
-
-                if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
-                    msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
-                EchoUtil.Echo(msg);
-                Log(msg);
-
-                if (mode == ContinueAfterMatch.StopExit)
-                    break;
-                if (mode == ContinueAfterMatch.Continue)
-                    continue;
-
-                IsWaiting = true;
-                while (IsWaiting)
-                    await Task.Delay(1_000, token).ConfigureAwait(false);
             }
         }
 

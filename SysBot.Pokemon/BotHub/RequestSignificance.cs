@@ -11,11 +11,6 @@
         None,
 
         /// <summary>
-        /// Above-average significance
-        /// </summary>
-        Favored,
-
-        /// <summary>
         /// Highest significance (testing purposes)
         /// </summary>
         Owner,

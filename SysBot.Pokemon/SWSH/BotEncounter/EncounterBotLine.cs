@@ -8,7 +8,7 @@ namespace SysBot.Pokemon
 {
     public sealed class EncounterBotLine : EncounterBot
     {
-        public EncounterBotLine(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg, hub)
+        public EncounterBotLine(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg, hub)
         {
         }
 
@@ -55,7 +55,7 @@ namespace SysBot.Pokemon
             {
                 if (!await IsInBattle(token).ConfigureAwait(false))
                 {
-                    switch (Hub.Config.Encounter.EncounteringType)
+                    switch (Hub.Config.SWSH_Encounter.EncounteringType)
                     {
                         case EncounterMode.VerticalLine:
                             await SetStick(LEFT, 0, -30000, 2_400, token).ConfigureAwait(false);

@@ -10,18 +10,21 @@ namespace SysBot.Pokemon
 {
     public abstract class EncounterBot : PokeRoutineExecutor8, IEncounterBot
     {
-        protected readonly PokeTradeHub<PK8> Hub;
+        protected readonly PokeBotHub<PK8> Hub;
+        private readonly BotCompleteCounts Count;
         private readonly IDumper DumpSetting;
         private readonly EncounterSettings Settings;
         private readonly int[] DesiredMinIVs;
         private readonly int[] DesiredMaxIVs;
         protected readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
         public ICountSettings Counts => Settings;
+        protected SWSH.PokeDataPointers Pointers { get; private set; } = new SWSH.PokeDataPointers();
 
-        protected EncounterBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
+        protected EncounterBot(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
-            Settings = Hub.Config.Encounter;
+            Count = Hub.Counts;
+            Settings = Hub.Config.SWSH_Encounter;
             DumpSetting = Hub.Config.Folder;
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
         }
@@ -30,7 +33,7 @@ namespace SysBot.Pokemon
 
         public override async Task MainLoop(CancellationToken token)
         {
-            var settings = Hub.Config.Encounter;
+            var settings = Hub.Config.SWSH_Encounter;
             Log("Identifying trainer data of the host console.");
             var sav = await IdentifyTrainer(token).ConfigureAwait(false);
             await InitializeHardware(settings, token).ConfigureAwait(false);
@@ -66,18 +69,40 @@ namespace SysBot.Pokemon
         // return true if breaking loop
         protected async Task<bool> HandleEncounter(PK8 pk, CancellationToken token)
         {
+            if (pk == null)
+                return false;
+
             encounterCount++;
             var print = Hub.Config.StopConditions.GetPrintName(pk);
+
+            if (pk.IsShiny)
+            {
+                Count.AddShinyEncounters();
+                if (pk.ShinyXor == 0)
+                    print = print.Replace("Shiny: Yes", "Shiny: Square");
+                else
+                    print = print.Replace("Shiny: Yes", "Shiny: Star");
+            }
+
             Log($"Encounter: {encounterCount}{Environment.NewLine}{print}{Environment.NewLine}");
 
             var legendary = Legal.Legends.Contains(pk.Species) || Legal.SubLegends.Contains(pk.Species);
             if (legendary)
+            {
+                Count.AddCompletedLegends();
                 Settings.AddCompletedLegends();
+            }
             else
+            {
+                Count.AddCompletedEncounters();
                 Settings.AddCompletedEncounters();
+            }
 
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
+            {
                 DumpPokemon(DumpSetting.DumpFolder, legendary ? "legends" : "encounters", pk);
+                Count.AddCompletedDumps();
+            }
 
             if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
                 return false;
@@ -88,24 +113,12 @@ namespace SysBot.Pokemon
                 await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
             }
 
-            var mode = Settings.ContinueAfterMatch;
-            var msg = $"Result found!\n{print}\n" + mode switch
-            {
-                ContinueAfterMatch.Continue             => "Continuing...",
-                ContinueAfterMatch.PauseWaitAcknowledge => "Waiting for instructions to continue.",
-                ContinueAfterMatch.StopExit             => "Stopping routine execution; restart the bot to search again.",
-                _ => throw new ArgumentOutOfRangeException(),
-            };
+            var msg = $"Result found!\n{print}\nStopping routine execution; restart the bot to search again.";
 
             if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
                 msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
             EchoUtil.Echo(msg);
             Log(msg);
-
-            if (mode == ContinueAfterMatch.StopExit)
-                return true;
-            if (mode == ContinueAfterMatch.Continue)
-                return false;
 
             IsWaiting = true;
             while (IsWaiting)

@@ -47,7 +47,7 @@ namespace SysBot.Pokemon.WinForms
 
         private static IPokeBotRunner GetRunner(ProgramConfig cfg) => cfg.Mode switch
         {
-            ProgramMode.SWSH => new PokeBotRunnerImpl<PK8>(cfg.Hub, new BotFactory8()),
+            ProgramMode.Switch => new PokeBotRunnerImpl<PK8>(cfg.Hub, new BotFactory8()),
             //ProgramMode.BDSP => new PokeBotRunnerImpl<PB8>(cfg.Hub, new BotFactory8BS()),
             _ => throw new IndexOutOfRangeException("Unsupported mode."),
         };
@@ -83,7 +83,7 @@ namespace SysBot.Pokemon.WinForms
             CB_Routine.DisplayMember = nameof(ComboItem.Text);
             CB_Routine.ValueMember = nameof(ComboItem.Value);
             CB_Routine.DataSource = list;
-            CB_Routine.SelectedValue = (int)PokeRoutineType.FlexTrade; // default option
+            CB_Routine.SelectedValue = (int)PokeRoutineType.LGPE_EncounterBot; // default option
 
             var protocols = (SwitchProtocol[])Enum.GetValues(typeof(SwitchProtocol));
             var listP = protocols.Select(z => new ComboItem(z.ToString(), (int)z)).ToArray();

@@ -40,18 +40,6 @@ namespace SysBot.Pokemon.Discord
             await channel.SendPKMAsShowdownSetAsync(pkm).ConfigureAwait(false);
         }
 
-        public static RequestSignificance GetFavor(this IUser user)
-        {
-            var mgr = SysCordSettings.Manager;
-            if (user.Id == mgr.Owner)
-                return RequestSignificance.Owner;
-            if (mgr.CanUseSudo(user.Id))
-                return RequestSignificance.Favored;
-            if (user is SocketGuildUser g)
-                return mgr.GetSignificance(g.Roles.Select(z => z.Name));
-            return RequestSignificance.None;
-        }
-
         public static async Task EchoAndReply(this ISocketMessageChannel channel, string msg)
         {
             // Announce it in the channel the command was entered only if it's not already an echo channel.

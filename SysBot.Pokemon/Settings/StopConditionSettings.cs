@@ -87,7 +87,7 @@ namespace SysBot.Pokemon
             return true;
         }
 
-        public static void InitializeTargetIVs(PokeTradeHub<PK8> hub, out int[] min, out int[] max)
+        public static void InitializeTargetIVs(PokeBotHub<PK8> hub, out int[] min, out int[] max)
         {
             min = ReadTargetIVs(hub.Config.StopConditions, true);
             max = ReadTargetIVs(hub.Config.StopConditions, false);

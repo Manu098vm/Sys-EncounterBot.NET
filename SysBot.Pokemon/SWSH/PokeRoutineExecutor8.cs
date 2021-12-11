@@ -23,7 +23,7 @@ namespace SysBot.Pokemon
 
         public override async Task<PK8> ReadPokemon(ulong offset, int size, CancellationToken token)
         {
-            var data = await Connection.ReadBytesAsync((uint)offset, size, token).ConfigureAwait(false);
+            var data = await Connection.ReadBytesAsync((uint) offset, size, token).ConfigureAwait(false);
             return new PK8(data);
         }
 
@@ -32,7 +32,8 @@ namespace SysBot.Pokemon
             var (valid, offset) = await ValidatePointerAll(jumps, token).ConfigureAwait(false);
             if (!valid)
                 return new PK8();
-            return await ReadPokemon(offset, token).ConfigureAwait(false);
+            var data = await SwitchConnection.ReadBytesAbsoluteAsync(offset, size, token).ConfigureAwait(false);
+            return new PK8(data);
         }
 
         public async Task<PK8> ReadSurpriseTradePokemon(CancellationToken token)
@@ -124,7 +125,7 @@ namespace SysBot.Pokemon
             return sav;
         }
 
-        protected virtual async Task EnterLinkCode(int code, PokeTradeHubConfig config, CancellationToken token)
+        protected virtual async Task EnterLinkCode(int code, PokeBotHubConfig config, CancellationToken token)
         {
             // Default implementation to just press directional arrows. Can do via Hid keys, but users are slower than bots at even the default code entry.
             var keys = TradeUtil.GetPresses(code);
@@ -136,14 +137,7 @@ namespace SysBot.Pokemon
             // Confirm Code outside of this method (allow synchronization)
         }
 
-        public async Task EnsureConnectedToYComm(PokeTradeHubConfig config, CancellationToken token)
-        {
-            if (!await IsGameConnectedToYComm(token).ConfigureAwait(false))
-            {
-                Log("Reconnecting to Y-Comm...");
-                await ReconnectToYComm(config, token).ConfigureAwait(false);
-            }
-        }
+        public async Task<bool> IsGiftFound(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(GiftFound, 1, token).ConfigureAwait(false))[0] > 0;
 
         public async Task<bool> IsGameConnectedToYComm(CancellationToken token)
         {
@@ -152,7 +146,7 @@ namespace SysBot.Pokemon
             return data[0] == 1;
         }
 
-        public async Task ReconnectToYComm(PokeTradeHubConfig config, CancellationToken token)
+        public async Task ReconnectToYComm(PokeBotHubConfig config, CancellationToken token)
         {
             // Press B in case a Error Message is Present
             await Click(B, 2000, token).ConfigureAwait(false);
@@ -178,7 +172,7 @@ namespace SysBot.Pokemon
             }
         }
 
-        public async Task ReOpenGame(PokeTradeHubConfig config, CancellationToken token)
+        public async Task ReOpenGame(PokeBotHubConfig config, CancellationToken token)
         {
             // Reopen the game if we get soft-banned
             Log("Potential soft ban detected, reopening game just in case!");
@@ -206,7 +200,7 @@ namespace SysBot.Pokemon
             return data[0] > 1;
         }
 
-        public async Task CloseGame(PokeTradeHubConfig config, CancellationToken token)
+        public async Task CloseGame(PokeBotHubConfig config, CancellationToken token)
         {
             var timing = config.Timings;
             // Close out of the game
@@ -216,7 +210,7 @@ namespace SysBot.Pokemon
             Log("Closed out of the game!");
         }
 
-        public async Task StartGame(PokeTradeHubConfig config, CancellationToken token)
+        public async Task StartGame(PokeBotHubConfig config, CancellationToken token)
         {
             var timing = config.Timings;
             // Open game.
@@ -288,7 +282,7 @@ namespace SysBot.Pokemon
             return dataint is CurrentScreen_Box1 or CurrentScreen_Box2;
         }
 
-        public async Task<bool> IsOnOverworld(PokeTradeHubConfig config, CancellationToken token)
+        public async Task<bool> IsOnOverworld(PokeBotHubConfig config, CancellationToken token)
         {
             // Uses CurrentScreenOffset and compares the value to CurrentScreen_Overworld.
             if (config.ScreenDetection == ScreenDetectionMode.Original)
@@ -318,5 +312,9 @@ namespace SysBot.Pokemon
             var data = new[] { (byte)((textSpeedByte[0] & 0xFC) | (int)speed) };
             await Connection.WriteBytesAsync(data, TextSpeedOffset, token).ConfigureAwait(false);
         }
+
+        public async Task<bool> IsInLairWait(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(LairWait, 1, token).ConfigureAwait(false))[0] == 0;
+        public async Task<bool> IsInLairEndList(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(LairRewards, 1, token).ConfigureAwait(false))[0] != 0;
+
     }
 }

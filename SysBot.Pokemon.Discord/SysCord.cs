@@ -16,7 +16,7 @@ namespace SysBot.Pokemon.Discord
     {
         public static DiscordManager Manager { get; internal set; } = default!;
         public static DiscordSettings Settings => Manager.Config;
-        public static PokeTradeHubConfig HubConfig { get; internal set; } = default!;
+        public static PokeBotHubConfig HubConfig { get; internal set; } = default!;
     }
 
     public sealed class SysCord<T> where T : PKM, new()
@@ -25,7 +25,7 @@ namespace SysBot.Pokemon.Discord
 
         private readonly DiscordSocketClient _client;
         private readonly DiscordManager Manager;
-        public readonly PokeTradeHub<T> Hub;
+        public readonly PokeBotHub<T> Hub;
 
         // Keep the CommandService and DI container around for use with commands.
         // These two types require you install the Discord.Net.Commands package.
@@ -248,14 +248,6 @@ namespace SysBot.Pokemon.Discord
             {
                 var time = DateTime.Now;
                 var lastLogged = LogUtil.LastLogged;
-                if (Hub.Config.Discord.BotColorStatusTradeOnly)
-                {
-                    var recent = Hub.Bots.ToArray()
-                        .Where(z => z.Config.InitialRoutine.IsTradeBot())
-                        .OrderByDescending(z => z.LastTime)
-                        .FirstOrDefault();
-                    lastLogged = recent?.LastTime ?? time;
-                }
                 var delta = time - lastLogged;
                 var gap = TimeSpan.FromSeconds(Interval) - delta;
 

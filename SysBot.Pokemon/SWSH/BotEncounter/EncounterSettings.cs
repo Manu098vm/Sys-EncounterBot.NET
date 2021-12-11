@@ -11,11 +11,8 @@ namespace SysBot.Pokemon
         private const string Encounter = nameof(Encounter);
         public override string ToString() => "Encounter Bot Settings";
 
-        [Category(Encounter), Description("The method by which the Line bot will encounter Pokémon.")]
-        public EncounterMode EncounteringType { get; set; } = EncounterMode.VerticalLine;
-
-        [Category(Encounter), Description("When enabled, the bot will continue after finding a suitable match.")]
-        public ContinueAfterMatch ContinueAfterMatch { get; set; } = ContinueAfterMatch.StopExit;
+        [Category(Encounter), Description("The method by which the SWSH bots will encounter Pokémon.")]
+        public EncounterMode EncounteringType { get; set; } = EncounterMode.LiveStatsChecking;
 
         [Category(Encounter), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; } = false;

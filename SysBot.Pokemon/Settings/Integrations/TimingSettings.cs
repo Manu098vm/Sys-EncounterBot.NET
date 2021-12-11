@@ -20,6 +20,9 @@ namespace SysBot.Pokemon
         [Category(OpenGame), Description("Extra time in milliseconds to wait before clicking A in title screen.")]
         public int ExtraTimeLoadGame { get; set; } = 5000;
 
+        [Category(OpenGame), Description("[BDSP] Extra time in milliseconds to wait for the overworld to load after the title screen.")]
+        public int ExtraTimeLoadOverworld { get; set; } = 3000;
+
         // Closing the game.
         [Category(CloseGame), Description("Extra time in milliseconds to wait after pressing HOME to minimize the game.")]
         public int ExtraTimeReturnHome { get; set; } = 0;
