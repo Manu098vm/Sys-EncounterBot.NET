@@ -7,6 +7,10 @@ namespace SysBot.Pokemon
         public const string ShiningPearlID = "010018E011D92000";
         public const string BrilliantDiamondID = "0100000011D90000";
         public abstract IReadOnlyList<long> MainRNGState { get; }
+        public abstract IReadOnlyList<long> PlayerPrefsProvider { get; }
+        public abstract IReadOnlyList<long> EggSeedPointer { get; }
+        public abstract IReadOnlyList<long> EggStepPointer { get; }
+        public abstract IReadOnlyList<long> LocationPointer { get; }
         public abstract IReadOnlyList<long> PartyStartPokemonPointer { get; }
         public abstract IReadOnlyList<long> BoxStartPokemonPointer { get; }
         public abstract IReadOnlyList<long> OpponentPokemonPointer { get; }

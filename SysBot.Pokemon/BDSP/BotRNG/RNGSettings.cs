@@ -36,6 +36,9 @@ namespace SysBot.Pokemon
         [Category(RNG), Description("Action to do once the target is hit. Available options: A, B, X, Y, DUP, DDOWN, DLEFT, DRIGHT, PLUS, MINUS, RSTICK, LSTICK, L, R, ZL, ZR, HOME, CAPTURE")]
         public string Actions { get; set; } = "A, A";
 
+        [Category(RNG), Description("Time to wait between each actions, expressed in milliseconds. Eg. 1000 is One Sec, 1500 is One Sec and Half.")]
+        public int ActionTimings { get; set; } = 1_000;
+
         [Category(RNG), Description("Scenario of the target encounter.")]
         public CheckMode CheckMode { get; set; } = CheckMode.Wild;
 

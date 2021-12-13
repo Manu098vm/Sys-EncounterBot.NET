@@ -5,6 +5,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using SysBot.Base;
 using System.Net.Sockets;
+using System.Linq;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace SysBot.Pokemon
 {
@@ -17,6 +20,7 @@ namespace SysBot.Pokemon
         private readonly RNG8b Calc;
         private readonly int[] DesiredMinIVs;
         private readonly int[] DesiredMaxIVs;
+        private readonly List<string> locations;
 
         public ICountSettings Counts => Settings;
 
@@ -44,10 +48,13 @@ namespace SysBot.Pokemon
             DumpSetting = hub.Config.Folder;
             Calc = new RNG8b();
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
+            string res_data = Properties.Resources.text_bdsp_00000_en;
+            locations = res_data.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
         }
 
         // Cached offsets that stay the same per session.
         private ulong RNGOffset;
+        private ulong PlayerLocation;
 
         public override async Task MainLoop(CancellationToken token)
         {
@@ -89,6 +96,7 @@ namespace SysBot.Pokemon
                     RNGRoutine.Generator => Generator(sav, token, Hub.Config.BDSP_RNG.GeneratorVerbose, Hub.Config.BDSP_RNG.GeneratorMaxResults),
                     RNGRoutine.DelayCalc => CalculateDelay(sav, token),
                     RNGRoutine.LogAdvances => LogAdvances(sav, token),
+                    RNGRoutine.TIDSID => Test(sav, token),
                     _ => LogAdvances(sav, token),
                 };
                 try
@@ -102,6 +110,44 @@ namespace SysBot.Pokemon
                 }
         }
 
+        private async Task Test(SAV8BS sav, CancellationToken token)
+		{
+            GameVersion version = 0;
+            var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false),0);
+            Log($"{GetLocation(route)} ({route})");
+            if (Offsets is PokeDataOffsetsBS_BD)
+                version = GameVersion.BD;
+            else if (Offsets is PokeDataOffsetsBS_SP)
+                version = GameVersion.SP;
+            Log($"Version: {version}");
+
+            string res_data = Properties.Resources.FieldEncountTable_d;
+            EncounterTable? ectable = JsonConvert.DeserializeObject<EncounterTable>(res_data);
+            Table current_table = new();
+            if (ectable != null)
+            {
+                if (ectable.table != null)
+                {
+                    foreach (var table in ectable.table)
+                    {
+                        if (table.zoneID == route)
+                            current_table = table;
+                    }
+                    if (current_table != null)
+                    {
+                        if (current_table.ground_mons != null)
+                        {
+                            Log("Available species:");
+                            foreach (var specie in current_table.ground_mons)
+                            {
+                                Log($"{(Species)specie.monsNo}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         private async Task AutoRNG(SAV8BS sav, CancellationToken token)
         {
             if (Hub.Config.BDSP_RNG.AutoRNGMode is AutoRNGMode.AutoCalc)
@@ -109,7 +155,8 @@ namespace SysBot.Pokemon
                 while(!await AutoCalc(sav, token).ConfigureAwait(false))
 				{
                     var target = int.MaxValue;
-                    while (Hub.Config.BDSP_RNG.RebootIf > 0 && target > Hub.Config.BDSP_RNG.RebootIf)
+                    var boot_pass = true;
+                    while ((Hub.Config.BDSP_RNG.RebootIf > 0 && target > Hub.Config.BDSP_RNG.RebootIf) || !boot_pass)
                     {
                         await RestartGameBDSP(false, token).ConfigureAwait(false);
                         var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
@@ -119,10 +166,31 @@ namespace SysBot.Pokemon
                         var tmpS3 = BitConverter.ToUInt32(tmpRamState, 12);
                         var xoro = new Xorshift(tmpS0, tmpS1, tmpS2, tmpS3);
                         target = CalculateTarget(xoro, sav, Hub.Config.BDSP_RNG.RNGType);
-                        Log($"\n[S0] {tmpS0:X}, [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}\nTarget in: {target}");
+                        if (tmpS1 == tmpS3)
+                        {
+                            Log("Boot failed. Retry...");
+                            boot_pass = false;
+                        }
+                        else
+                        {
+                            string msg = $"\n[S0] {tmpS0:X}, [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}";
+                            if (Hub.Config.BDSP_RNG.RebootIf > 0 && target > Hub.Config.BDSP_RNG.RebootIf)
+                                msg = $"{msg}\nTarget above the limit settings. Rebooting.";
+                            else
+                                msg = $"{msg}\nTarget in: {target}";
+                            Log(msg);
+                            boot_pass = true;
+                        }
                     }
                     await ResumeStart(Hub.Config, token).ConfigureAwait(false);
                 }
+                if (Hub.Config.StopConditions.CaptureVideoClip)
+                {
+                    await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
+                    await PressAndHold(SwitchButton.CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
+                }
+                if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
+                    Log($"{Hub.Config.StopConditions.MatchFoundEchoMention}");
             }
             else
                 await LogAdvances(sav, token, true).ConfigureAwait(false);
@@ -150,9 +218,10 @@ namespace SysBot.Pokemon
                     Log("\nYou must input at least One Action to trigger the encounter in the Hub settings.\n");
                     return;
                 }
-                Log($"\n\nCurrent states:\n[S0] 0x{tmpS0:X} [S1] 0x{tmpS1:X}\nCalculate a target and set it in the Hub Settings. The routine will continue automatically once detected a target.");
-                while(Hub.Config.BDSP_RNG.Target <= 0)
-                    await Task.Delay(1_000, token).ConfigureAwait(false); 
+                Log($"\n\nCurrent states:\n[S0] {tmpS0:X}, [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}\nCalculate a target and set it in the Hub Settings. The routine will continue automatically once detected a target.");
+                while (Hub.Config.BDSP_RNG.Target <= 0)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                Log("CONTINUING...");
 			}
 
             while (!token.IsCancellationRequested)
@@ -175,9 +244,9 @@ namespace SysBot.Pokemon
                     if (ramS0 == tmpS0 && ramS1 == tmpS1 && ramS2 == tmpS2 && ramS3 == tmpS3)
                     {
                         if (auto)
-                        {
-                            target = Hub.Config.BDSP_RNG.Target;
-                            if (target != 0 && advances == target)
+						{
+							target = Hub.Config.BDSP_RNG.Target;
+							if (target != 0 && advances == target)
                             {
                                 await Click(actions[0], 0_100, token).ConfigureAwait(false);
                                 Log("Starting encounter...");
@@ -188,15 +257,20 @@ namespace SysBot.Pokemon
                                     pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
                                 } while (pk is null);
                                 Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
-                                Log("If target is missed, calculate a proper delay with CalculateDelay mode and retry.");
                                 return;
                             }
                             else if (target != 0 && advances > target)
                             {
+                                if (in_dex)
+                                {
+                                    await ResetStick(token).ConfigureAwait(false);
+                                    await CloseDex(token).ConfigureAwait(false);
+                                    in_dex = false;
+                                }
                                 Log("Target frame missed. Probably a noisy area. New target calculation needed.");
                                 Hub.Config.BDSP_RNG.Target = 0;
                                 advances = 0;
-                                Log($"\n\nCurrent states:\n[S0] 0x{tmpS0:X} [S1] 0x{tmpS1:X}\nCalculate a target and set it in the Hub Settings. The routine will continue automatically once detected a target.");
+                                Log($"\n\nCurrent states:\n[S0], {tmpS0:X} [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}\nCalculate a target and set it in the Hub Settings. The routine will continue automatically once detected a target.");
                                 while (Hub.Config.BDSP_RNG.Target == 0)
                                     await Task.Delay(1_000, token).ConfigureAwait(false);
                             }
@@ -204,6 +278,7 @@ namespace SysBot.Pokemon
                             {
                                 if (!in_dex)
                                 {
+                                    await Task.Delay(2_000, token).ConfigureAwait(false);
                                     await OpenDex(token).ConfigureAwait(false);
                                     in_dex = true;
                                 }
@@ -231,7 +306,7 @@ namespace SysBot.Pokemon
                                 in_dex = false;
                                 if (target > Hub.Config.BDSP_RNG.ScrollDexIf && can_act)
                                 {
-                                    await Task.Delay(0_500).ConfigureAwait(false);
+                                    await Task.Delay(0_700).ConfigureAwait(false);
                                     Log("Perfoming Actions");
                                     await DoActions(actions, token).ConfigureAwait(false);
                                     can_act = false;
@@ -239,14 +314,14 @@ namespace SysBot.Pokemon
                             }
                             else if(can_act)
                             {
-                                await Task.Delay(0_500).ConfigureAwait(false);
+                                await Task.Delay(0_700).ConfigureAwait(false);
                                 Log("Perfoming Actions");
                                 await DoActions(actions, token).ConfigureAwait(false);
                                 can_act = false;
                             }
                         }
                         else
-                            Log($"\nAdvance {advances}\n[S1] 0x{tmpS1:X}, [S0] 0x{tmpS0:X}");
+                            Log($"\nAdvance {advances}\n[S0] {tmpS0:X}, [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}\n");
                     }
                 }
             }
@@ -308,6 +383,7 @@ namespace SysBot.Pokemon
 					{
                         old_target = target;
                         target = CalculateTarget(xoro, sav, type) - Hub.Config.BDSP_RNG.Delay;
+                        //Log($"Target: {target}, RebootIf: {Hub.Config.BDSP_RNG.RebootIf}");
 
                         if (target == 0)
                         {
@@ -317,22 +393,26 @@ namespace SysBot.Pokemon
                                 await CloseDex(token).ConfigureAwait(false);
                                 in_dex = false;
                             }
-
-                            await Click(actions[0], 0_100, token).ConfigureAwait(false);
+                            
+                            await Click(SwitchButton.A, 0_100, token).ConfigureAwait(false);
+                            System.Diagnostics.Stopwatch stopwatch = new();
+                            stopwatch.Start();
                             Log("Starting encounter...");
                             var offset = GetDestOffset(Hub.Config.BDSP_RNG.CheckMode);
                             pk = null;
                             do
                             {
                                 pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
-                            } while (pk is null);
+                            } while (pk is null || stopwatch.ElapsedMilliseconds > 15_000);
+                            if (pk is null)
+                                return false;
                             Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
                             Log("If target is missed, calculate a proper delay with DelayCalc mode and retry.");
                             return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions);
                         }
                         else if (Hub.Config.BDSP_RNG.RebootIf > 0 && target > Hub.Config.BDSP_RNG.RebootIf)
                         {
-                            Log($"Target in {target}. Rebooting.");
+                            Log($"Target above the limit settings. Rebooting...");
                             return false;
                         }
                         else if (check && old_target < target || target < 0)
@@ -344,14 +424,9 @@ namespace SysBot.Pokemon
                                 in_dex = false;
                             }
 
-                            if (can_act)
-                            {
-                                Log("Target frame missed. Calculating new target...");
-                                print = true;
-                            }
 							else
 							{
-                                Log("Traget frame missed.");
+                                Log("Traget frame missed. Rebooting...");
                                 return false;
 							}
                         }
@@ -359,6 +434,7 @@ namespace SysBot.Pokemon
                         {
                             if (!in_dex)
                             {
+                                await Task.Delay(1_000, token).ConfigureAwait(false);
                                 await OpenDex(token).ConfigureAwait(false);
                                 in_dex = true;
                             }
@@ -386,7 +462,7 @@ namespace SysBot.Pokemon
                             in_dex = false;
                             if (target > Hub.Config.BDSP_RNG.ScrollDexIf && can_act)
 							{
-                                await Task.Delay(0_500).ConfigureAwait(false);
+                                await Task.Delay(0_700).ConfigureAwait(false);
                                 Log("Perfoming Actions");
                                 await DoActions(actions, token).ConfigureAwait(false);
                                 can_act = false;
@@ -396,7 +472,7 @@ namespace SysBot.Pokemon
                         {
 							if (can_act)
 							{
-                                await Task.Delay(0_500).ConfigureAwait(false);
+                                await Task.Delay(0_700).ConfigureAwait(false);
                                 Log("Perfoming Actions");
                                 await DoActions(actions, token).ConfigureAwait(false);
                                 can_act = false;
@@ -442,7 +518,7 @@ namespace SysBot.Pokemon
                     rng.Next();
                 }
                 advances++;
-            } while (!HandleTarget(pk, false));
+            } while (!HandleTarget(pk, false) && (advances - Hub.Config.BDSP_RNG.RebootIf < Hub.Config.BDSP_RNG.RebootIf && Hub.Config.BDSP_RNG.RebootIf > 0));
             return advances;
         }
 
@@ -593,6 +669,8 @@ namespace SysBot.Pokemon
             return result;
         }
 
+
+
         private string GetString(PB8 pk)
         {
 
@@ -636,6 +714,8 @@ namespace SysBot.Pokemon
         {
             Log("Caching session offsets...");
             RNGOffset = await SwitchConnection.PointerAll(Offsets.MainRNGState, token).ConfigureAwait(false);
+            await Task.Delay(1_000).ConfigureAwait(false);
+            PlayerLocation = await SwitchConnection.PointerAll(Offsets.LocationPointer, token).ConfigureAwait(false);
             await Task.Delay(1_000).ConfigureAwait(false);
             //Click useless key to actually initialize simulated controller
             await Click(SwitchButton.L, 0_050, token).ConfigureAwait(false);
@@ -695,11 +775,18 @@ namespace SysBot.Pokemon
 
         private async Task DoActions(List<SwitchButton> actions, CancellationToken token)
 		{
+            var timings = Hub.Config.BDSP_RNG.ActionTimings;
             for (var i = 0; i < actions.Count - 1; i++)
             {
-                await Click(actions[0], 0_500, token).ConfigureAwait(false);
+                Log($"Press {actions[0]}.");
+                await Click(actions[0], timings > 0 ? timings : 1_000, token).ConfigureAwait(false);
                 actions.RemoveAt(0);
             }
         }
+
+        private string GetLocation(int location_id)
+		{
+            return (this.locations.ElementAt(location_id));
+		}
     }
 }

@@ -261,7 +261,8 @@ namespace SysBot.Pokemon
 
         public async Task OpenDex(CancellationToken token)
 		{
-            await Click(SwitchButton.X, 0_500, token).ConfigureAwait(false);
+            Log("Opening Pokedex...");
+            await Click(SwitchButton.X, 0_900, token).ConfigureAwait(false);
             await Click(SwitchButton.PLUS, 1_350, token).ConfigureAwait(false);
             await Click(SwitchButton.B, 1_000, token).ConfigureAwait(false);
             await Click(SwitchButton.DUP, 0_150, token).ConfigureAwait(false);
