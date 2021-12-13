@@ -3,6 +3,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using SysBot.Base;
+using System.Collections.Generic;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 
@@ -12,6 +13,7 @@ namespace SysBot.Pokemon
     {
         protected readonly PokeBotHub<PK8> Hub;
         private readonly BotCompleteCounts Count;
+        public readonly IReadOnlyList<string> UnwantedMarks;
         private readonly IDumper DumpSetting;
         private readonly EncounterSettings Settings;
         private readonly int[] DesiredMinIVs;
@@ -27,6 +29,7 @@ namespace SysBot.Pokemon
             Settings = Hub.Config.SWSH_Encounter;
             DumpSetting = Hub.Config.Folder;
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
+            StopConditionSettings.ReadUnwantedMarks(Hub.Config.StopConditions, out UnwantedMarks);
         }
 
         private int encounterCount;
@@ -104,7 +107,7 @@ namespace SysBot.Pokemon
                 Count.AddCompletedDumps();
             }
 
-            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
+            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, UnwantedMarks))
                 return false;
 
             if (Hub.Config.StopConditions.CaptureVideoClip)

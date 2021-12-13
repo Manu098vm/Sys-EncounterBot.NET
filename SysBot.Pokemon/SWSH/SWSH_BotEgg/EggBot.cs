@@ -122,7 +122,7 @@ namespace SysBot.Pokemon
                 Count.AddCompletedDumps();
             }
 
-            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
+            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
                 return true;
 
             // no need to take a video clip of us receiving an egg.

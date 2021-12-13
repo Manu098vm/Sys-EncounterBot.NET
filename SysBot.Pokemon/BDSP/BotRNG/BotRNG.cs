@@ -55,6 +55,7 @@ namespace SysBot.Pokemon
         // Cached offsets that stay the same per session.
         private ulong RNGOffset;
         private ulong PlayerLocation;
+        private ulong DayTime;
 
         public override async Task MainLoop(CancellationToken token)
         {
@@ -115,6 +116,8 @@ namespace SysBot.Pokemon
             GameVersion version = 0;
             var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false),0);
             Log($"{GetLocation(route)} ({route})");
+            bool night = (await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0] == 1;
+            Log($"Night: {night}");
             if (Offsets is PokeDataOffsetsBS_BD)
                 version = GameVersion.BD;
             else if (Offsets is PokeDataOffsetsBS_SP)
@@ -408,7 +411,7 @@ namespace SysBot.Pokemon
                                 return false;
                             Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
                             Log("If target is missed, calculate a proper delay with DelayCalc mode and retry.");
-                            return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions);
+                            return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null);
                         }
                         else if (Hub.Config.BDSP_RNG.RebootIf > 0 && target > Hub.Config.BDSP_RNG.RebootIf)
                         {
@@ -696,7 +699,7 @@ namespace SysBot.Pokemon
             if (pk.Species == 0)
                 pk.Species = 1;
 
-            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
+            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
                 return false;
 
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder) && dump)
@@ -716,6 +719,8 @@ namespace SysBot.Pokemon
             RNGOffset = await SwitchConnection.PointerAll(Offsets.MainRNGState, token).ConfigureAwait(false);
             await Task.Delay(1_000).ConfigureAwait(false);
             PlayerLocation = await SwitchConnection.PointerAll(Offsets.LocationPointer, token).ConfigureAwait(false);
+            await Task.Delay(1_000).ConfigureAwait(false);
+            DayTime = await SwitchConnection.PointerAll(Offsets.DayTimePointer, token).ConfigureAwait(false);
             await Task.Delay(1_000).ConfigureAwait(false);
             //Click useless key to actually initialize simulated controller
             await Click(SwitchButton.L, 0_050, token).ConfigureAwait(false);

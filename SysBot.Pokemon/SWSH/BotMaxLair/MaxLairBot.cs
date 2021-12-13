@@ -293,7 +293,7 @@ namespace SysBot.Pokemon
                 Count.AddCompletedDumps();
             }
 
-            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions))
+            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
                 return false;
 
             var msg = $"Result found!\n{print}";

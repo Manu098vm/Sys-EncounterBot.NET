@@ -9,6 +9,7 @@ namespace SysBot.Pokemon
         public override IReadOnlyList<long> EggSeedPointer { get; } = new long[] { 0x4E34DD0, 0xB8, 0x10, 0x460 };
         public override IReadOnlyList<long> EggStepPointer { get; } = new long[] { 0x4E34DD0, 0xB8, 0x10, 0x468 };
         public override IReadOnlyList<long> LocationPointer { get; } = new long[] { 0x4E34DD0, 0xB8, 0x10, 0x40 };
+        public override IReadOnlyList<long> DayTimePointer { get; } = new long[] { 0x4E34DD0, 0xB8, 0x10, 0x308 };
         public override IReadOnlyList<long> PartyStartPokemonPointer { get; } = new long[] { 0x4E34DD0, 0xB8, 0x10, 0x7F0, 0x10, 0x20, 0x20, 0x18, 0x20 };
         public override IReadOnlyList<long> BoxStartPokemonPointer { get; } = new long[] { 0x4E34DD0, 0xB8, 0x10, 0xA0, 0x20, 0x20, 0x20 };
         public override IReadOnlyList<long> OpponentPokemonPointer { get; } = new long[] { 0x4E34DD0, 0xB8, 0x10, 0x7E8, 0x58, 0x28, 0x10, 0x20, 0x20, 0x18, 0x20 };
