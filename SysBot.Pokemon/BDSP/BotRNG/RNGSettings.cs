@@ -27,6 +27,9 @@ namespace SysBot.Pokemon
         [Category(RNG), Description("If not 0, the value will be considered when calculating the target. Only working with the AutoCalc mode for AutoRNG.")]
         public int Delay { get; set; } = 0;
 
+        [Category(RNG), Description("Select the wild encounter you want to calculate.")]
+        public WildMode WildMode { get; set; } = WildMode.Grass;
+
         [Category(RNG), Description("Reboot the console if target is above this value. Ignored if 0.")]
         public int RebootIf { get; set; } = 0;
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using Newtonsoft.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using PKHeX.Core;
@@ -268,5 +268,128 @@ namespace SysBot.Pokemon
             for(int i = 0; i < 5; i++)
                 await Click(SwitchButton.B, 0_350, token).ConfigureAwait(false);
 		}
+
+        public List<int> GetEncounterSlots(GameVersion version, int location, GameTime time, WildMode mode)
+        {
+            string res_data = Properties.Resources.FieldEncountTable_d;
+            EncounterTable? ectable = JsonConvert.DeserializeObject<EncounterTable>(res_data);
+            Table current_table = new();
+            var list = new List<int>();
+            int i = 2;
+
+            if (ectable != null)
+            {
+                if (ectable.table != null)
+                {
+                    foreach (var table in ectable.table)
+                    {
+                        if (table.zoneID == location)
+                            current_table = table;
+                    }
+                    if (current_table != null)
+                    {
+
+                        if ((mode is WildMode.Grass || mode is WildMode.Swarm) && current_table.ground_mons != null)
+                        {
+                            foreach (var specie in current_table.ground_mons)
+                                list.Add(specie.monsNo);
+                            if ((time is GameTime.Night || time is GameTime.DeepNight) && current_table.night != null)
+                                foreach (var specie in current_table.night)
+                                {
+                                    list[i] = specie.monsNo;
+                                    i++;
+                                }
+                            else if (current_table.day != null)
+                                foreach (var specie in current_table.day)
+                                {
+                                    list[i] = specie.monsNo;
+                                    i++;
+                                }
+                            if (mode is WildMode.Swarm && current_table.tairyo != null)
+                            {
+                                i = 0;
+                                foreach (var specie in current_table.tairyo)
+                                {
+                                    list[i] = specie.monsNo;
+                                    i++;
+                                }
+                            }
+                        }
+                        else if (mode is WildMode.Surf && current_table.water_mons != null)
+                            foreach (var specie in current_table.water_mons)
+                                list.Add(specie.monsNo);
+                        else if (mode is WildMode.OldRod && current_table.boro_mons != null)
+                            foreach (var specie in current_table.boro_mons)
+                                list.Add(specie.monsNo);
+                        else if (mode is WildMode.GoodRod && current_table.ii_mons != null)
+                            foreach (var specie in current_table.ii_mons)
+                                list.Add(specie.monsNo);
+                        else if (mode is WildMode.SuperRod && current_table.sugoi_mons != null)
+                            foreach (var specie in current_table.sugoi_mons)
+                                list.Add(specie.monsNo);
+                    }
+                }
+            }
+            return list;
+        }
+
+        public List<SwitchButton> ParseActions(string config_actions)
+        {
+            var action = new List<SwitchButton>();
+            var actions = $"{config_actions.ToUpper()},";
+            var word = "";
+            var index = 0;
+
+            while (index < actions.Length - 1)
+            {
+                if ((actions.Length > 1 && (actions[index + 1] == ',' || actions[index + 1] == '.')) || actions.Length == 1)
+                {
+                    word += actions[index];
+                    if (Enum.IsDefined(typeof(SwitchButton), word))
+                        action.Add((SwitchButton)Enum.Parse(typeof(SwitchButton), word));
+                    actions.Remove(0, 1);
+                    word = "";
+                }
+                else if (actions[index] == ',' || actions[index] == '.' || actions[index] == ' ' || actions[index] == '\n' || actions[index] == '\t' || actions[index] == '\0')
+                    actions.Remove(0, 1);
+                else
+                {
+                    word += actions[index];
+                    actions.Remove(0, 1);
+                }
+                index++;
+            }
+
+            return action;
+        }
+
+        public string GetString(PB8 pk)
+        {
+
+            return $"\nEC: {pk.EncryptionConstant:X}\nPID: {pk.PID:X} {GetShinyType(pk)}\n" +
+                $"{(Nature)pk.Nature} nature\nAbility slot: {pk.AbilityNumber}\n" +
+                $"IVs: [{pk.IV_HP}, {pk.IV_ATK}, {pk.IV_DEF}, {pk.IV_SPA}, {pk.IV_SPD}, {pk.IV_SPE}]\n";
+        }
+
+        public string GetShinyType(PB8 pk)
+        {
+            if (pk.IsShiny)
+            {
+                if (pk.ShinyXor == 0)
+                    return "(Square)";
+                return "(Star)";
+            }
+            return "";
+        }
+
+        public async Task DoActions(List<SwitchButton> actions, int timings, CancellationToken token)
+        {
+            for (var i = 0; i < actions.Count - 1; i++)
+            {
+                Log($"Press {actions[0]}.");
+                await Click(actions[0], timings > 0 ? timings : 1_000, token).ConfigureAwait(false);
+                actions.RemoveAt(0);
+            }
+        }
     }
 }

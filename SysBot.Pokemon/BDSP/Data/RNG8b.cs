@@ -6,7 +6,7 @@
  */
 
 using PKHeX.Core;
-using SysBot.Base;
+using System.Collections.Generic;
 
 namespace SysBot.Pokemon
 {
@@ -59,6 +59,14 @@ namespace SysBot.Pokemon
 
             return (t % 0xffffffff) + 0x80000000;
         }
+
+        public uint Range(int min = -0x7fffffff - 1, int max = 0x7fffffff)
+		{
+            var t = this.Next();
+            var diff = (uint)(max - min);
+
+            return (t % diff) + ((uint)min & 0xFFFFFFFF);
+		}
     }
     public class RNG8b
     {
@@ -128,11 +136,26 @@ namespace SysBot.Pokemon
             return pk;
         }
 
-        public PB8 CalculateFromStates(PB8 pk, Shiny shiny, RNGType type, Xorshift seed)
+        public PB8 CalculateFromStates(PB8 pk, Shiny shiny, RNGType type, Xorshift seed, Base.IConsoleConnection connection, WildMode mode = WildMode.None, List<int>? slots = null)
         {
             var xoro = new Xorshift(seed.GetU64State()[0], seed.GetU64State()[1]);
 
             var flawless = GetFlawless(type);
+
+            if(type is RNGType.Wild && mode != WildMode.None && slots != null)
+			{
+                xoro.Next();
+                //var slot = xoro.Range(0, 100);
+                var calc = (int)(xoro.Next()%100);
+                var slot = CalcSlot(mode, calc);
+                connection.Log($"\n\nRange: {calc}, Slot: {slot}, Species: {(Species)slots[slot]}");
+                pk.Species = slots[slot];
+                //pk.Move1 = CalcSlot(mode, slot);
+                xoro.Advance(84);
+
+                if(mode is not WildMode.Grass or WildMode.Swarm)
+                    xoro.Range(0, 1000); //Lvl
+			}
 
             if (type is RNGType.MysteryGift)
                 xoro.Next();
@@ -249,5 +272,21 @@ namespace SysBot.Pokemon
             var xor = pid ^ oid;
             return (xor ^ (xor >> 16)) & 0xFFFF;
         }
+
+        //Thanks to Admiral Fish and his Pokéfinder
+        private int CalcSlot(WildMode mode, int rand)
+		{
+            var calc = mode switch
+            {
+                WildMode.GoodRod or WildMode.SuperRod => new int[5] { 40, 80, 95, 99, 100 },
+                WildMode.OldRod or WildMode.Surf => new int[5] { 60, 90, 95, 99, 100 },
+                _ => new int[12] { 20, 40, 50, 60, 70, 80, 85, 90, 94, 98, 99, 100 },
+            };
+            int i;
+            for (i = 0; i < calc.Length; i++)
+                if (rand < calc[i])
+                    return i;
+            return 255;
+		}
     }
 }

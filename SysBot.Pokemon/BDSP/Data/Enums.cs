@@ -2,11 +2,8 @@
 {
     public enum RNGType
 	{
-        Honey,
-        HoneyTree,
+        Wild,
         Starter,
-        SweetScent,
-        Fishing,
         Legendary,
         MysteryGift,
         Roamer,
@@ -36,9 +33,23 @@
         Wild,
 	}
 
-    public enum DexMode
+    public enum WildMode
 	{
-        A,
-        B,
+        None,
+        Grass,
+        Surf,
+        Swarm,
+        OldRod,
+        GoodRod,
+        SuperRod,
+	}
+
+    public enum GameTime
+	{
+        Morning = 0, //4am-10am
+        Day = 1, //10am-5pm
+        Sunset = 2, //5pm-8pm
+        Night = 3, //8pm-2am
+        DeepNight = 4, //2am-4am
 	}
 }

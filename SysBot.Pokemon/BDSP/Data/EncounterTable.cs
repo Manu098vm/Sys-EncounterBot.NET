@@ -117,27 +117,27 @@ namespace SysBot.Pokemon
     {
         public int zoneID { get; set; }
         public int encRate_gr { get; set; }
-        public IList<GroundMon> ground_mons { get; set; }
-        public IList<Tairyo> tairyo { get; set; }
-        public IList<Day> day { get; set; }
-        public IList<Night> night { get; set; }
-        public IList<SwayGrass> swayGrass { get; set; }
-        public IList<int> FormProb { get; set; }
-        public IList<int> Nazo { get; set; }
-        public IList<int> AnnoonTable { get; set; }
-        public IList<GbaRuby> gbaRuby { get; set; }
-        public IList<GbaSapp> gbaSapp { get; set; }
-        public IList<GbaEme> gbaEme { get; set; }
-        public IList<GbaFire> gbaFire { get; set; }
-        public IList<GbaLeaf> gbaLeaf { get; set; }
+        public IList<GroundMon>? ground_mons { get; set; }
+        public IList<Tairyo>? tairyo { get; set; }
+        public IList<Day>? day { get; set; }
+        public IList<Night>? night { get; set; }
+        public IList<SwayGrass>? swayGrass { get; set; }
+        public IList<int>? FormProb { get; set; }
+        public IList<int>? Nazo { get; set; }
+        public IList<int>? AnnoonTable { get; set; }
+        public IList<GbaRuby>? gbaRuby { get; set; }
+        public IList<GbaSapp>? gbaSapp { get; set; }
+        public IList<GbaEme>? gbaEme { get; set; }
+        public IList<GbaFire>? gbaFire { get; set; }
+        public IList<GbaLeaf>? gbaLeaf { get; set; }
         public int encRate_wat { get; set; }
-        public IList<WaterMon> water_mons { get; set; }
+        public IList<WaterMon>? water_mons { get; set; }
         public int encRate_turi_boro { get; set; }
-        public IList<BoroMon> boro_mons { get; set; }
+        public IList<BoroMon>? boro_mons { get; set; }
         public int encRate_turi_ii { get; set; }
-        public IList<IiMon> ii_mons { get; set; }
+        public IList<IiMon>? ii_mons { get; set; }
         public int encRate_sugoi { get; set; }
-        public IList<SugoiMon> sugoi_mons { get; set; }
+        public IList<SugoiMon>? sugoi_mons { get; set; }
     }
 
     public class Urayama
@@ -168,7 +168,7 @@ namespace SysBot.Pokemon
     {
         public int zoneID { get; set; }
         public int nextCount { get; set; }
-        public IList<int> nextZoneID { get; set; }
+        public IList<int>? nextZoneID { get; set; }
     }
 
     public class Legendpoke
@@ -176,9 +176,9 @@ namespace SysBot.Pokemon
         public int monsNo { get; set; }
         public int formNo { get; set; }
         public int isFixedEncSeq { get; set; }
-        public string encSeq { get; set; }
+        public string? encSeq { get; set; }
         public int isFixedBGM { get; set; }
-        public string bgmEvent { get; set; }
+        public string? bgmEvent { get; set; }
         public int isFixedBtlBg { get; set; }
         public int btlBg { get; set; }
         public int isFixedSetupEffect { get; set; }
@@ -188,23 +188,22 @@ namespace SysBot.Pokemon
     public class Zui
     {
         public int zoneID { get; set; }
-        public IList<int> form { get; set; }
+        public IList<int>? form { get; set; }
     }
 
     public class EncounterTable
     {
-        public MGameObject m_GameObject { get; set; }
+        public MGameObject? m_GameObject { get; set; }
         public int m_Enabled { get; set; }
-        public MScript m_Script { get; set; }
-        public string m_Name { get; set; }
-        public IList<Table> table { get; set; }
-        public IList<Urayama> urayama { get; set; }
-        public IList<Mistu> mistu { get; set; }
-        public IList<Honeytree> honeytree { get; set; }
-        public IList<Safari> safari { get; set; }
-        public IList<Mvpoke> mvpoke { get; set; }
-        public IList<Legendpoke> legendpoke { get; set; }
-        public IList<Zui> zui { get; set; }
+        public MScript? m_Script { get; set; }
+        public string? m_Name { get; set; }
+        public IList<Table>? table { get; set; }
+        public IList<Urayama>? urayama { get; set; }
+        public IList<Mistu>? mistu { get; set; }
+        public IList<Honeytree>? honeytree { get; set; }
+        public IList<Safari>? safari { get; set; }
+        public IList<Mvpoke>? mvpoke { get; set; }
+        public IList<Legendpoke>? legendpoke { get; set; }
+        public IList<Zui>? zui { get; set; }
     }
-
 }
