@@ -60,13 +60,23 @@ namespace SysBot.Pokemon
             return (t % 0xffffffff) + 0x80000000;
         }
 
-        public uint Range(int min = -0x7fffffff - 1, int max = 0x7fffffff)
+        public byte Range(byte min = 0, byte max = 100)
 		{
-            var t = this.Next();
-            var diff = (uint)(max - min);
+            var s0 = this.state[0];
+            this.state[0] = this.state[1];
+            this.state[1] = this.state[2];
+            this.state[2] = this.state[3];
 
-            return (t % diff) + ((uint)min & 0xFFFFFFFF);
-		}
+            uint tmp = s0 ^ s0 << 11;
+            tmp = tmp ^ tmp >> 8 ^ this.state[2] ^ this.state[2] >> 19;
+
+            this.state[3] = tmp;
+
+            var diff = (byte)(max - min);
+
+            return (byte)((tmp % diff) + min);
+
+        }
     }
     public class RNG8b
     {
@@ -136,7 +146,7 @@ namespace SysBot.Pokemon
             return pk;
         }
 
-        public PB8 CalculateFromStates(PB8 pk, Shiny shiny, RNGType type, Xorshift seed, Base.IConsoleConnection connection, WildMode mode = WildMode.None, List<int>? slots = null)
+        public PB8 CalculateFromStates(PB8 pk, Shiny shiny, RNGType type, Xorshift seed, WildMode mode = WildMode.None, List<int>? slots = null)
         {
             var xoro = new Xorshift(seed.GetU64State()[0], seed.GetU64State()[1]);
 
@@ -144,16 +154,15 @@ namespace SysBot.Pokemon
 
             if(type is RNGType.Wild && mode != WildMode.None && slots != null)
 			{
-                //var slot = xoro.Range(0, 100);
-                var calc = (int)(xoro.Next()%100);
+                var calc = xoro.Range(0, 100);
                 var slot = CalcSlot(mode, calc);
-                connection.Log($"\n\nRange: {calc}, Slot: {slot}, Species: {(Species)slots[slot]}");
-                pk.Species = slots[slot];
-                //pk.Move1 = CalcSlot(mode, slot);
+                pk.Species = slots[(int)slot];
+                //Save the slot in some available structure space
+                pk.Move1 = slot; 
                 xoro.Advance(84);
 
                 if(mode is not WildMode.Grass or WildMode.Swarm)
-                    xoro.Range(0, 1000); //Lvl
+                    xoro.Next(); //Lvl Range(0,1000)
 			}
 
             if (type is RNGType.MysteryGift)
@@ -273,15 +282,15 @@ namespace SysBot.Pokemon
         }
 
         //Thanks to Admiral Fish and his Pokéfinder
-        private int CalcSlot(WildMode mode, int rand)
+        private byte CalcSlot(WildMode mode, byte rand)
 		{
             var calc = mode switch
             {
-                WildMode.GoodRod or WildMode.SuperRod => new int[5] { 40, 80, 95, 99, 100 },
-                WildMode.OldRod or WildMode.Surf => new int[5] { 60, 90, 95, 99, 100 },
-                _ => new int[12] { 20, 40, 50, 60, 70, 80, 85, 90, 94, 98, 99, 100 },
+                WildMode.GoodRod or WildMode.SuperRod => new byte[5] { 40, 80, 95, 99, 100 },
+                WildMode.OldRod or WildMode.Surf => new byte[5] { 60, 90, 95, 99, 100 },
+                _ => new byte[12] { 20, 40, 50, 60, 70, 80, 85, 90, 94, 98, 99, 100 },
             };
-            int i;
+            byte i;
             for (i = 0; i < calc.Length; i++)
                 if (rand < calc[i])
                     return i;

@@ -23,7 +23,7 @@
         LogAdvances,
         AutoRNG,
         Generator,
-        TIDSID,
+        TEST,
 	}
 
     public enum CheckMode

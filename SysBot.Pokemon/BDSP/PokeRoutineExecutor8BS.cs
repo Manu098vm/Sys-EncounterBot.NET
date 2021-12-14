@@ -384,11 +384,10 @@ namespace SysBot.Pokemon
 
         public async Task DoActions(List<SwitchButton> actions, int timings, CancellationToken token)
         {
-            for (var i = 0; i < actions.Count - 1; i++)
-            {
-                Log($"Press {actions[0]}.");
-                await Click(actions[0], timings > 0 ? timings : 1_000, token).ConfigureAwait(false);
-                actions.RemoveAt(0);
+            for(var i = 0; i < actions.Count - 1; i++)
+			{
+                Log($"Press {actions[i]}.");
+                await Click(actions[i], timings, token).ConfigureAwait(false);
             }
         }
     }

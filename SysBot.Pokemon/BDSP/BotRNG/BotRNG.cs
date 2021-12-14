@@ -97,7 +97,7 @@ namespace SysBot.Pokemon
                     RNGRoutine.Generator => Generator(sav, token, Hub.Config.BDSP_RNG.GeneratorVerbose, Hub.Config.BDSP_RNG.GeneratorMaxResults),
                     RNGRoutine.DelayCalc => CalculateDelay(sav, token),
                     RNGRoutine.LogAdvances => LogAdvances(sav, token),
-                    RNGRoutine.TIDSID => Test(sav, token),
+                    RNGRoutine.TEST => Test(sav, token),
                     _ => LogAdvances(sav, token),
                 };
                 try
@@ -125,12 +125,30 @@ namespace SysBot.Pokemon
             Log($"({version}) {GetLocation(route)} ({route}) [{time}]");
 
             var mons = GetEncounterSlots(version, route, time, mode);
-            foreach(var mon in mons)
-                Log($"{(Species)mon}");
+            Log("Available mons:");
+            var i = 0;
+            foreach (var mon in mons)
+            {
+                Log($"[{i}] {(Species)mon}");
+                i++;
+            }
+
+            Log("Actions:");
+            List<SwitchButton> actions = ParseActions(Hub.Config.BDSP_RNG.Actions);
+            foreach (var button in actions)
+                Log($"{button}");
+            Log("Performing actions...");
+            await DoActions(actions, Hub.Config.BDSP_RNG.ActionTimings, token).ConfigureAwait(false);
+            await Click(actions.Last(), 0_050, token).ConfigureAwait(false);
         }
 
         private async Task AutoRNG(SAV8BS sav, CancellationToken token)
         {
+            if(!(Hub.Config.BDSP_RNG.RebootIf > 0))
+			{
+                Log($"You must set a minumunt amount of advancements in the 'RebootIf' setting.");
+                return;
+			}
             if (Hub.Config.BDSP_RNG.AutoRNGMode is AutoRNGMode.AutoCalc)
             {
                 while(!await AutoCalc(sav, token).ConfigureAwait(false))
@@ -146,7 +164,7 @@ namespace SysBot.Pokemon
                         var tmpS2 = BitConverter.ToUInt32(tmpRamState, 8);
                         var tmpS3 = BitConverter.ToUInt32(tmpRamState, 12);
                         var xoro = new Xorshift(tmpS0, tmpS1, tmpS2, tmpS3);
-                        target = CalculateTarget(xoro, sav, Hub.Config.BDSP_RNG.RNGType);
+                        target = await CalculateTarget(xoro, sav, Hub.Config.BDSP_RNG.RNGType, Hub.Config.BDSP_RNG.WildMode, token).ConfigureAwait(false);
                         if (tmpS1 == tmpS3)
                         {
                             Log("Boot failed. Retry...");
@@ -229,8 +247,8 @@ namespace SysBot.Pokemon
 							target = Hub.Config.BDSP_RNG.Target;
 							if (target != 0 && advances == target)
                             {
-                                await Click(actions[0], 0_100, token).ConfigureAwait(false);
-                                Log("Starting encounter...");
+                                await Click(actions.Last(), 0_100, token).ConfigureAwait(false);
+                                Log($"\n[S0] {tmpS0:X}, [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}\nStarting encounter...");
                                 var offset = GetDestOffset(Hub.Config.BDSP_RNG.CheckMode);
                                 PB8? pk;
                                 do
@@ -316,6 +334,7 @@ namespace SysBot.Pokemon
             var print = true;
             var actions = ParseActions(Hub.Config.BDSP_RNG.Actions);
             var type = Hub.Config.BDSP_RNG.RNGType;
+            var mode = Hub.Config.BDSP_RNG.WildMode;
             var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
             var tmpS0 = BitConverter.ToUInt32(tmpRamState, 0);
             var tmpS1 = BitConverter.ToUInt32(tmpRamState, 4);
@@ -341,6 +360,11 @@ namespace SysBot.Pokemon
                 return true;
             }
 
+            var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
+            var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
+            GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
+            Log($"[{version}] - Route: {GetLocation(route)} ({route}) [{time}]");
+
             Log($"Initial States: \n[S0] {tmpS0:X}, [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}");
 
             while (!token.IsCancellationRequested)
@@ -363,7 +387,8 @@ namespace SysBot.Pokemon
                     if (ramS0 == tmpS0 && ramS1 == tmpS1 && ramS2 == tmpS2 && ramS3 == tmpS3)
 					{
                         old_target = target;
-                        target = CalculateTarget(xoro, sav, type) - Hub.Config.BDSP_RNG.Delay;
+                        target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false) - Hub.Config.BDSP_RNG.Delay;
+                        Log($"\n[S0] {tmpS0:X}, [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}\nTarget: {target}");
                         //Log($"Target: {target}, RebootIf: {Hub.Config.BDSP_RNG.RebootIf}");
 
                         if (target == 0)
@@ -375,7 +400,7 @@ namespace SysBot.Pokemon
                                 in_dex = false;
                             }
                             
-                            await Click(SwitchButton.A, 0_100, token).ConfigureAwait(false);
+                            await Click(actions.Last(), 0_100, token).ConfigureAwait(false);
                             System.Diagnostics.Stopwatch stopwatch = new();
                             stopwatch.Start();
                             Log("Starting encounter...");
@@ -425,7 +450,7 @@ namespace SysBot.Pokemon
                                 await ResetStick(token).ConfigureAwait(false);
                                 await SetStick(SwitchStick.LEFT, 30_000, 0, 2_000, token).ConfigureAwait(false);
                             }
-                            else if (target - 400 > Hub.Config.BDSP_RNG.ScrollDexIf)
+                            else if (target - 1000 > Hub.Config.BDSP_RNG.ScrollDexIf)
                             {
                                 await ResetStick(token).ConfigureAwait(false);
                                 await SetStick(SwitchStick.LEFT, 0, 30_000, 1_000, token).ConfigureAwait(false);
@@ -474,12 +499,23 @@ namespace SysBot.Pokemon
             return false;
         }
 
-        int CalculateTarget(Xorshift xoro, SAV8BS sav, RNGType type)
+        async Task<int> CalculateTarget(Xorshift xoro, SAV8BS sav, RNGType type, WildMode mode, CancellationToken token)
 		{
             int advances = 0;
             uint[] states = xoro.GetU32State();
             Xorshift rng = new(states[0], states[1], states[2], states[3]);
+            List<int>? slots = null;
             int species = (int)Hub.Config.StopConditions.StopOnSpecies;
+
+            if (mode is not WildMode.None)
+            {
+                var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
+                var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
+                GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
+                //Log($"Route: {GetLocation(route)} ({route}) [{time}]");
+                slots = GetEncounterSlots(version, route, time, mode);
+            }
+
             var pk = new PB8
             {
                 TID = sav.TID,
@@ -495,7 +531,7 @@ namespace SysBot.Pokemon
                 else
 				{
                     states = rng.GetU32State();
-                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), Connection);
+                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, slots);
                     rng.Next();
                 }
                 advances++;
@@ -506,6 +542,8 @@ namespace SysBot.Pokemon
         private async Task CalculateDelay(SAV8BS sav, CancellationToken token)
 		{
             var actions = ParseActions(Hub.Config.BDSP_RNG.Actions);
+            var mode = Hub.Config.BDSP_RNG.WildMode;
+            var dest = Hub.Config.BDSP_RNG.CheckMode;
             var advances = 0;
             var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
             var tmpS0 = BitConverter.ToUInt32(tmpRamState, 0);
@@ -521,6 +559,8 @@ namespace SysBot.Pokemon
                 Log("\nYou must input at least One and only One Action to trigger the encounter in the Hub settings.\n");
                 return;
             }
+
+            Log($"Initial State:\n[S0]: {tmpS0:X}, [S1]: {tmpS1:X}\n[S2]: {tmpS2:X}, [S3]: {tmpS3:X}\n");
 
             while (!token.IsCancellationRequested)
 			{
@@ -545,26 +585,29 @@ namespace SysBot.Pokemon
                         used = advances;
                         PB8? pk;
                         Log($"Waiting for pokemon...");
-                        var offset = GetDestOffset(Hub.Config.BDSP_RNG.CheckMode);
+                        var offset = GetDestOffset(dest);
                         do
                         {
                             pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
                         } while (pk is null);
+
                         var hit = pk.EncryptionConstant;
-                        Connection.Log($"\nSpecies: {(Species)pk.Species}{GetString(pk)}");
-                        //var result = calculatedlist.IndexOf(hit);
+
+                        Log($"\nFinal State:\n[S0]: {tmpS0:X}, [S1]: {tmpS1:X}\n[S2]: {tmpS2:X}, [S3]: {tmpS3:X}\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
+
                         var result = 0;
                         var i = 0;
 
-                        foreach(var item in calculatedlist)
-						{
+                        foreach (var item in calculatedlist)
+                        {
                             i++;
-                            if(item.EncryptionConstant == hit)
-							{
+                            if (item.EncryptionConstant == hit)
+                            {
                                 result = i;
                                 break;
-							}
-						}
+                            }
+                        }
+
                         var delay = result - used;
                         Log($"\nCalculated delay is {delay}.\n");
 
@@ -595,14 +638,6 @@ namespace SysBot.Pokemon
                 initial_s1f = BitConverter.ToUInt32(tmpRamState, 4);
                 initial_s2f = BitConverter.ToUInt32(tmpRamState, 8);
                 initial_s3f = BitConverter.ToUInt32(tmpRamState, 12);
-
-                if (mode is not WildMode.None)
-                {
-                    var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
-                    var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
-                    GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
-                    encounterslots = GetEncounterSlots(version, route, time, mode);
-                }
             } 
             else
 			{
@@ -610,6 +645,14 @@ namespace SysBot.Pokemon
                 initial_s1f = (xoro != null) ? xoro.GetU32State()[1] : 0;
                 initial_s2f = (xoro != null) ? xoro.GetU32State()[2] : 0;
                 initial_s3f = (xoro != null) ? xoro.GetU32State()[3] : 0;
+            }
+
+            if (mode is not WildMode.None)
+            {
+                var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
+                var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
+                GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
+                encounterslots = GetEncounterSlots(version, route, time, mode);
             }
 
             var rng = new Xorshift(initial_s0f, initial_s1f, initial_s2f, initial_s3f);
@@ -634,15 +677,15 @@ namespace SysBot.Pokemon
                     pk = Calc.CalculateFromSeed(pk, Shiny.Random, type, rng.Next());
                 else
                 {
-                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), Connection, mode, encounterslots);
+                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, encounterslots);
                     rng.Next();
                 }
 
                 result.Add(pk);
 
                 var msg = $"\nAdvances: {advance}\n[S0] {states[0]:X}, [S1] {states[1]:X}\n[S2] {states[2]:X}, [S3] {states[3]:X}";
-                /*if (Hub.Config.BDSP_RNG.WildMode is not WildMode.None)
-                    msg = $"{msg}\nSpecies: {(Species)pk.Species} (EncounterSlot: {pk.Move1})";*/
+                if (Hub.Config.BDSP_RNG.WildMode is not WildMode.None)
+                    msg = $"{msg}\nSpecies: {(Species)pk.Species} (EncounterSlot: {pk.Move1})";
                 msg = $"{msg}\n{GetString(pk)}";
                 if (verbose == true)
                     Log($"{Environment.NewLine}{msg}");
