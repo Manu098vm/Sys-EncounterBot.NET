@@ -144,7 +144,6 @@ namespace SysBot.Pokemon
 
             if(type is RNGType.Wild && mode != WildMode.None && slots != null)
 			{
-                xoro.Next();
                 //var slot = xoro.Range(0, 100);
                 var calc = (int)(xoro.Next()%100);
                 var slot = CalcSlot(mode, calc);
