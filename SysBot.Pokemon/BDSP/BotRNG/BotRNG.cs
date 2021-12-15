@@ -96,9 +96,9 @@ namespace SysBot.Pokemon
                     RNGRoutine.AutoRNG => AutoRNG(sav, token),
                     RNGRoutine.Generator => Generator(sav, token, Hub.Config.BDSP_RNG.GeneratorSettings.GeneratorVerbose, Hub.Config.BDSP_RNG.GeneratorSettings.GeneratorMaxResults),
                     RNGRoutine.DelayCalc => CalculateDelay(sav, token),
-                    RNGRoutine.LogAdvances => LogAdvances(sav, token),
+                    RNGRoutine.LogAdvances => TrackAdvances(sav, token),
                     RNGRoutine.TEST => Test(sav, token),
-                    _ => LogAdvances(sav, token),
+                    _ => TrackAdvances(sav, token),
                 };
                 try
                 {
@@ -134,7 +134,7 @@ namespace SysBot.Pokemon
             }
 
             Log("Actions:");
-            List<SwitchButton> actions = ParseActions(Hub.Config.BDSP_RNG.Actions);
+            List<SwitchButton> actions = ParseActions(Hub.Config.BDSP_RNG.AutoRNGSettings.Actions);
             foreach (var button in actions)
                 Log($"{button}");
             Log("Performing actions...");
@@ -144,63 +144,69 @@ namespace SysBot.Pokemon
 
         private async Task AutoRNG(SAV8BS sav, CancellationToken token)
         {
-            if(!(Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIf > 0))
-			{
-                Log($"You must set a minumunt amount of advancements in the 'RebootIf' setting.");
-                return;
-			}
             if (Hub.Config.BDSP_RNG.AutoRNGSettings.AutoRNGMode is AutoRNGMode.AutoCalc)
             {
-                while(!await AutoCalc(sav, token).ConfigureAwait(false))
-				{
-                    var target = int.MaxValue;
-                    var boot_pass = true;
-                    while ((Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIf > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIf) || !boot_pass)
-                    {
-                        await RestartGameBDSP(false, token).ConfigureAwait(false);
-                        var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
-                        var tmpS0 = BitConverter.ToUInt32(tmpRamState, 0);
-                        var tmpS1 = BitConverter.ToUInt32(tmpRamState, 4);
-                        var tmpS2 = BitConverter.ToUInt32(tmpRamState, 8);
-                        var tmpS3 = BitConverter.ToUInt32(tmpRamState, 12);
-                        var xoro = new Xorshift(tmpS0, tmpS1, tmpS2, tmpS3);
-                        target = await CalculateTarget(xoro, sav, Hub.Config.BDSP_RNG.RNGType, Hub.Config.BDSP_RNG.WildMode, token).ConfigureAwait(false);
-                        if (tmpS1 == tmpS3)
-                        {
-                            Log("Boot failed. Retry...");
-                            boot_pass = false;
-                        }
-                        else
-                        {
-                            string msg = $"\n[S0] {tmpS0:X}, [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}";
-                            if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIf > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIf)
-                                msg = $"{msg}\nTarget above the limit settings. Rebooting.";
-                            else
-                                msg = $"{msg}\nTarget in: {target}";
-                            Log(msg);
-                            boot_pass = true;
-                        }
-                    }
-                    await ResumeStart(Hub.Config, token).ConfigureAwait(false);
-                }
-                if (Hub.Config.StopConditions.CaptureVideoClip)
+                bool found;
+                if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIfFailed)
                 {
-                    await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
-                    await PressAndHold(SwitchButton.CAPTURE, 2_000, 0, token).ConfigureAwait(false);
+                    while (!await AutoCalc(sav, token).ConfigureAwait(false))
+                    {
+                        var target = int.MaxValue;
+                        var boot_pass = true;
+                        while ((Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue) || !boot_pass)
+                        {
+                            await RestartGameBDSP(false, token).ConfigureAwait(false);
+                            var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
+                            var tmpS0 = BitConverter.ToUInt32(tmpRamState, 0);
+                            var tmpS1 = BitConverter.ToUInt32(tmpRamState, 4);
+                            var tmpS2 = BitConverter.ToUInt32(tmpRamState, 8);
+                            var tmpS3 = BitConverter.ToUInt32(tmpRamState, 12);
+                            var xoro = new Xorshift(tmpS0, tmpS1, tmpS2, tmpS3);
+                            target = await CalculateTarget(xoro, sav, Hub.Config.BDSP_RNG.RNGType, Hub.Config.BDSP_RNG.WildMode, token).ConfigureAwait(false);
+                            if (tmpS1 == tmpS3)
+                            {
+                                Log("Boot failed. Retry...");
+                                boot_pass = false;
+                            }
+                            else
+                            {
+                                string msg = $"\n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}";
+                                if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue)
+                                    msg = $"{msg}\nTarget above the limit settings. Rebooting.";
+                                else
+                                    msg = $"{msg}\nTarget in: {target}";
+                                Log(msg);
+                                boot_pass = true;
+                            }
+                        }
+                        await ResumeStart(Hub.Config, token).ConfigureAwait(false);
+                    }
+                    found = true;
                 }
-                if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
-                    Log($"{Hub.Config.StopConditions.MatchFoundEchoMention}");
+                else
+                    found = await AutoCalc(sav, token).ConfigureAwait(false);
+
+                if (found)
+                {
+                    if (Hub.Config.StopConditions.CaptureVideoClip)
+                    {
+                        await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
+                        await PressAndHold(SwitchButton.CAPTURE, 2_000, 0, token).ConfigureAwait(false);
+                    }
+                    if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
+                        Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} result found.");
+                }
             }
             else
-                await LogAdvances(sav, token, true).ConfigureAwait(false);
+                await TrackAdvances(sav, token, true).ConfigureAwait(false);
             return;
         }
 
-        private async Task LogAdvances(SAV8BS sav, CancellationToken token, bool auto = false)
+        private async Task<bool> TrackAdvances(SAV8BS sav, CancellationToken token, bool auto = false)
 		{
             var advances = 0;
             var target = 0;
-            var actions = ParseActions(Hub.Config.BDSP_RNG.Actions);
+            var actions = ParseActions(Hub.Config.BDSP_RNG.AutoRNGSettings.Actions);
             var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
             var tmpS0 = BitConverter.ToUInt32(tmpRamState, 0);
             var tmpS1 = BitConverter.ToUInt32(tmpRamState, 4);
@@ -215,9 +221,10 @@ namespace SysBot.Pokemon
                 if (actions.Count <= 0)
                 {
                     Log("\nYou must input at least One Action to trigger the encounter in the Hub settings.\n");
-                    return;
+                    return true;
                 }
-                Log($"\n\nCurrent states:\n[S0] {tmpS0:X}, [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}\nCalculate a target and set it in the Hub Settings. The routine will continue automatically once detected a target.");
+                Hub.Config.BDSP_RNG.AutoRNGSettings.Target = 0;
+                Log($"\n\nCurrent states:\n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}\nCalculate a target and set it in the Hub Settings. The routine will continue automatically once detected a target.");
                 while (Hub.Config.BDSP_RNG.AutoRNGSettings.Target <= 0)
                     await Task.Delay(1_000, token).ConfigureAwait(false);
                 Log("CONTINUING...");
@@ -247,16 +254,26 @@ namespace SysBot.Pokemon
 							target = Hub.Config.BDSP_RNG.AutoRNGSettings.Target;
 							if (target != 0 && advances == target)
                             {
+                                if (in_dex)
+                                {
+                                    await ResetStick(token).ConfigureAwait(false);
+                                    await CloseDex(token).ConfigureAwait(false);
+                                }
+
+                                System.Diagnostics.Stopwatch stopwatch = new();
+                                stopwatch.Start();
                                 await Click(actions.Last(), 0_100, token).ConfigureAwait(false);
-                                Log($"\n[S0] {tmpS0:X}, [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}\nStarting encounter...");
+                                Log($"\n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}\nStarting encounter...");
                                 var offset = GetDestOffset(Hub.Config.BDSP_RNG.CheckMode);
                                 PB8? pk;
                                 do
                                 {
                                     pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
-                                } while (pk is null);
+                                } while (pk is null && stopwatch.ElapsedMilliseconds < 5_000);
+                                if (pk is null)
+                                    return false;
                                 Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
-                                return;
+                                return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null);
                             }
                             else if (target != 0 && advances > target)
                             {
@@ -264,16 +281,12 @@ namespace SysBot.Pokemon
                                 {
                                     await ResetStick(token).ConfigureAwait(false);
                                     await CloseDex(token).ConfigureAwait(false);
-                                    in_dex = false;
                                 }
                                 Log("Target frame missed. Probably a noisy area. New target calculation needed.");
                                 Hub.Config.BDSP_RNG.AutoRNGSettings.Target = 0;
-                                advances = 0;
-                                Log($"\n\nCurrent states:\n[S0], {tmpS0:X} [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}\nCalculate a target and set it in the Hub Settings. The routine will continue automatically once detected a target.");
-                                while (Hub.Config.BDSP_RNG.AutoRNGSettings.Target == 0)
-                                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                                return false;
                             }
-                            else if (Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexIf > 0 && target-advances > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexIf)
+                            else if (Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil > 0 && target-advances > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil)
                             {
                                 if (!in_dex)
                                 {
@@ -282,12 +295,12 @@ namespace SysBot.Pokemon
                                     in_dex = true;
                                 }
 
-                                if (target - 400 > 7000)
+                                if (target - advances - 400 > 7000)
                                 {
                                     await ResetStick(token).ConfigureAwait(false);
                                     await SetStick(SwitchStick.LEFT, 30_000, 0, 2_000, token).ConfigureAwait(false);
                                 }
-                                else if (target - 400 > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexIf)
+                                else if (target - advances - 400 > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil)
                                 {
                                     await ResetStick(token).ConfigureAwait(false);
                                     await SetStick(SwitchStick.LEFT, 0, 30_000, 1_000, token).ConfigureAwait(false);
@@ -303,10 +316,10 @@ namespace SysBot.Pokemon
                                 await ResetStick(token).ConfigureAwait(false);
                                 await CloseDex(token).ConfigureAwait(false);
                                 in_dex = false;
-                                if (target > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexIf && can_act)
+                                if (target > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil && can_act)
                                 {
                                     await Task.Delay(0_700).ConfigureAwait(false);
-                                    Log("Perfoming Actions");
+                                    Log("Perfoming actions...");
                                     await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
                                     can_act = false;
                                 }
@@ -314,16 +327,21 @@ namespace SysBot.Pokemon
                             else if(can_act)
                             {
                                 await Task.Delay(0_700).ConfigureAwait(false);
-                                Log("Perfoming Actions");
+                                Log("Perfoming actions...");
                                 await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
                                 can_act = false;
                             }
+                            else
+							{
+                                Log($"Target in {target-advances} Advances.");
+                            }
                         }
                         else
-                            Log($"\nAdvance {advances}\n[S0] {tmpS0:X}, [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}\n");
+                            Log($"\nAdvance {advances}\n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}\n");
                     }
                 }
             }
+            return false;
         }
 
         private async Task<bool> AutoCalc(SAV8BS sav, CancellationToken token)
@@ -332,7 +350,7 @@ namespace SysBot.Pokemon
 
             var advances = 0;
             var print = true;
-            var actions = ParseActions(Hub.Config.BDSP_RNG.Actions);
+            var actions = ParseActions(Hub.Config.BDSP_RNG.AutoRNGSettings.Actions);
             var type = Hub.Config.BDSP_RNG.RNGType;
             var mode = Hub.Config.BDSP_RNG.WildMode;
             var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
@@ -343,7 +361,9 @@ namespace SysBot.Pokemon
             var xoro = new Xorshift(tmpS0, tmpS1, tmpS2, tmpS3);
             var check = false;
             var can_act = true;
-            bool in_dex = false;
+            var in_dex = false;
+            var d0_safe = Hub.Config.BDSP_RNG.AutoRNGSettings.Delay != 0 ? true : false;
+            var force_check = false;
             var target = 0;
             int old_target;
             PB8? pk;
@@ -365,7 +385,7 @@ namespace SysBot.Pokemon
             GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
             Log($"[{version}] - Route: {GetLocation(route)} ({route}) [{time}]");
 
-            Log($"Initial States: \n[S0] {tmpS0:X}, [S1] {tmpS1:X}\n[S2] {tmpS2:X}, [S3] {tmpS3:X}");
+            Log($"Initial States: \n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}");
 
             while (!token.IsCancellationRequested)
             {
@@ -389,7 +409,7 @@ namespace SysBot.Pokemon
                         old_target = target;
                         target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false) - Hub.Config.BDSP_RNG.AutoRNGSettings.Delay;
 
-                        if (target == 0)
+                        if (check && old_target < target)
                         {
                             if (in_dex)
                             {
@@ -397,44 +417,47 @@ namespace SysBot.Pokemon
                                 await CloseDex(token).ConfigureAwait(false);
                                 in_dex = false;
                             }
+                            else if (d0_safe)
+                            {
+                                Log("Traget frame missed.");
+                                return false;
+                            }
+                            else
+                            {
+                                force_check = true;
+                            }
+                        }
+
+                        if (target == 0 || force_check)
+                        {
+                            if (in_dex)
+                            {
+                                await ResetStick(token).ConfigureAwait(false);
+                                await CloseDex(token).ConfigureAwait(false);
+                            }
                             
                             await Click(actions.Last(), 0_100, token).ConfigureAwait(false);
                             System.Diagnostics.Stopwatch stopwatch = new();
                             stopwatch.Start();
-                            Log("Starting encounter...");
+                            Log($"\n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}\nStarting encounter...");
                             var offset = GetDestOffset(Hub.Config.BDSP_RNG.CheckMode);
                             pk = null;
                             do
                             {
                                 pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
-                            } while (pk is null || stopwatch.ElapsedMilliseconds > 5_000);
+                            } while (pk is null && stopwatch.ElapsedMilliseconds < 5_000);
                             if (pk is null)
                                 return false;
                             Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
                             Log("If target is missed, calculate a proper delay with DelayCalc mode and retry.");
                             return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null);
                         }
-                        else if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIf > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIf)
+                        else if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIfFailed && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue)
                         {
                             Log($"Target above the limit settings. Rebooting...");
                             return false;
                         }
-                        else if (check && old_target < target || target < 0)
-                        {
-                            if (in_dex)
-                            {
-                                await ResetStick(token).ConfigureAwait(false);
-                                await CloseDex(token).ConfigureAwait(false);
-                                in_dex = false;
-                            }
-
-							else
-							{
-                                Log("Traget frame missed. Rebooting...");
-                                return false;
-							}
-                        }
-                        else if (Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexIf > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexIf)
+                        else if (Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil)
                         {
                             if (!in_dex)
                             {
@@ -448,7 +471,7 @@ namespace SysBot.Pokemon
                                 await ResetStick(token).ConfigureAwait(false);
                                 await SetStick(SwitchStick.LEFT, 30_000, 0, 2_000, token).ConfigureAwait(false);
                             }
-                            else if (target - 1000 > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexIf)
+                            else if (target - 1000 > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue)
                             {
                                 await ResetStick(token).ConfigureAwait(false);
                                 await SetStick(SwitchStick.LEFT, 0, 30_000, 1_000, token).ConfigureAwait(false);
@@ -464,7 +487,7 @@ namespace SysBot.Pokemon
                             await ResetStick(token).ConfigureAwait(false);
                             await CloseDex(token).ConfigureAwait(false);
                             in_dex = false;
-                            if (target > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexIf && can_act)
+                            if (target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue && can_act)
 							{
                                 await Task.Delay(0_700).ConfigureAwait(false);
                                 Log("Perfoming Actions");
@@ -533,14 +556,13 @@ namespace SysBot.Pokemon
                     rng.Next();
                 }
                 advances++;
-            } while (!HandleTarget(pk, false) && (advances - Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIf < Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIf && Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIf > 0));
+            } while (!HandleTarget(pk, false) && (advances - Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue < Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue && Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue > 0));
             return advances;
         }
 
         private async Task CalculateDelay(SAV8BS sav, CancellationToken token)
 		{
-            var actions = ParseActions(Hub.Config.BDSP_RNG.Actions);
-            var mode = Hub.Config.BDSP_RNG.WildMode;
+            var action = Hub.Config.BDSP_RNG.DelayCalcSettings.Action;
             var dest = Hub.Config.BDSP_RNG.CheckMode;
             var advances = 0;
             var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
@@ -552,13 +574,7 @@ namespace SysBot.Pokemon
             var calculatedlist = await Generator(sav, token, false, 500, xoro).ConfigureAwait(false);
             int used;
 
-            if (actions.Count <= 0 || actions.Count > 1)
-            {
-                Log("\nYou must input at least One and only One Action to trigger the encounter in the Hub settings.\n");
-                return;
-            }
-
-            Log($"Initial State:\n[S0]: {tmpS0:X}, [S1]: {tmpS1:X}\n[S2]: {tmpS2:X}, [S3]: {tmpS3:X}\n");
+            Log($"Initial State:\n[S0]: {tmpS0:X8}, [S1]: {tmpS1:X8}\n[S2]: {tmpS2:X8}, [S3]: {tmpS3:X8}\n");
 
             while (!token.IsCancellationRequested)
 			{
@@ -579,7 +595,7 @@ namespace SysBot.Pokemon
 
                     if (ramS0 == tmpS0 && ramS1 == tmpS1 && ramS2 == tmpS2 && ramS3 == tmpS3)
                     {
-                        await Click(actions[0], 0_100, token).ConfigureAwait(false);
+                        await Click(action, 0_100, token).ConfigureAwait(false);
                         used = advances;
                         PB8? pk;
                         Log($"Waiting for pokemon...");
@@ -591,7 +607,7 @@ namespace SysBot.Pokemon
 
                         var hit = pk.EncryptionConstant;
 
-                        Log($"\nFinal State:\n[S0]: {tmpS0:X}, [S1]: {tmpS1:X}\n[S2]: {tmpS2:X}, [S3]: {tmpS3:X}\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
+                        Log($"\nFinal State:\n[S0]: {tmpS0:X8}, [S1]: {tmpS1:X8}\n[S2]: {tmpS2:X8}, [S3]: {tmpS3:X8}\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
 
                         var result = 0;
                         var i = 0;
@@ -605,8 +621,8 @@ namespace SysBot.Pokemon
                                 break;
                             }
                         }
-
-                        var delay = result - used;
+                        //Log($"Result: {result}, used: {used}");
+                        var delay = (result-used) != -1 ? (result-used) : 0;
                         Log($"\nCalculated delay is {delay}.\n");
 
                         return;
@@ -681,7 +697,7 @@ namespace SysBot.Pokemon
 
                 result.Add(pk);
 
-                var msg = $"\nAdvances: {advance}\n[S0] {states[0]:X}, [S1] {states[1]:X}\n[S2] {states[2]:X}, [S3] {states[3]:X}";
+                var msg = $"\nAdvances: {advance}\n[S0] {states[0]:X8}, [S1] {states[1]:X8}\n[S2] {states[2]:X8}, [S3] {states[3]:X8}";
                 if (Hub.Config.BDSP_RNG.WildMode is not WildMode.None)
                     msg = $"{msg}\nSpecies: {(Species)pk.Species} (EncounterSlot: {pk.Move1})";
                 msg = $"{msg}\n{GetString(pk)}";

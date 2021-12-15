@@ -17,13 +17,17 @@ namespace SysBot.Pokemon
         [Category(RNG), Description("Bot RNG Routine.")]
         public RNGRoutine Routine { get; set; } = RNGRoutine.DelayCalc;
 
-        [Category(RNG), Description("AutoRNG Settings.")]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public AutoRNGSettings AutoRNGSettings { get; set; } = new();
-
         [Category(RNG), Description("RNG Generator Settings.")]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public GeneratorSettings GeneratorSettings { get; set; } = new();
+
+        [Category(RNG), Description("DelayCalc Settings.")]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public DelaySettings DelayCalcSettings { get; set; } = new();
+
+        [Category(RNG), Description("AutoRNG Settings.")]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public AutoRNGSettings AutoRNGSettings { get; set; } = new();
 
         [Category(RNG), Description("Select the RNG you want to perform or calculate.")]
         public RNGType RNGType { get; set; } = 0;
@@ -33,9 +37,6 @@ namespace SysBot.Pokemon
 
         [Category(RNG), Description("Select the wild encounter you want to calculate.")]
         public WildMode WildMode { get; set; } = WildMode.None;
-
-        [Category(RNG), Description("Actions to perform to hit the target. Available options: A, B, X, Y, DUP, DDOWN, DLEFT, DRIGHT, PLUS, MINUS, RSTICK, LSTICK, L, R, ZL, ZR, HOME, CAPTURE")]
-        public string Actions { get; set; } = "A, A";
 
         private int _completedRNGs;
 
