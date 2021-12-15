@@ -271,7 +271,7 @@ namespace SysBot.Pokemon
 
         public List<int> GetEncounterSlots(GameVersion version, int location, GameTime time, WildMode mode)
         {
-            string res_data = Properties.Resources.FieldEncountTable_d;
+            string res_data = version is GameVersion.BD ? Properties.Resources.FieldEncountTable_d : Properties.Resources.FieldEncountTable_p;
             EncounterTable? ectable = JsonConvert.DeserializeObject<EncounterTable>(res_data);
             Table current_table = new();
             var list = new List<int>();
@@ -299,7 +299,7 @@ namespace SysBot.Pokemon
                                     list[i] = specie.monsNo;
                                     i++;
                                 }
-                            else if (current_table.day != null)
+                            else if ((time is GameTime.Day || time is GameTime.Sunset) && current_table.day != null)
                                 foreach (var specie in current_table.day)
                                 {
                                     list[i] = specie.monsNo;
