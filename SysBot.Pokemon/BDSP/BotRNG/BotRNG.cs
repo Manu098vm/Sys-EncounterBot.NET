@@ -360,12 +360,13 @@ namespace SysBot.Pokemon
             var tmpS2 = BitConverter.ToUInt32(tmpRamState, 8);
             var tmpS3 = BitConverter.ToUInt32(tmpRamState, 12);
             var xoro = new Xorshift(tmpS0, tmpS1, tmpS2, tmpS3);
+            var target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false) - Hub.Config.BDSP_RNG.AutoRNGSettings.Delay;
+            var d0_safe = Hub.Config.BDSP_RNG.AutoRNGSettings.Delay != 0;
+            var modifier = Hub.Config.BDSP_RNG.RNGType is RNGType.MysteryGift ? 1 : 0;
             var check = false;
             var can_act = true;
             var in_dex = false;
-            var d0_safe = Hub.Config.BDSP_RNG.AutoRNGSettings.Delay != 0 ? true : false;
             var force_check = false;
-            var target = 0;
             int old_target;
             PB8? pk;
     
@@ -386,7 +387,7 @@ namespace SysBot.Pokemon
             GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
             Log($"[{version}] - Route: {GetLocation(route)} ({route}) [{time}]");
 
-            Log($"Initial States: \n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}");
+            Log($"Initial States: \n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}\nTarget in {target}.");
 
             while (!token.IsCancellationRequested)
             {
@@ -408,7 +409,7 @@ namespace SysBot.Pokemon
                     if (ramS0 == tmpS0 && ramS1 == tmpS1 && ramS2 == tmpS2 && ramS3 == tmpS3)
 					{
                         old_target = target;
-                        target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false) - Hub.Config.BDSP_RNG.AutoRNGSettings.Delay;
+                        target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false) - Hub.Config.BDSP_RNG.AutoRNGSettings.Delay - modifier;
 
                         if (check && old_target < target)
                         {
