@@ -5,7 +5,7 @@ namespace SysBot.Pokemon
     public interface IPokeDataOffsetsBS
     {
         public IReadOnlyList<long> MainRNGState { get; }
-        public IReadOnlyList<long> PlayerPrefsProvider { get; }
+        public IReadOnlyList<long> RoamerSeedPointer { get; }
         public IReadOnlyList<long> EggSeedPointer { get; }
         public IReadOnlyList<long> EggStepPointer { get; }
         public IReadOnlyList<long> LocationPointer { get; }

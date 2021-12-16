@@ -31,6 +31,7 @@
         Team,
         Box,
         Wild,
+        Seed,
 	}
 
     public enum WildMode

@@ -353,6 +353,7 @@ namespace SysBot.Pokemon
             var actions = ParseActions(Hub.Config.BDSP_RNG.AutoRNGSettings.Actions);
             var type = Hub.Config.BDSP_RNG.RNGType;
             var mode = Hub.Config.BDSP_RNG.WildMode;
+            var checkmode = Hub.Config.BDSP_RNG.CheckMode;
             var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
             var tmpS0 = BitConverter.ToUInt32(tmpRamState, 0);
             var tmpS1 = BitConverter.ToUInt32(tmpRamState, 4);
@@ -423,9 +424,7 @@ namespace SysBot.Pokemon
                                 return false;
                             }
                             else
-                            {
                                 force_check = true;
-                            }
                         }
 
                         if (target == 0 || force_check)
@@ -440,14 +439,33 @@ namespace SysBot.Pokemon
                             System.Diagnostics.Stopwatch stopwatch = new();
                             stopwatch.Start();
                             Log($"\n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}\nStarting encounter...");
-                            var offset = GetDestOffset(Hub.Config.BDSP_RNG.CheckMode);
+                            var offset = GetDestOffset(checkmode);
                             pk = null;
+                            uint seed = 0;
                             do
                             {
-                                pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
-                            } while (pk is null && stopwatch.ElapsedMilliseconds < 5_000);
+                                if (checkmode is CheckMode.Seed && type is RNGType.Roamer)
+                                {
+                                    var species = (int)Hub.Config.StopConditions.StopOnSpecies;
+                                    pk = new PB8
+                                    {
+                                        TID = sav.TID,
+                                        SID = sav.SID,
+                                        OT_Name = sav.OT,
+                                        Species = (species != 0) ? species : 482,
+                                    };
+                                    seed = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(await PointerAll(offset, token).ConfigureAwait(false), 4, token).ConfigureAwait(false), 0);
+                                    pk = Calc.CalculateFromSeed(pk, Shiny.Random, type, seed);
+                                }
+                                else
+                                {
+                                    seed = 1;
+                                    pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
+                                }
+                            } while ((pk is null || seed == 0) && stopwatch.ElapsedMilliseconds < 5_000);
                             if (pk is null)
                                 return false;
+
                             Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
                             Log("If target is missed, calculate a proper delay with DelayCalc mode and retry.");
                             return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null);
@@ -471,7 +489,7 @@ namespace SysBot.Pokemon
                                 await ResetStick(token).ConfigureAwait(false);
                                 await SetStick(SwitchStick.LEFT, 30_000, 0, 2_000, token).ConfigureAwait(false);
                             }
-                            else if (target - 1000 > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue)
+                            else if (target - 1000 > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil)
                             {
                                 await ResetStick(token).ConfigureAwait(false);
                                 await SetStick(SwitchStick.LEFT, 0, 30_000, 1_000, token).ConfigureAwait(false);
@@ -542,7 +560,7 @@ namespace SysBot.Pokemon
                 TID = sav.TID,
                 SID = sav.SID,
                 OT_Name = sav.OT,
-                Species = (species != 0) ? species : 1,
+                Species = (species != 0) ? species : 482,
             };
 
 			do
@@ -598,12 +616,30 @@ namespace SysBot.Pokemon
                         await Click(action, 0_100, token).ConfigureAwait(false);
                         used = advances;
                         PB8? pk;
+                        uint seed = 0;
                         Log($"Waiting for pokemon...");
                         var offset = GetDestOffset(dest);
                         do
                         {
-                            pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
-                        } while (pk is null);
+                            if (dest is CheckMode.Seed)
+                            {
+                                var species = (int)Hub.Config.StopConditions.StopOnSpecies;
+                                pk = new PB8
+                                {
+                                    TID = sav.TID,
+                                    SID = sav.SID,
+                                    OT_Name = sav.OT,
+                                    Species = (species != 0) ? species : 482,
+                                };
+                                seed = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(await PointerAll(offset, token).ConfigureAwait(false), 4, token).ConfigureAwait(false), 0);
+                                pk = Calc.CalculateFromSeed(pk, Shiny.Random, RNGType.Roamer, seed);
+                            }
+                            else
+                            {
+                                seed = 1;
+                                pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
+                            }
+                        } while (pk is null || seed == 0);
 
                         var hit = pk.EncryptionConstant;
 
@@ -776,6 +812,7 @@ namespace SysBot.Pokemon
                 CheckMode.Team => Offsets.PartyStartPokemonPointer,
                 CheckMode.Box => Offsets.BoxStartPokemonPointer,
                 CheckMode.Wild => Offsets.OpponentPokemonPointer,
+                CheckMode.Seed => Offsets.RoamerSeedPointer,
                 _ => Offsets.OpponentPokemonPointer,
             };
         }

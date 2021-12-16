@@ -193,7 +193,7 @@ namespace SysBot.Pokemon
                 Log("Back in the overworld!");
             }
             else
-                await Task.Delay(15_000 + timing.ExtraTimeLoadGame, token).ConfigureAwait(false);
+                await Task.Delay(5_000 + timing.ExtraTimeLoadGame, token).ConfigureAwait(false);
         }
 
         public async Task ResumeStart(PokeBotHubConfig config, CancellationToken token)
@@ -201,7 +201,7 @@ namespace SysBot.Pokemon
             var timing = config.Timings;
 
             // Switch Logo lag, skip cutscene, game load screen
-            await Task.Delay(15_000 + timing.ExtraTimeLoadGame, token).ConfigureAwait(false);
+            await Task.Delay(17_000 + timing.ExtraTimeLoadGame, token).ConfigureAwait(false);
 
             for (int i = 0; i < 10; i++)
                 await Click(A, 1_000, token).ConfigureAwait(false);

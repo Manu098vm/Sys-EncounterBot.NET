@@ -131,17 +131,7 @@ namespace SysBot.Pokemon
 
             pk.SetAbilityIndex((int)xoro.NextUInt(2));
 
-            var genderRatio = PersonalTable.BDSP.GetFormEntry(pk.Species, pk.Form).Gender;
-            if (genderRatio == PersonalInfo.RatioMagicGenderless)
-                pk.Gender = (int)Gender.Genderless;
-            else if (genderRatio == PersonalInfo.RatioMagicMale)
-                pk.Gender = (int)Gender.Male;
-            else if (genderRatio == PersonalInfo.RatioMagicFemale)
-                pk.Gender = (int)Gender.Female;
-            else
-                pk.Gender = ((int)xoro.NextUInt(N_GENDER) + 1 < genderRatio) ? 1 : 0;
-
-            pk.SetNature((int)xoro.NextUInt(N_NATURE));
+            pk.Nature = (int)xoro.NextUInt(N_NATURE);
 
             return pk;
         }
