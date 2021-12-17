@@ -1,36 +1,34 @@
-﻿using PKHeX.Core;
-using System;
+﻿using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using System;
+using PKHeX.Core;
 using static SysBot.Base.SwitchButton;
+using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsets;
 
 namespace SysBot.Pokemon
 {
-    public class FossilBot : PokeRoutineExecutor8, IEncounterBot
+    public sealed class EncounterBotFossil : EncounterBot
     {
-        private readonly PokeBotHub<PK8> Hub;
-        private readonly FossilSettings Settings;
-        private readonly BotCompleteCounts Count;
-        private readonly IDumper DumpSetting;
-        private readonly int[] DesiredMinIVs;
-        private readonly int[] DesiredMaxIVs;
-        protected SWSH.PokeDataPointers Pointers { get; private set; } = new SWSH.PokeDataPointers();
-        public ICountSettings Counts => Settings;
-
-        public FossilBot(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
+        private FossilSettings Settings;
+        private new readonly BotCompleteCounts Counts;
+        private readonly IDumper DumpSettings;
+        private readonly int[] DesiredMinIV;
+        private readonly int[] DesiredMaxIV;
+        private int encounterCount;
+        public EncounterBotFossil(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg, hub)
         {
-            Hub = hub;
-            Settings = Hub.Config.SWSH_Fossil;
-            Count = Hub.Counts;
-            DumpSetting = Hub.Config.Folder;
-            StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
+            encounterCount = 0;
+            Settings = Hub.Config.SWSH_Encounter.FossilSettings;
+            Counts = Hub.Counts;
+            DumpSettings = Hub.Config.Folder;
+            StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIV, out DesiredMaxIV);
         }
 
-        private int encounterCount;
-
-        public override async Task MainLoop(CancellationToken token)
+        protected override async Task EncounterLoop(SAV8SWSH sav, CancellationToken token)
         {
+            
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
 
@@ -44,14 +42,19 @@ namespace SysBot.Pokemon
                 return;
             }
 
-            //TODO: Check free box space
-
             try
             {
-                await InitializeHardware(Settings, token).ConfigureAwait(false);
+                await InitializeHardware(Hub.Config.SWSH_Encounter, token).ConfigureAwait(false);
                 Log($"Starting main FossilBot loop.");
                 Config.IterateNextRoutine();
-                await InnerLoop(reviveCount, pouchData, counts, token).ConfigureAwait(false);
+
+                int maxcount;
+                if (Settings.MaxRevivals > 0 && Settings.MaxRevivals <= reviveCount)
+                    maxcount = Settings.MaxRevivals;
+                else
+                    maxcount = reviveCount;
+
+                await InnerLoop(maxcount, counts, token).ConfigureAwait(false);
             }
 #pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception e)
@@ -60,13 +63,13 @@ namespace SysBot.Pokemon
                 Log(e.Message);
             }
 
-            Log($"Ending {nameof(FossilBot)} loop.");
+            Log($"Ending {nameof(EncounterBotFossil)} loop.");
             await HardStop().ConfigureAwait(false);
         }
 
-        private async Task InnerLoop(int reviveCount, byte[] pouchData, FossilCount counts, CancellationToken token)
+        private async Task InnerLoop(int reviveCount, FossilCount counts, CancellationToken token)
         {
-            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.SWSH_FossilBot)
+            while (!token.IsCancellationRequested)
             {
                 if (encounterCount != 0 && encounterCount % reviveCount == 0)
                 {
@@ -75,6 +78,9 @@ namespace SysBot.Pokemon
                     await CloseGame(Hub.Config, token).ConfigureAwait(false);
                     await StartGame(Hub.Config, token).ConfigureAwait(false);
                 }
+
+                while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                    await Click(B, 0_400, token).ConfigureAwait(false);
 
                 await ReviveFossil(counts, token).ConfigureAwait(false);
                 Log("Fossil revived. Checking details...");
@@ -88,7 +94,7 @@ namespace SysBot.Pokemon
                     var showdowntext = ShowdownParsing.GetShowdownText(pk);
                     if (pk.IsShiny)
                     {
-                        Count.AddShinyEncounters();
+                        Counts.AddShinyEncounters();
                         if (pk.ShinyXor == 0)
                             showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
                         else
@@ -100,15 +106,15 @@ namespace SysBot.Pokemon
 
 
                     Log($"Encounter: {encounterCount}:{Environment.NewLine}{showdowntext}{Environment.NewLine}");
-                    if (DumpSetting.Dump)
+                    if (DumpSettings.Dump)
                     {
-                        DumpPokemon(DumpSetting.DumpFolder, "fossil", pk);
-                        Count.AddCompletedDumps();
+                        DumpPokemon(DumpSettings.DumpFolder, "fossil", pk);
+                        Counts.AddCompletedDumps();
                     }
 
                     Settings.AddCompletedFossils();
 
-                    if (StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
+                    if (StopConditionSettings.EncounterFound(pk, DesiredMinIV, DesiredMaxIV, Hub.Config.StopConditions, null))
                     {
                         if (Hub.Config.StopConditions.CaptureVideoClip)
                         {
@@ -120,24 +126,9 @@ namespace SysBot.Pokemon
                         await DetachController(token).ConfigureAwait(false);
                         return;
                     }
-
-                    IsWaiting = true;
-                    while (IsWaiting)
-                        await Task.Delay(1_000, token).ConfigureAwait(false);
-
-                    while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                        await Click(B, 0_200, token).ConfigureAwait(false);
                 }
             }
         }
-
-        public override async Task HardStop()
-        {
-            await CleanExit(Settings, CancellationToken.None).ConfigureAwait(false);
-        }
-
-        private bool IsWaiting;
-        public void Acknowledge() => IsWaiting = false;
 
         private async Task ReviveFossil(FossilCount count, CancellationToken token)
         {
@@ -163,12 +154,13 @@ namespace SysBot.Pokemon
                 await Click(DDOWN, 300, token).ConfigureAwait(false);
 
             // A spam through accepting the fossil and agreeing to revive.
-            for (int i = 0; i < 8; i++)
+            while (!await IsGiftFound(token).ConfigureAwait(false))
                 await Click(A, 0_400, token).ConfigureAwait(false);
+        }
 
-            // Safe to mash B from here until we get out of all menus.
-            while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                await Click(B, 0_400, token).ConfigureAwait(false);
+        public override async Task HardStop()
+        {
+            await CleanExit(Hub.Config.SWSH_Encounter, CancellationToken.None).ConfigureAwait(false);
         }
     }
 }

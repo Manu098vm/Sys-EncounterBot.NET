@@ -41,10 +41,6 @@ namespace SysBot.Pokemon
 
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public FossilSettings SWSH_Fossil { get; set; } = new();
-
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
         public EncounterSettings SWSH_Encounter { get; set; } = new();
 
         [Category(Bots)]

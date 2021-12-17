@@ -70,7 +70,7 @@ namespace SysBot.Pokemon
         protected abstract Task EncounterLoop(SAV8SWSH sav, CancellationToken token);
 
         // return true if breaking loop
-        protected async Task<bool> HandleEncounter(PK8 pk, CancellationToken token)
+        protected async Task<bool> HandleEncounter(PK8? pk, CancellationToken token)
         {
             if (pk == null)
                 return false;

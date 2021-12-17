@@ -53,6 +53,11 @@
         Gifts,
 
         /// <summary>
+        /// Bot will soft reset Gifts
+        /// </summary>
+        Fossils,
+
+        /// <summary>
         /// Bot will soft reset for in-game trades
         /// </summary>
         Trades,

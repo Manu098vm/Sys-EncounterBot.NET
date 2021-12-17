@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using PKHeX.Core;
 using static SysBot.Base.SwitchButton;
@@ -23,10 +24,13 @@ namespace SysBot.Pokemon
             if(type is EncounterMode.Trades)
                 Log("Be sure to have the requested Pokémon in Box 1 Slot 1!");
 
+            var sw = new Stopwatch();
+            var time = (long)0;
             while (!token.IsCancellationRequested)
             {
                 if(!skiproutine)
                 {
+                    sw.Restart();
                     PK8? pk;
                     Log($"Looking for {type}...");
 
@@ -41,7 +45,13 @@ namespace SysBot.Pokemon
                         }
 
                         pk = await ReadUntilPresent(monoffset, 0_050, 0_050, BoxFormatSlotSize, token).ConfigureAwait(false);
-                    } while (pk is null || isgift);
+
+                        if (time == 0)
+                        {
+                            time = sw.ElapsedMilliseconds + 10_000;
+                            sw.Restart();
+                        }
+                    } while (pk is null && !isgift && sw.ElapsedMilliseconds < time);
 
                     //SearchUtil.HashByDetails(pkoriginal) == SearchUtil.HashByDetails(pknew)
 

@@ -5,6 +5,30 @@
         WildArea,
         Route5,
     }
+
+    public enum FossilSpecies
+    {
+        /// <summary>
+        /// Bot will revive Dracozolt
+        /// </summary>
+        Dracozolt,
+
+        /// <summary>
+        /// Bot will revive Arctozolt
+        /// </summary>
+        Arctozolt,
+
+        /// <summary>
+        /// Bot will revive Dracovish
+        /// </summary>
+        Dracovish,
+
+        /// <summary>
+        /// Bot will revive Arctovish
+        /// </summary>
+        Arctovish,
+    }
+
     public enum LairSpecies : ushort
     {
         None = 0,

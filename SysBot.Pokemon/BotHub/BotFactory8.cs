@@ -12,7 +12,6 @@ namespace SysBot.Pokemon
             //PokeRoutineType.SWSH_OverworldScan => new OverworldScan(cfg, Hub),
             PokeRoutineType.BDSP_RNG => new BDSPBotRNG(cfg, Hub),
             PokeRoutineType.SWSH_EggBot => new EggBot(cfg, Hub),
-            PokeRoutineType.SWSH_FossilBot => new FossilBot(cfg, Hub),
             PokeRoutineType.SWSH_MaxLair => new MaxLairBot(cfg, Hub),
             PokeRoutineType.SWSH_EncounterBot => Hub.Config.SWSH_Encounter.EncounteringType switch
 			{
@@ -20,6 +19,7 @@ namespace SysBot.Pokemon
                 EncounterMode.HorizontalLine => new EncounterBotLine(cfg, Hub),
                 EncounterMode.VerticalLine => new EncounterBotLine(cfg, Hub),
                 EncounterMode.Keldeo => new EncounterBotKeldeo(cfg, Hub),
+                EncounterMode.Fossils => new EncounterBotFossil(cfg, Hub),
                 EncounterMode.LiveStatsChecking => new EncounterBotLive(cfg, Hub),
                 _ => new EncounterBotReset(cfg, Hub),
 			},
@@ -33,7 +33,6 @@ namespace SysBot.Pokemon
             PokeRoutineType.LGPE_EncounterBot => true,
             PokeRoutineType.SWSH_OverworldScan => true,
             PokeRoutineType.SWSH_EggBot => true,
-            PokeRoutineType.SWSH_FossilBot => true,
             PokeRoutineType.SWSH_MaxLair => true,
             PokeRoutineType.SWSH_EncounterBot => true,
             PokeRoutineType.BDSP_RNG => true,

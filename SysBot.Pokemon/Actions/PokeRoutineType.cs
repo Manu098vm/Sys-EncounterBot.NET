@@ -12,8 +12,7 @@
         SWSH_EncounterBot = 4,
         SWSH_MaxLair = 5,
         SWSH_EggBot = 6,
-        SWSH_FossilBot = 7,
-        BDSP_RNG = 8,
-        RemoteControl = 9,
+        BDSP_RNG = 7,
+        RemoteControl = 8,
     }
 }

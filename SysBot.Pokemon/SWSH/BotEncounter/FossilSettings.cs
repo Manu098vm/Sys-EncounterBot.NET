@@ -5,7 +5,7 @@ using SysBot.Base;
 
 namespace SysBot.Pokemon
 {
-    public class FossilSettings : IBotStateSettings, ICountSettings
+    public class FossilSettings : ICountSettings
     {
         private const string Fossil = nameof(Fossil);
         private const string Counts = nameof(Counts);
@@ -14,8 +14,8 @@ namespace SysBot.Pokemon
         [Category(Fossil), Description("Species of fossil Pokémon to hunt for.")]
         public FossilSpecies Species { get; set; } = FossilSpecies.Dracozolt;
 
-        [Category(Fossil), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
-        public bool ScreenOff { get; set; } = false;
+        [Category(Fossil), Description("Max revivals. Useful if you have limited box spaces. Ignored if 0.")]
+        public int MaxRevivals { get; set; } = 0;
 
         private int _completedFossils;
 

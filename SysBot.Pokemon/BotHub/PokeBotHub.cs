@@ -17,11 +17,11 @@ namespace SysBot.Pokemon
         }
 
         public readonly PokeBotHubConfig Config;
-        public readonly BotSynchronizer BotSync;
+        public readonly BotSynchronizer? BotSync;
         public readonly BotCompleteCounts Counts;
 
         /// <summary> Trade Bots only, used to delegate multi-player tasks </summary>
         public readonly ConcurrentPool<PokeRoutineExecutorBase> Bots = new();
-        public bool TradeBotsReady => !Bots.All(z => z.Config.CurrentRoutineType == PokeRoutineType.Idle);
+        public bool BotsReady => !Bots.All(z => z.Config.CurrentRoutineType == PokeRoutineType.Idle);
     }
 }

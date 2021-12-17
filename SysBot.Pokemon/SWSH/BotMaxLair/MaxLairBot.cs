@@ -53,7 +53,7 @@ namespace SysBot.Pokemon
                 Log(e.Message);
             }
 
-            Log($"Ending {nameof(FossilBot)} loop.");
+            Log($"Ending {nameof(MaxLairBot)} loop.");
             await HardStop().ConfigureAwait(false);
         }
 
