@@ -12,12 +12,11 @@ namespace SysBot.Pokemon
     public abstract class EncounterBot : PokeRoutineExecutor8, IEncounterBot
     {
         protected readonly PokeBotHub<PK8> Hub;
-        private readonly BotCompleteCounts Count;
         public readonly IReadOnlyList<string> UnwantedMarks;
         private readonly IDumper DumpSetting;
-        private readonly EncounterSettings Settings;
-        private readonly int[] DesiredMinIVs;
-        private readonly int[] DesiredMaxIVs;
+        protected readonly EncounterSettings Settings;
+        protected readonly int[] DesiredMinIVs;
+        protected readonly int[] DesiredMaxIVs;
         protected readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
         public ICountSettings Counts => Settings;
         protected SWSH.PokeDataPointers Pointers { get; private set; } = new SWSH.PokeDataPointers();
@@ -25,7 +24,6 @@ namespace SysBot.Pokemon
         protected EncounterBot(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
-            Count = Hub.Counts;
             Settings = Hub.Config.SWSH_Encounter;
             DumpSetting = Hub.Config.Folder;
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
@@ -80,7 +78,6 @@ namespace SysBot.Pokemon
 
             if (pk.IsShiny)
             {
-                Count.AddShinyEncounters();
                 if (pk.ShinyXor == 0)
                     print = print.Replace("Shiny: Yes", "Shiny: Square");
                 else
@@ -91,21 +88,12 @@ namespace SysBot.Pokemon
 
             var legendary = Legal.Legends.Contains(pk.Species) || Legal.SubLegends.Contains(pk.Species);
             if (legendary)
-            {
-                Count.AddCompletedLegends();
                 Settings.AddCompletedLegends();
-            }
             else
-            {
-                Count.AddCompletedEncounters();
                 Settings.AddCompletedEncounters();
-            }
 
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
-            {
                 DumpPokemon(DumpSetting.DumpFolder, legendary ? "legends" : "encounters", pk);
-                Count.AddCompletedDumps();
-            }
 
             if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, UnwantedMarks))
                 return false;

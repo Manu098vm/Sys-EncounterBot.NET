@@ -18,10 +18,6 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("ConsoleLanguageSpecific screen detection method only. Set your Switch console language here for bots to work properly. All consoles should be using the same language.")]
         public ConsoleLanguageParameter ConsoleLanguage { get; set; }
 
-        [Category(Operation)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public CountSettings Counts { get; set; } = new();
-
         [Category(Operation), Description("Stop conditions.")]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public StopConditionSettings StopConditions { get; set; } = new();
@@ -42,10 +38,6 @@ namespace SysBot.Pokemon
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public EncounterSettings SWSH_Encounter { get; set; } = new();
-
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public MaxLairSettings SWSH_MaxLair { get; set; } = new();
 
         // Integration
 

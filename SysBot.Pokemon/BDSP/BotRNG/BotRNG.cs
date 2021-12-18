@@ -16,7 +16,6 @@ namespace SysBot.Pokemon
     {
         private readonly PokeBotHub<PK8> Hub;
         private readonly RNGSettings Settings;
-        private readonly BotCompleteCounts Count;
         private readonly RNG8b Calc;
         private readonly int[] DesiredMinIVs;
         private readonly int[] DesiredMaxIVs;
@@ -44,7 +43,6 @@ namespace SysBot.Pokemon
         {
             Hub = hub;
             Settings = hub.Config.BDSP_RNG;
-            Count = Hub.Counts;
             DumpSetting = hub.Config.Folder;
             Calc = new RNG8b();
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
@@ -765,10 +763,7 @@ namespace SysBot.Pokemon
                 return false;
 
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder) && dump)
-            {
                 DumpPokemon(DumpSetting.DumpFolder, "BDSP_Layout_PKM", pk);
-                Count.AddCompletedDumps();
-            }
 
             return true;
         }

@@ -8,6 +8,11 @@
         LiveStatsChecking,
 
         /// <summary>
+        /// Bot will log any battle-based encounter
+        /// </summary>
+        MaxLair,
+
+        /// <summary>
         /// Bot will soft reset Eternatus
         /// </summary>
         Eternatus,

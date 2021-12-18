@@ -13,12 +13,10 @@ namespace SysBot.Pokemon
         public PokeBotHub(PokeBotHubConfig config)
         {
             Config = config;
-            Counts = new BotCompleteCounts(config.Counts);
         }
 
         public readonly PokeBotHubConfig Config;
         public readonly BotSynchronizer? BotSync;
-        public readonly BotCompleteCounts Counts;
 
         /// <summary> Trade Bots only, used to delegate multi-player tasks </summary>
         public readonly ConcurrentPool<PokeRoutineExecutorBase> Bots = new();

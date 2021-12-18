@@ -11,7 +11,6 @@ namespace SysBot.Pokemon
     public class EggBot : PokeRoutineExecutor8, IEncounterBot
     {
         private readonly PokeBotHub<PK8> Hub;
-        private readonly BotCompleteCounts Count;
         private readonly IDumper DumpSetting;
         private readonly int[] DesiredMinIVs;
         private readonly int[] DesiredMaxIVs;
@@ -23,7 +22,6 @@ namespace SysBot.Pokemon
         {
             Hub = hub;
             Settings = Hub.Config.SWSH_Eggs;
-            Count = Hub.Counts;
             DumpSetting = Hub.Config.Folder;
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
         }
@@ -106,7 +104,6 @@ namespace SysBot.Pokemon
             var print = Hub.Config.StopConditions.GetPrintName(pk);
             if (pk.IsShiny)
             {
-                Count.AddShinyEncounters();
                 if (pk.ShinyXor == 0)
                     print = print.Replace("Shiny: Yes", "Shiny: Square");
                 else
@@ -114,13 +111,9 @@ namespace SysBot.Pokemon
             }
             Log($"Encounter: {encounterCount}{Environment.NewLine}{print}{Environment.NewLine}");
             Settings.AddCompletedEggs();
-            Count.AddCompletedEggs();
 
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
-            {
                 DumpPokemon(DumpSetting.DumpFolder, "egg", pk);
-                Count.AddCompletedDumps();
-            }
 
             if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
                 return true;

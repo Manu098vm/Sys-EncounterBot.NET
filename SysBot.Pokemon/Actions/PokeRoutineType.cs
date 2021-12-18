@@ -10,9 +10,8 @@
         LGPE_EncounterBot = 2,
         SWSH_OverworldScan = 3,
         SWSH_EncounterBot = 4,
-        SWSH_MaxLair = 5,
-        SWSH_EggBot = 6,
-        BDSP_RNG = 7,
-        RemoteControl = 8,
+        SWSH_EggBot = 5,
+        BDSP_RNG = 6,
+        RemoteControl = 7,
     }
 }

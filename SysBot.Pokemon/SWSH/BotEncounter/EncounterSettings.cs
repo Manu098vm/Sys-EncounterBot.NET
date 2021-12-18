@@ -24,6 +24,10 @@ namespace SysBot.Pokemon
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public FossilSettings FossilSettings { get; set; } = new();
 
+        [Category(Encounter)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public MaxLairSettings MaxLairSettings { get; set; } = new();
+
         [Category(Counts), Description("Encountered Wild Pokémon")]
         public int CompletedEncounters
         {
