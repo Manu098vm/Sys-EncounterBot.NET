@@ -32,7 +32,7 @@ namespace SysBot.Pokemon
             StopConditionSettings.ReadUnwantedMarks(Hub.Config.StopConditions, out UnwantedMarks);
         }
 
-        private int encounterCount;
+        protected int encounterCount;
 
         public override async Task MainLoop(CancellationToken token)
         {

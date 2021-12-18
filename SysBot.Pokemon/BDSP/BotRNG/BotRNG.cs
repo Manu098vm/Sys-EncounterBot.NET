@@ -346,8 +346,6 @@ namespace SysBot.Pokemon
 
         private async Task<bool> AutoCalc(SAV8BS sav, CancellationToken token)
 		{
-            Log("Encounter Slot calculations for wild Pokémon have to be calculated through Pokefinder. Please use ExternalCalc Mode for that.");
-
             var advances = 0;
             var print = true;
             var actions = ParseActions(Hub.Config.BDSP_RNG.AutoRNGSettings.Actions);
