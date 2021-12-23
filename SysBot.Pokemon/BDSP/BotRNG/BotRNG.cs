@@ -250,7 +250,7 @@ namespace SysBot.Pokemon
                         if (auto)
 						{
 							target = Hub.Config.BDSP_RNG.AutoRNGSettings.Target;
-							if (target != 0 && advances == target)
+							if (target != 0 && advances >= target)
                             {
                                 if (in_dex)
                                 {
@@ -356,7 +356,7 @@ namespace SysBot.Pokemon
             var tmpS2 = BitConverter.ToUInt32(tmpRamState, 8);
             var tmpS3 = BitConverter.ToUInt32(tmpRamState, 12);
             var xoro = new Xorshift(tmpS0, tmpS1, tmpS2, tmpS3);
-            var target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false) - Hub.Config.BDSP_RNG.AutoRNGSettings.Delay;
+            var target = Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue < 1000000 ? await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false) - Hub.Config.BDSP_RNG.AutoRNGSettings.Delay : 0;
             var d0_safe = Hub.Config.BDSP_RNG.AutoRNGSettings.Delay != 0;
             var modifier = Hub.Config.BDSP_RNG.RNGType is RNGType.MysteryGift ? 1 : 0;
             var check = false;
@@ -778,11 +778,8 @@ namespace SysBot.Pokemon
         {
             Log("Caching session offsets...");
             RNGOffset = await SwitchConnection.PointerAll(Offsets.MainRNGState, token).ConfigureAwait(false);
-            await Task.Delay(1_000).ConfigureAwait(false);
             PlayerLocation = await SwitchConnection.PointerAll(Offsets.LocationPointer, token).ConfigureAwait(false);
-            await Task.Delay(1_000).ConfigureAwait(false);
             DayTime = await SwitchConnection.PointerAll(Offsets.DayTimePointer, token).ConfigureAwait(false);
-            await Task.Delay(1_000).ConfigureAwait(false);
             //Click useless key to actually initialize simulated controller
             await Click(SwitchButton.L, 0_050, token).ConfigureAwait(false);
         }

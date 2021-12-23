@@ -11,13 +11,15 @@ namespace SysBot.Pokemon
         public abstract IReadOnlyList<long> EggSeedPointer { get; }
         public abstract IReadOnlyList<long> EggStepPointer { get; }
         public abstract IReadOnlyList<long> LocationPointer { get; }
-        public abstract IReadOnlyList<long> DayTimePointer { get; }
         public abstract IReadOnlyList<long> PartyStartPokemonPointer { get; }
         public abstract IReadOnlyList<long> BoxStartPokemonPointer { get; }
         public abstract IReadOnlyList<long> OpponentPokemonPointer { get; }
         public abstract IReadOnlyList<long> SceneIDPointer { get; }
-        public abstract IReadOnlyList<long> MainSavePointer { get; }
-        public abstract IReadOnlyList<long> ConfigPointer { get; }
+        public abstract IReadOnlyList<long> DayTimePointer { get; }
+        public abstract IReadOnlyList<long> MyStatusTrainerPointer { get; }
+        public abstract IReadOnlyList<long> MyStatusTIDPointer { get; }
+        public abstract IReadOnlyList<long> ConfigTextSpeedPointer { get; }
+        public abstract IReadOnlyList<long> ConfigLanguagePointer { get; }
 
         // SceneID enums
         public const byte SceneID_Field = 0;

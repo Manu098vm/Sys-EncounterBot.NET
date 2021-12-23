@@ -23,6 +23,7 @@ namespace SysBot.Pokemon
                 EncounterMode.LiveStatsChecking => new EncounterBotLive(cfg, Hub),
                 _ => new EncounterBotReset(cfg, Hub),
 			},
+            PokeRoutineType.SWSH_OverworldScan => new BotOverworld(cfg, Hub),
             PokeRoutineType.RemoteControl => new RemoteControlBot(cfg),
             _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
         };

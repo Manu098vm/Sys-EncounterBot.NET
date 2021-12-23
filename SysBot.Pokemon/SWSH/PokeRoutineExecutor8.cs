@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using PKHeX.Core;
 using SysBot.Base;
+using Sysbot.Pokemon;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsets;
 
@@ -125,52 +126,7 @@ namespace SysBot.Pokemon
             return sav;
         }
 
-        protected virtual async Task EnterLinkCode(int code, PokeBotHubConfig config, CancellationToken token)
-        {
-            // Default implementation to just press directional arrows. Can do via Hid keys, but users are slower than bots at even the default code entry.
-            var keys = TradeUtil.GetPresses(code);
-            foreach (var key in keys)
-            {
-                int delay = config.Timings.KeypressTime;
-                await Click(key, delay, token).ConfigureAwait(false);
-            }
-            // Confirm Code outside of this method (allow synchronization)
-        }
-
         public async Task<bool> IsGiftFound(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(GiftFound, 1, token).ConfigureAwait(false))[0] > 0;
-
-        public async Task<bool> IsGameConnectedToYComm(CancellationToken token)
-        {
-            // Reads the Y-Comm Flag is the Game is connected Online
-            var data = await Connection.ReadBytesAsync(IsConnectedOffset, 1, token).ConfigureAwait(false);
-            return data[0] == 1;
-        }
-
-        public async Task ReconnectToYComm(PokeBotHubConfig config, CancellationToken token)
-        {
-            // Press B in case a Error Message is Present
-            await Click(B, 2000, token).ConfigureAwait(false);
-
-            // Return to Overworld
-            if (!await IsOnOverworld(config, token).ConfigureAwait(false))
-            {
-                for (int i = 0; i < 5; i++)
-                {
-                    await Click(B, 500, token).ConfigureAwait(false);
-                }
-            }
-
-            await Click(Y, 1000, token).ConfigureAwait(false);
-
-            // Press it twice for safety -- sometimes misses it the first time.
-            await Click(PLUS, 2_000, token).ConfigureAwait(false);
-            await Click(PLUS, 5_000 + config.Timings.ExtraTimeReconnectYComm, token).ConfigureAwait(false);
-
-            for (int i = 0; i < 5; i++)
-            {
-                await Click(B, 500, token).ConfigureAwait(false);
-            }
-        }
 
         public async Task ReOpenGame(PokeBotHubConfig config, CancellationToken token)
         {
@@ -312,9 +268,176 @@ namespace SysBot.Pokemon
             var data = new[] { (byte)((textSpeedByte[0] & 0xFC) | (int)speed) };
             await Connection.WriteBytesAsync(data, TextSpeedOffset, token).ConfigureAwait(false);
         }
+        public async Task FleeToOverworld(CancellationToken token)
+        {
+            // This routine will always escape a battle.
+            await Click(DUP, 0_200, token).ConfigureAwait(false);
+            await Click(A, 1_000, token).ConfigureAwait(false);
+
+            while (await IsInBattle(token).ConfigureAwait(false))
+            {
+                await Click(B, 0_500, token).ConfigureAwait(false);
+                await Click(B, 1_000, token).ConfigureAwait(false);
+                await Click(DUP, 0_200, token).ConfigureAwait(false);
+                await Click(A, 1_000, token).ConfigureAwait(false);
+            }
+        }
 
         public async Task<bool> IsInLairWait(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(LairWait, 1, token).ConfigureAwait(false))[0] == 0;
         public async Task<bool> IsInLairEndList(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(LairRewards, 1, token).ConfigureAwait(false))[0] != 0;
 
+        public async Task<bool> IsArticunoPresent(CancellationToken token) => (await Connection.ReadBytesAsync(IsArticunoInSnowslide, 1, token).ConfigureAwait(false))[0] == 1;
+        public async Task<byte[]> ReadKCoordinates(CancellationToken token) => await SwitchConnection.ReadBytesAsync(KCoordinatesBlock, 24592, token).ConfigureAwait(false);
+        public async Task<List<PK8>> ReadOwPokemonFromBlock(byte[] KCoordinates, SAV8SWSH sav, CancellationToken token)
+        {
+            var PK8s = new List<PK8>();
+
+            var i = 8;
+            var j = 0;
+            var count = 0;
+            var last_index = i;
+
+            while (!token.IsCancellationRequested && i < KCoordinates.Length)
+            {
+                if (j == 12)
+                {
+                    if (KCoordinates[i - 68] != 0 && KCoordinates[i - 68] != 255)
+                    {
+                        var bytes = KCoordinates.Slice(i - 68, 56);
+                        j = 0;
+                        i = last_index + 8;
+                        last_index = i;
+                        count++;
+                        var pkm = await ReadOwPokemon(0, 0, bytes, sav, token).ConfigureAwait(false);
+                        if (pkm != null)
+                            PK8s.Add(pkm);
+                    }
+                }
+
+                if (KCoordinates[i] == 0xFF)
+                {
+                    if (i % 8 == 0)
+                        last_index = i;
+                    i++;
+                    j++;
+                }
+                else
+                {
+                    j = 0;
+                    if (i == last_index)
+                    {
+                        i += 8;
+                        last_index = i;
+                    }
+                    else
+                    {
+                        i = last_index + 8;
+                        last_index = i;
+                    }
+                }
+
+            }
+            return PK8s;
+        }
+        public async Task<PK8?> ReadOwPokemon(Species target, uint startoffset, byte[]? mondata, SAV8SWSH TrainerData, CancellationToken token)
+        {
+            byte[]? data = null;
+            Species species = 0;
+            uint offset = startoffset;
+            int i = 0;
+
+            if (target != (Species)0)
+            {
+                do
+                {
+                    data = await Connection.ReadBytesAsync(offset, 56, token).ConfigureAwait(false);
+                    species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
+                    offset += 192;
+                    i++;
+                } while (target != 0 && species != 0 && target != species && i <= 40);
+                if (i > 40)
+                    data = null;
+            }
+            else if (mondata != null)
+            {
+                data = mondata;
+                species = (Species)BitConverter.ToUInt16(data.Slice(0, 2), 0);
+            }
+
+            if (data != null && data[20] == 1)
+            {
+                var pk = new PK8
+                {
+                    Species = (int)species,
+                    Form = data[2],
+                    CurrentLevel = data[4],
+                    Met_Level = data[4],
+                    Gender = (data[10] == 1) ? 0 : 1,
+                    OT_Name = TrainerData.OT,
+                    TID = TrainerData.TID,
+                    SID = TrainerData.SID,
+                    OT_Gender = TrainerData.Gender,
+                    HT_Name = TrainerData.OT,
+                    HT_Gender = TrainerData.Gender,
+                    Move1 = BitConverter.ToUInt16(data.Slice(48, 2), 0),
+                    Move2 = BitConverter.ToUInt16(data.Slice(50, 2), 0),
+                    Move3 = BitConverter.ToUInt16(data.Slice(52, 2), 0),
+                    Move4 = BitConverter.ToUInt16(data.Slice(54, 2), 0),
+                    Version = 44,
+                };
+                pk.SetNature(data[8]);
+                pk.SetAbility(data[12] - 1);
+                if (data[22] != 255)
+                    pk.SetRibbonIndex((RibbonIndex)data[22]);
+                if (!pk.IsGenderValid())
+                    pk.Gender = 2;
+                if (data[14] == 1)
+                    pk.HeldItem = data[16];
+
+                Shiny shinyness = (Shiny)(data[6] + 1);
+                int ivs = data[18];
+                uint seed = BitConverter.ToUInt32(data.Slice(24, 4), 0);
+
+                pk = RNG8.CalculateFromSeed(pk, shinyness, ivs, seed);
+                return pk;
+            }
+            else
+                return null;
+        }
+        public List<int[]> ParseMovements(string moves, int up_ms, int right_ms, int down_ms, int left_ms)
+        {
+            var buttons = new List<int[]>();
+            var movements = moves.ToUpper() + ",";
+            var index = 0;
+            var word = "";
+
+            while (index < movements.Length - 1)
+            {
+                if ((movements.Length > 1 && (movements[index + 1] == ',' || movements[index + 1] == '.')) || movements.Length == 1)
+                {
+                    word += movements[index];
+                    if (word.Equals("UP"))
+                        buttons.Add(new int[] { 0, 30_000, up_ms });
+                    else if (word.Equals("RIGHT"))
+                        buttons.Add(new int[] { 30_000, 0, right_ms });
+                    else if (word.Equals("DOWN"))
+                        buttons.Add(new int[] { 0, -30_000, down_ms });
+                    else if (word.Equals("LEFT"))
+                        buttons.Add(new int[] { -30_000, 0, left_ms });
+                    movements.Remove(0, 1);
+                    word = "";
+                }
+                else if (movements[index] == ',' || movements[index] == '.' || movements[index] == ' ' || movements[index] == '\n' || movements[index] == '\t' || movements[index] == '\0')
+                    movements.Remove(0, 1);
+                else
+                {
+                    word += movements[index];
+                    movements.Remove(0, 1);
+                }
+                index++;
+            }
+
+            return buttons;
+        }
     }
 }

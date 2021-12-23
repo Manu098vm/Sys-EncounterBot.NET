@@ -130,7 +130,7 @@ namespace SysBot.Pokemon
                     {
                         var pk = await ReadUntilPresent(RaidPokemonOffset, 2_000, 0_200, BoxFormatSlotSize, token).ConfigureAwait(false);
                         if (pk != null)
-                            Log($"Raid Battle {raidCount}: {pk.Species} {pk.Nickname}");
+                            Log($"Raid Battle {raidCount}: ({pk.Species}) {pk.Nickname}");
                         else
                             Log($"Raid Battle {raidCount}.{Environment.NewLine}RAM probably shifted. It is suggested to reboot the game or console.");
 
@@ -173,8 +173,10 @@ namespace SysBot.Pokemon
                     else
                         Log($"Adventure n. {completedAdventures} completed.");
 
-                    if ((Settings.MaxLairSettings.KeepShinies && found[0] > 0) || found[0] == 4)
+                    if (found[0] > 0)
                     {
+                        var pk = await ReadLairResult(found[0], token).ConfigureAwait(false);
+
                         await Task.Delay(1_500, token).ConfigureAwait(false);
                         for (int i = 1; i < found[0]; i++)
                             await Click(DDOWN, 1_000, token).ConfigureAwait(false);
@@ -187,12 +189,16 @@ namespace SysBot.Pokemon
                             Hub.Config.StopConditions.CaptureVideoClip = true;
                         }
 
-                        var pk = await ReadLairResult(found[0], token).ConfigureAwait(false);
-
-                        if (pk != null && StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, UnwantedMarks))
+                        if (pk != null && found[2] == 1)
+                        {
+                            Log($"Found match in result n. {found[0]}: {(Species)pk.Species}");
                             return;
+                        }
                         else
                         {
+                            if(pk != null)
+                                Log($"Found shiny in result n. {found[0]}: {(Species)pk.Species}");
+
                             await Task.Delay(1_500, token).ConfigureAwait(false);
                             await Click(B, 1_500, token).ConfigureAwait(false);
                             while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
@@ -217,34 +223,40 @@ namespace SysBot.Pokemon
             }
         }
 
+        private async Task<int[]> IsAdventureHuntFound(CancellationToken token)
+        {
+            int[] found = { 0, 0, 0 };
+            bool enc_conditions = false;
+            int i = 0;
+
+            while (i < 4)
+            {
+                var pkm = await ReadLairResult(i, token).ConfigureAwait(false);
+                if (pkm != null)
+                {
+                    if (i == 3)
+                        found[1] = 1;
+                    if(await HandleEncounter(pkm, token).ConfigureAwait(false))
+					{
+                        found[0] = i + 1;
+                        enc_conditions = true;
+                    }
+                    else if (i < 4 && pkm.IsShiny && Hub.Config.SWSH_Encounter.MaxLairSettings.KeepShinies && !enc_conditions)
+                        found[0] = i + 1;
+                }
+                i++;
+            }
+            found[2] = enc_conditions ? 1 : 0;
+            return found;
+        }
+
         private async Task<PK8?> ReadLairResult(int slot, CancellationToken token)
-		{
+        {
             var pointer = new long[] { 0x28F4060, 0x1B0, 0x68, (0x58 + (0x08 * slot)), 0xD0 };
             var pkm = await ReadUntilPresentPointer(pointer, 2_000, 0_200, BoxFormatSlotSize, token).ConfigureAwait(false);
             if (pkm is not null && pkm.Species == 0)
                 return null;
             return pkm;
-        }
-
-        private async Task<int[]> IsAdventureHuntFound(CancellationToken token)
-        {
-            int[] found = { 0, 0 };
-            int i = 0;
-
-            while (i < 4)
-            {
-                var pointer = new long[] { 0x28F4060, 0x1B0, 0x68, (0x58 + (0x08 * i)), 0xD0 };
-                var pkm = await ReadUntilPresentPointer(pointer, 2_000, 0_200, BoxFormatSlotSize, token).ConfigureAwait(false);
-                if (pkm != null)
-                {
-                    if (i == 3)
-                        found[1] = 1;
-                    if (await HandleEncounter(pkm, token).ConfigureAwait(false) || (i < 4 && pkm.IsShiny))
-                        found[0] = i + 1;
-                }
-                i++;
-            }
-            return found;
         }
 
         public override async Task HardStop()
