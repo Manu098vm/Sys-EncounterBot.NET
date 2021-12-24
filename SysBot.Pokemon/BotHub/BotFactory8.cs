@@ -7,9 +7,6 @@ namespace SysBot.Pokemon
     {
         public override PokeRoutineExecutorBase CreateBot(PokeBotHub<PK8> Hub, PokeBotState cfg) => cfg.NextRoutineType switch
         {
-            //PokeRoutineType.LGPE_OverworldScan => new OverworldBot(cfg, Hub),
-            //PokeRoutineType.LGPE_EncounterBot => new Letsgo(cfg, Hub),
-            //PokeRoutineType.SWSH_OverworldScan => new OverworldScan(cfg, Hub),
             PokeRoutineType.BDSP_RNG => new BDSPBotRNG(cfg, Hub),
             PokeRoutineType.SWSH_EggBot => new EggBot(cfg, Hub),
             PokeRoutineType.SWSH_EncounterBot => Hub.Config.SWSH_Encounter.EncounteringType switch
