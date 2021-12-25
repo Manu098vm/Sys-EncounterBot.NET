@@ -51,6 +51,12 @@ namespace SysBot.Base
             await Task.Delay(delay, token).ConfigureAwait(false);
         }
 
+        public async Task SetDeviceType(HidDeviceType type, CancellationToken token)
+		{
+            var cmd = SwitchCommand.Configure(SwitchConfigureParameter.controllerType, (int)type, UseCRLF);
+            await Connection.SendAsync(cmd, token).ConfigureAwait(false);
+        }
+
         public async Task DetachController(CancellationToken token)
         {
             await Connection.SendAsync(SwitchCommand.DetachController(UseCRLF), token).ConfigureAwait(false);
