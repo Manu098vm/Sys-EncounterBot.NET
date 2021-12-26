@@ -19,7 +19,7 @@ namespace SysBot.Pokemon
         protected readonly int[] DesiredMaxIVs;
         protected readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
         public ICountSettings Counts => Settings;
-        protected SWSH.PokeDataPointers Pointers { get; private set; } = new SWSH.PokeDataPointers();
+        protected PokeDataPointers Pointers { get; private set; } = new PokeDataPointers();
 
         protected EncounterBot(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
@@ -124,21 +124,6 @@ namespace SysBot.Pokemon
         {
             // If aborting the sequence, we might have the stick set at some position. Clear it just in case.
             await SetStick(LEFT, 0, 0, 0_500, token).ConfigureAwait(false); // reset
-        }
-
-        protected async Task FleeToOverworld(CancellationToken token)
-        {
-            // This routine will always escape a battle.
-            await Click(DUP, 0_200, token).ConfigureAwait(false);
-            await Click(A, 1_000, token).ConfigureAwait(false);
-
-            while (await IsInBattle(token).ConfigureAwait(false))
-            {
-                await Click(B, 0_500, token).ConfigureAwait(false);
-                await Click(B, 1_000, token).ConfigureAwait(false);
-                await Click(DUP, 0_200, token).ConfigureAwait(false);
-                await Click(A, 1_000, token).ConfigureAwait(false);
-            }
         }
     }
 }

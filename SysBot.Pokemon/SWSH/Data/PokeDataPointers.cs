@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace SysBot.Pokemon.SWSH
+namespace SysBot.Pokemon
 {
 	public class PokeDataPointers
 	{

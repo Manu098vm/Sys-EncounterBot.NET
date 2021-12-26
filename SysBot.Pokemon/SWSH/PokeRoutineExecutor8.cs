@@ -404,40 +404,5 @@ namespace SysBot.Pokemon
             else
                 return null;
         }
-        public List<int[]> ParseMovements(string moves, int up_ms, int right_ms, int down_ms, int left_ms)
-        {
-            var buttons = new List<int[]>();
-            var movements = moves.ToUpper() + ",";
-            var index = 0;
-            var word = "";
-
-            while (index < movements.Length - 1)
-            {
-                if ((movements.Length > 1 && (movements[index + 1] == ',' || movements[index + 1] == '.')) || movements.Length == 1)
-                {
-                    word += movements[index];
-                    if (word.Equals("UP"))
-                        buttons.Add(new int[] { 0, 30_000, up_ms });
-                    else if (word.Equals("RIGHT"))
-                        buttons.Add(new int[] { 30_000, 0, right_ms });
-                    else if (word.Equals("DOWN"))
-                        buttons.Add(new int[] { 0, -30_000, down_ms });
-                    else if (word.Equals("LEFT"))
-                        buttons.Add(new int[] { -30_000, 0, left_ms });
-                    movements.Remove(0, 1);
-                    word = "";
-                }
-                else if (movements[index] == ',' || movements[index] == '.' || movements[index] == ' ' || movements[index] == '\n' || movements[index] == '\t' || movements[index] == '\0')
-                    movements.Remove(0, 1);
-                else
-                {
-                    word += movements[index];
-                    movements.Remove(0, 1);
-                }
-                index++;
-            }
-
-            return buttons;
-        }
     }
 }

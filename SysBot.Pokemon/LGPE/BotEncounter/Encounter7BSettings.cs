@@ -5,28 +5,23 @@ using SysBot.Base;
 
 namespace SysBot.Pokemon
 {
-    public class EncounterSettings : IBotStateSettings, ICountSettings
+    public class Encounter7BSettings : IBotStateSettings, ICountSettings
     {
         private const string Counts = nameof(Counts);
         private const string Encounter = nameof(Encounter);
-        public override string ToString() => "SWSH Encounter Bot Settings";
+        public override string ToString() => "LGPE Encounter Bot Settings";
 
         [Category(Encounter), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; } = false;
 
-        [Category(Encounter), Description("The method by which the SWSH bots will encounter Pokémon.")]
-        public EncounterMode EncounteringType { get; set; } = EncounterMode.LiveStatsChecking;
+        [Category(Encounter), Description("The method by which the bot will encounter Pokémon In Let's Go.")]
+        public LetsGoMode EncounteringType { get; set; } = LetsGoMode.LiveStatsChecking;
+
+        [Category(Encounter), Description("Set the fortune teller nature. All the wild and stationary Pokémon will have this nature. Ignored if random.")]
+        public PKHeX.Core.Nature SetFortuneTellerNature { get; set; } = PKHeX.Core.Nature.Random;
 
         private int _completedWild;
         private int _completedLegend;
-
-        [Category(Encounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public FossilSettings FossilSettings { get; set; } = new();
-
-        [Category(Encounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public MaxLairSettings MaxLairSettings { get; set; } = new();
 
         [Category(Counts), Description("Encountered Wild Pokémon")]
         public int CompletedEncounters

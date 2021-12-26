@@ -9,7 +9,7 @@ namespace SysBot.Pokemon
     {
         private const string Counts = nameof(Counts);
         private const string OverworldScan = nameof(OverworldScan);
-        public override string ToString() => "Overworld Bot Settings";
+        public override string ToString() => "Overworld Scan Settings";
 
         [Category(OverworldScan), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; } = false;

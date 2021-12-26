@@ -33,6 +33,14 @@ namespace SysBot.Pokemon
 
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
+        public Overworld7BSettings LGPE_OverworldScan { get; set; } = new();
+
+        [Category(Bots)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public Encounter7BSettings LGPE_Encounter { get; set; } = new();
+
+        [Category(Bots)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
         public OverworldScanSettings SWSH_OverworldScan { get; set; } = new();
 
         [Category(Bots)]
