@@ -10,20 +10,20 @@ namespace SysBot.Base
     public abstract class RoutineExecutor<T> : IRoutineExecutor where T : class, IConsoleBotConfig
     {
         public readonly IConsoleConnectionAsync Connection;
-        public readonly ISwitchConnectionAsync SwitchConnection;
         public readonly T Config;
 
         protected RoutineExecutor(IConsoleBotManaged<IConsoleConnection, IConsoleConnectionAsync> cfg)
         {
             Config = (T)cfg;
             Connection = cfg.CreateAsynchronous();
-            SwitchConnection = (ISwitchConnectionAsync)Connection;
         }
 
         public string LastLogged { get; private set; } = "Not Started";
         public DateTime LastTime { get; private set; } = DateTime.Now;
 
         public void ReportStatus() => LastTime = DateTime.Now;
+
+        public abstract string GetSummary();
 
         public void Log(string message)
         {
@@ -48,5 +48,6 @@ namespace SysBot.Base
         public abstract Task MainLoop(CancellationToken token);
         public abstract Task InitialStartup(CancellationToken token);
         public abstract void SoftStop();
+        public abstract Task HardStop();
     }
 }

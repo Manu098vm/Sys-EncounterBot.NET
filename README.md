@@ -27,5 +27,7 @@ Check the [Wiki](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki) for a d
 
 [Zaksabeast](https://github.com/zaksabeast) for his great researches on how Shinies are generated in the Let's Go games.
 
+
+
 # License
 Refer to the `LICENSE` for details regarding licensing.

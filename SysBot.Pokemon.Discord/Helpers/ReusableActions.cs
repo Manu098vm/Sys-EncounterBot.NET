@@ -12,6 +12,21 @@ namespace SysBot.Pokemon.Discord
 {
     public static class ReusableActions
     {
+        public static async Task SendPKMAsync(this IMessageChannel channel, PKM pkm, string msg = "")
+        {
+            var tmp = Path.Combine(Path.GetTempPath(), Util.CleanFileName(pkm.FileName));
+            File.WriteAllBytes(tmp, pkm.DecryptedPartyData);
+            await channel.SendFileAsync(tmp, msg).ConfigureAwait(false);
+            File.Delete(tmp);
+        }
+
+        public static async Task SendPKMAsync(this IUser user, PKM pkm, string msg = "")
+        {
+            var tmp = Path.Combine(Path.GetTempPath(), Util.CleanFileName(pkm.FileName));
+            File.WriteAllBytes(tmp, pkm.DecryptedPartyData);
+            await user.SendFileAsync(tmp, msg).ConfigureAwait(false);
+            File.Delete(tmp);
+        }
 
         public static async Task RepostPKMAsShowdownAsync(this ISocketMessageChannel channel, IAttachment att)
         {
@@ -24,7 +39,6 @@ namespace SysBot.Pokemon.Discord
             var pkm = result.Data!;
             await channel.SendPKMAsShowdownSetAsync(pkm).ConfigureAwait(false);
         }
-
 
         public static async Task EchoAndReply(this ISocketMessageChannel channel, string msg)
         {
@@ -42,14 +56,7 @@ namespace SysBot.Pokemon.Discord
 
         public static string GetFormattedShowdownText(PKM pkm)
         {
-            int TID = (pkm.Gen7 || pkm.Gen8) ? pkm.TrainerID7 : pkm.TID;
-            int SID = (pkm.Gen7 || pkm.Gen8) ? pkm.TrainerSID7 : pkm.SID;
-            string showdowntext = ShowdownParsing.GetShowdownText(pkm);
-            if (pkm.IsShiny && pkm.ShinyXor == 0)
-                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Square");
-            else if (pkm.IsShiny)
-                showdowntext = showdowntext.Replace("Shiny: Yes", "Shiny: Star");
-            string showdown = $"{showdowntext}\nOT: {pkm.OT_Name}\nTID: {TID}\nSID: {SID}";
+            var showdown = ShowdownParsing.GetShowdownText(pkm);
             return Format.Code(showdown);
         }
 

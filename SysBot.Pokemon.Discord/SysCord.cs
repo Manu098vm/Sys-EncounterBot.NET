@@ -12,18 +12,20 @@ using System.Threading.Tasks;
 
 namespace SysBot.Pokemon.Discord
 {
-    public static class SysCordInstance
+    public static class SysCordSettings
     {
-        public static SysCord Self = default!;
-        public static DiscordManager Manager = default!;
-        public static DiscordSettings Settings => Self.Hub.Config.Discord;
-        public static PokeBotRunner Runner = default!;
+        public static DiscordManager Manager { get; internal set; } = default!;
+        public static DiscordSettings Settings => Manager.Config;
+        public static PokeBotHubConfig HubConfig { get; internal set; } = default!;
     }
 
-    public sealed class SysCord
+    public sealed class SysCord<T> where T : PKM, new()
     {
+        public static PokeBotRunner<T> Runner { get; private set; } = default!;
+
         private readonly DiscordSocketClient _client;
-        public readonly PokeTradeHub<PK8> Hub;
+        private readonly DiscordManager Manager;
+        public readonly PokeBotHub<T> Hub;
 
         // Keep the CommandService and DI container around for use with commands.
         // These two types require you install the Discord.Net.Commands package.
@@ -33,11 +35,17 @@ namespace SysBot.Pokemon.Discord
         // Bot listens to channel messages to reply with a ShowdownSet whenever a PKM file is attached (not with a command).
         private bool ConvertPKMToShowdownSet { get; } = true;
 
-        public SysCord(PokeTradeHub<PK8> hub)
+        // Track loading of Echo/Logging channels so they aren't loaded multiple times.
+        private bool MessageChannelsLoaded { get; set; }
+
+        public SysCord(PokeBotRunner<T> runner)
         {
-            Hub = hub;
-            SysCordInstance.Self = this; // hack
-            SysCordInstance.Manager = new DiscordManager(Hub.Config);
+            Runner = runner;
+            Hub = runner.Hub;
+            Manager = new DiscordManager(Hub.Config.Discord);
+
+            SysCordSettings.Manager = Manager;
+            SysCordSettings.HubConfig = Hub.Config;
 
             _client = new DiscordSocketClient(new DiscordSocketConfig
             {
@@ -85,25 +93,13 @@ namespace SysBot.Pokemon.Discord
             return map.BuildServiceProvider();
         }
 
-        // Example of a logging handler. This can be re-used by addons
+        // Example of a logging handler. This can be reused by add-ons
         // that ask for a Func<LogMessage, Task>.
 
         private static Task Log(LogMessage msg)
         {
-            Console.ForegroundColor = msg.Severity switch
-            {
-                LogSeverity.Critical => ConsoleColor.Red,
-                LogSeverity.Error => ConsoleColor.Red,
-
-                LogSeverity.Warning => ConsoleColor.Yellow,
-                LogSeverity.Info => ConsoleColor.White,
-
-                LogSeverity.Verbose => ConsoleColor.DarkGray,
-                LogSeverity.Debug => ConsoleColor.DarkGray,
-                _ => Console.ForegroundColor
-            };
-
             var text = $"[{msg.Severity,8}] {msg.Source}: {msg.Message} {msg.Exception}";
+            Console.ForegroundColor = GetTextColor(msg.Severity);
             Console.WriteLine($"{DateTime.Now,-19} {text}");
             Console.ResetColor();
 
@@ -111,6 +107,19 @@ namespace SysBot.Pokemon.Discord
 
             return Task.CompletedTask;
         }
+
+        private static ConsoleColor GetTextColor(LogSeverity sv) => sv switch
+        {
+            LogSeverity.Critical => ConsoleColor.Red,
+            LogSeverity.Error => ConsoleColor.Red,
+
+            LogSeverity.Warning => ConsoleColor.Yellow,
+            LogSeverity.Info => ConsoleColor.White,
+
+            LogSeverity.Verbose => ConsoleColor.DarkGray,
+            LogSeverity.Debug => ConsoleColor.DarkGray,
+            _ => Console.ForegroundColor,
+        };
 
         public async Task MainAsync(string apiToken, CancellationToken token)
         {
@@ -121,21 +130,8 @@ namespace SysBot.Pokemon.Discord
             await _client.LoginAsync(TokenType.Bot, apiToken).ConfigureAwait(false);
             await _client.StartAsync().ConfigureAwait(false);
 
-            // Restore Echoes
-            await Task.Delay(5_000, token).ConfigureAwait(false);
-            EchoModule.RestoreChannels(_client);
-
-            // Restore Logging
-            await Task.Delay(5_000, token).ConfigureAwait(false);
-            LogModule.RestoreLogging(_client);
-
-
-            var game = SysCordInstance.Settings.BotGameStatus;
-            if (!string.IsNullOrWhiteSpace(game))
-                await _client.SetGameAsync(game).ConfigureAwait(false);
-
             var app = await _client.GetApplicationInfoAsync().ConfigureAwait(false);
-            SysCordInstance.Manager.Owner = app.Owner.Id;
+            Manager.Owner = app.Owner.Id;
 
             // Wait infinitely so your bot actually stays connected.
             await MonitorStatusAsync(token).ConfigureAwait(false);
@@ -146,9 +142,31 @@ namespace SysBot.Pokemon.Discord
             var assembly = Assembly.GetExecutingAssembly();
 
             await _commands.AddModulesAsync(assembly, _services).ConfigureAwait(false);
+            var genericTypes = assembly.DefinedTypes.Where(z => z.IsSubclassOf(typeof(ModuleBase<SocketCommandContext>)) && z.IsGenericType);
+            foreach (var t in genericTypes)
+            {
+                var genModule = t.MakeGenericType(typeof(T));
+                await _commands.AddModuleAsync(genModule, _services).ConfigureAwait(false);
+            }
             var modules = _commands.Modules.ToList();
 
+            var blacklist = Hub.Config.Discord.ModuleBlacklist
+                .Replace("Module", "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(z => z.Trim()).ToList();
+
+            foreach (var module in modules)
+            {
+                var name = module.Name;
+                name = name.Replace("Module", "");
+                var gen = name.IndexOf('`');
+                if (gen != -1)
+                    name = name[..gen];
+                if (blacklist.Any(z => z.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                    await _commands.RemoveModuleAsync(module).ConfigureAwait(false);
+            }
+
             // Subscribe a handler to see if a message invokes a command.
+            _client.Ready += LoadLoggingAndEcho;
             _client.MessageReceived += HandleMessageAsync;
         }
 
@@ -189,6 +207,20 @@ namespace SysBot.Pokemon.Discord
             // Create a Command Context.
             var context = new SocketCommandContext(_client, msg);
 
+            // Check Permission
+            var mgr = Manager;
+            if (!mgr.CanUseCommandUser(msg.Author.Id))
+            {
+                await msg.Channel.SendMessageAsync("You are not permitted to use this command.").ConfigureAwait(false);
+                return true;
+            }
+            if (!mgr.CanUseCommandChannel(msg.Channel.Id) && msg.Author.Id != mgr.Owner)
+            {
+                if (Hub.Config.Discord.ReplyCannotUseCommandInChannel)
+                    await msg.Channel.SendMessageAsync("You can't use that command here.").ConfigureAwait(false);
+                return true;
+            }
+
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed successfully).
             var guild = msg.Channel is SocketGuildChannel g ? g.Guild.Name : "Unknown Guild";
@@ -219,9 +251,10 @@ namespace SysBot.Pokemon.Discord
                 var delta = time - lastLogged;
                 var gap = TimeSpan.FromSeconds(Interval) - delta;
 
+                bool noQueue = true;
                 if (gap <= TimeSpan.Zero)
                 {
-                    var idle = UserStatus.Idle;
+                    var idle = noQueue ? UserStatus.DoNotDisturb : UserStatus.Idle;
                     if (idle != state)
                     {
                         state = idle;
@@ -231,10 +264,34 @@ namespace SysBot.Pokemon.Discord
                     continue;
                 }
 
-                await _client.SetStatusAsync(state).ConfigureAwait(false);
-
+                var active = noQueue ? UserStatus.DoNotDisturb : UserStatus.Online;
+                if (active != state)
+                {
+                    state = active;
+                    await _client.SetStatusAsync(state).ConfigureAwait(false);
+                }
                 await Task.Delay(gap, token).ConfigureAwait(false);
             }
+        }
+
+        private async Task LoadLoggingAndEcho()
+        {
+            if (MessageChannelsLoaded)
+                return;
+
+            // Restore Echoes
+            EchoModule.RestoreChannels(_client, Hub.Config.Discord);
+
+            // Restore Logging
+            LogModule.RestoreLogging(_client, Hub.Config.Discord);
+
+            // Don't let it load more than once in case of Discord hiccups.
+            await Log(new LogMessage(LogSeverity.Info, "LoadLoggingAndEcho()", "Logging and Echo channels loaded!")).ConfigureAwait(false);
+            MessageChannelsLoaded = true;
+
+            var game = Hub.Config.Discord.BotGameStatus;
+            if (!string.IsNullOrWhiteSpace(game))
+                await _client.SetGameAsync(game).ConfigureAwait(false);
         }
     }
 }

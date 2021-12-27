@@ -3,62 +3,72 @@ using PKHeX.Core;
 using SysBot.Base;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Newtonsoft.Json.Serialization;
 
 namespace SysBot.Pokemon.WinForms
 {
     public sealed partial class Main : Form
     {
-        private static readonly string WorkingDirectory = Application.StartupPath;
-        private static readonly string ConfigPath = Path.Combine(WorkingDirectory, "config.json");
         private readonly List<PokeBotState> Bots = new();
-        private readonly PokeBotRunner RunningEnvironment;
+        private readonly IPokeBotRunner RunningEnvironment;
+        private readonly ProgramConfig Config;
 
         public Main()
         {
             InitializeComponent();
 
-            if (File.Exists(ConfigPath))
+            if (File.Exists(Program.ConfigPath))
             {
-                var lines = File.ReadAllText(ConfigPath);
-                var prog = JsonConvert.DeserializeObject<ProgramConfig>(lines);
-                if (prog != null)
+                var lines = File.ReadAllText(Program.ConfigPath);
+                Config = JsonConvert.DeserializeObject<ProgramConfig>(lines, GetSettings()) ?? new ProgramConfig();
+                RunningEnvironment = GetRunner(Config);
+                foreach (var bot in Config.Bots)
                 {
-                    RunningEnvironment = new PokeBotRunnerImpl(prog.Hub);
-                    foreach (var bot in prog.Bots)
-                    {
-                        bot.Initialize();
-                        AddBot(bot);
-                    }
-                }
-                else
-                {
-                    var hub = new PokeTradeHubConfig();
-                    RunningEnvironment = new PokeBotRunnerImpl(hub);
-                    hub.Folder.CreateDefaults(WorkingDirectory);
+                    bot.Initialize();
+                    AddBot(bot);
                 }
             }
             else
             {
-                var hub = new PokeTradeHubConfig();
-                RunningEnvironment = new PokeBotRunnerImpl(hub);
-                hub.Folder.CreateDefaults(WorkingDirectory);
+                Config = new ProgramConfig();
+                RunningEnvironment = GetRunner(Config);
+                Config.Hub.Folder.CreateDefaults(Program.WorkingDirectory);
             }
 
             LoadControls();
+            Text = $"{Text} ({Config.Mode})";
             Task.Run(BotMonitor);
         }
+
+        private static IPokeBotRunner GetRunner(ProgramConfig cfg) => cfg.Mode switch
+        {
+            ProgramMode.Switch => new PokeBotRunnerImpl<PK8>(cfg.Hub, new BotFactory8()),
+            //ProgramMode.BDSP => new PokeBotRunnerImpl<PB8>(cfg.Hub, new BotFactory8BS()),
+            _ => throw new IndexOutOfRangeException("Unsupported mode."),
+        };
 
         private async Task BotMonitor()
         {
             while (!Disposing)
             {
-                foreach (var c in FLP_Bots.Controls.OfType<BotController>())
-                    c.ReadState();
+                try
+                {
+                    foreach (var c in FLP_Bots.Controls.OfType<BotController>())
+                        c.ReadState();
+                }
+#pragma warning disable CA1031 // Do not catch general exception types
+                catch
+#pragma warning restore CA1031 // Do not catch general exception types
+                {
+                    // Updating the collection by adding/removing bots will change the iterator
+                    // Can try a for-loop or ToArray, but those still don't prevent concurrent mutations of the array.
+                    // Just try, and if failed, ignore. Next loop will be fine. Locks on the collection are kinda overkill, since this task is not critical.
+                }
                 await Task.Delay(2_000).ConfigureAwait(false);
             }
         }
@@ -66,21 +76,21 @@ namespace SysBot.Pokemon.WinForms
         private void LoadControls()
         {
             MinimumSize = Size;
-            PG_Hub.SelectedObject = RunningEnvironment.Hub.Config;
+            PG_Hub.SelectedObject = RunningEnvironment.Config;
 
-            var routines = (PokeRoutineType[])Enum.GetValues(typeof(PokeRoutineType));
+            var routines = ((PokeRoutineType[])Enum.GetValues(typeof(PokeRoutineType))).Where(z => RunningEnvironment.SupportsRoutine(z));
             var list = routines.Select(z => new ComboItem(z.ToString(), (int)z)).ToArray();
             CB_Routine.DisplayMember = nameof(ComboItem.Text);
             CB_Routine.ValueMember = nameof(ComboItem.Value);
             CB_Routine.DataSource = list;
-            CB_Routine.SelectedIndex = 0; // default option
+            CB_Routine.SelectedValue = (int)PokeRoutineType.LGPE_EncounterBot; // default option
 
             var protocols = (SwitchProtocol[])Enum.GetValues(typeof(SwitchProtocol));
             var listP = protocols.Select(z => new ComboItem(z.ToString(), (int)z)).ToArray();
             CB_Protocol.DisplayMember = nameof(ComboItem.Text);
             CB_Protocol.ValueMember = nameof(ComboItem.Value);
             CB_Protocol.DataSource = listP;
-            CB_Protocol.SelectedIndex = 0; // default option
+            CB_Protocol.SelectedIndex = (int)SwitchProtocol.WiFi; // default option
 
             LogUtil.Forwarders.Add(AppendLog);
         }
@@ -106,35 +116,54 @@ namespace SysBot.Pokemon.WinForms
 
         private ProgramConfig GetCurrentConfiguration()
         {
-            return new()
-            {
-                Bots = Bots.ToArray(),
-                Hub = RunningEnvironment.Hub.Config,
-            };
+            Config.Bots = Bots.ToArray();
+            return Config;
         }
 
         private void Main_FormClosing(object sender, FormClosingEventArgs e)
         {
+            SaveCurrentConfig();
             var bots = RunningEnvironment;
-            if (bots.IsRunning)
+            if (!bots.IsRunning)
+                return;
+
+            async Task WaitUntilNotRunning()
             {
-                bots.StopAll();
-                Thread.Sleep(100); // wait for things to abort?
+                while (bots.IsRunning)
+                    await Task.Delay(10).ConfigureAwait(false);
             }
 
-            SaveCurrentConfig();
+            // Try to let all bots hard-stop before ending execution of the entire program.
+            WindowState = FormWindowState.Minimized;
+            ShowInTaskbar = false;
+            bots.StopAll();
+            Task.WhenAny(WaitUntilNotRunning(), Task.Delay(5_000)).ConfigureAwait(true).GetAwaiter().GetResult();
         }
 
         private void SaveCurrentConfig()
         {
             var cfg = GetCurrentConfiguration();
-            var lines = JsonConvert.SerializeObject(cfg, new JsonSerializerSettings
+            var lines = JsonConvert.SerializeObject(cfg, GetSettings());
+            File.WriteAllText(Program.ConfigPath, lines);
+        }
+
+        private static JsonSerializerSettings GetSettings() => new()
+        {
+            Formatting = Formatting.Indented,
+            DefaultValueHandling = DefaultValueHandling.Include,
+            NullValueHandling = NullValueHandling.Ignore,
+            ContractResolver = new SerializableExpandableContractResolver(),
+        };
+
+        // https://stackoverflow.com/a/36643545
+        private sealed class SerializableExpandableContractResolver : DefaultContractResolver
+        {
+            protected override JsonContract CreateContract(Type objectType)
             {
-                Formatting = Formatting.Indented,
-                DefaultValueHandling = DefaultValueHandling.Include,
-                NullValueHandling = NullValueHandling.Ignore
-            });
-            File.WriteAllText(ConfigPath, lines);
+                if (TypeDescriptor.GetAttributes(objectType).Contains(new TypeConverterAttribute(typeof(ExpandableObjectConverter))))
+                    return CreateObjectContract(objectType);
+                return base.CreateContract(objectType);
+            }
         }
 
         private void B_Start_Click(object sender, EventArgs e)
@@ -204,10 +233,20 @@ namespace SysBot.Pokemon.WinForms
             if (Bots.Any(z => z.Connection.Equals(cfg.Connection)))
                 return false;
 
-            var newbot = RunningEnvironment.CreateBotFromConfig(cfg);
+            PokeRoutineExecutorBase newBot;
             try
             {
-                RunningEnvironment.Add(newbot);
+                Console.WriteLine($"Current Mode ({Config.Mode}) does not support this type of bot ({cfg.CurrentRoutineType}).");
+                newBot = RunningEnvironment.CreateBotFromConfig(cfg);
+            }
+            catch
+            {
+                return false;
+            }
+
+            try
+            {
+                RunningEnvironment.Add(newBot);
             }
             catch (ArgumentException ex)
             {
@@ -238,7 +277,7 @@ namespace SysBot.Pokemon.WinForms
             row.Remove += (s, e) =>
             {
                 Bots.Remove(row.State);
-                RunningEnvironment.Remove(row.State, !(false));
+                RunningEnvironment.Remove(row.State, !RunningEnvironment.Config.SkipConsoleBotCreation);
                 FLP_Bots.Controls.Remove(row);
             };
         }
@@ -266,5 +305,10 @@ namespace SysBot.Pokemon.WinForms
         {
             TB_IP.Visible = CB_Protocol.SelectedIndex == 0;
         }
-    }
+
+		private void CB_Routine_SelectedIndexChanged(object sender, EventArgs e)
+		{
+
+		}
+	}
 }

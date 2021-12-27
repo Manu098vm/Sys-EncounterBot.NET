@@ -1,5 +1,6 @@
 ﻿using PKHeX.Core;
 using SysBot.Pokemon.Discord;
+using SysBot.Pokemon.WinForms;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,20 +9,22 @@ namespace SysBot.Pokemon
     /// <summary>
     /// Bot Environment implementation with Integrations added.
     /// </summary>
-    public class PokeBotRunnerImpl : PokeBotRunner
+    public class PokeBotRunnerImpl<T> : PokeBotRunner<T> where T : PKM, new()
     {
-        public PokeBotRunnerImpl(PokeTradeHub<PK8> hub) : base(hub) { }
-        public PokeBotRunnerImpl(PokeTradeHubConfig config) : base(config) { }
+        public PokeBotRunnerImpl(PokeBotHub<T> hub, BotFactory<T> fac) : base(hub, fac) { }
+        public PokeBotRunnerImpl(PokeBotHubConfig config, BotFactory<T> fac) : base(config, fac) { }
+
+
         protected override void AddIntegrations()
         {
-            if (!string.IsNullOrWhiteSpace(Hub.Config.Discord.Token))
-                AddDiscordBot(Hub.Config.Discord.Token);
+            AddDiscordBot(Hub.Config.Discord.Token);
         }
 
         private void AddDiscordBot(string apiToken)
         {
-            SysCordInstance.Runner = this;
-            var bot = new SysCord(Hub);
+            if (string.IsNullOrWhiteSpace(apiToken))
+                return;
+            var bot = new SysCord<T>(this);
             Task.Run(() => bot.MainAsync(apiToken, CancellationToken.None));
         }
     }

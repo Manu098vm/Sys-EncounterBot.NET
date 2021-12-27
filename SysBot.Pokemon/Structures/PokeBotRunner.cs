@@ -1,16 +1,47 @@
 ﻿using PKHeX.Core;
 using SysBot.Base;
-using System;
+using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace SysBot.Pokemon
 {
-    public abstract class PokeBotRunner : BotRunner<PokeBotState>
+    public interface IPokeBotRunner
     {
-        public readonly PokeTradeHub<PK8> Hub;
+        PokeBotHubConfig Config { get; }
+        bool RunOnce { get; }
+        bool IsRunning { get; }
 
-        protected PokeBotRunner(PokeTradeHub<PK8> hub) => Hub = hub;
-        protected PokeBotRunner(PokeTradeHubConfig config) => Hub = new PokeTradeHub<PK8>(config);
+        void StartAll();
+        void StopAll();
+        void InitializeStart();
+
+        void Add(PokeRoutineExecutorBase newbot);
+        void Remove(IConsoleBotConfig state, bool callStop);
+
+        BotSource<PokeBotState>? GetBot(PokeBotState state);
+        PokeRoutineExecutorBase CreateBotFromConfig(PokeBotState cfg);
+        bool SupportsRoutine(PokeRoutineType pokeRoutineType);
+    }
+
+    public abstract class PokeBotRunner<T> : BotRunner<PokeBotState>, IPokeBotRunner where T : PKM, new()
+    {
+        public readonly PokeBotHub<T> Hub;
+        private readonly BotFactory<T> Factory;
+
+        public PokeBotHubConfig Config => Hub.Config;
+
+        protected PokeBotRunner(PokeBotHub<T> hub, BotFactory<T> factory)
+        {
+            Hub = hub;
+            Factory = factory;
+        }
+
+        protected PokeBotRunner(PokeBotHubConfig config, BotFactory<T> factory)
+        {
+            Factory = factory;
+            Hub = new PokeBotHub<T>(config);
+        }
 
         protected virtual void AddIntegrations() { }
 
@@ -21,6 +52,7 @@ namespace SysBot.Pokemon
 
         public override bool Remove(IConsoleBotConfig cfg, bool callStop)
         {
+            var bot = GetBot(cfg)?.Bot;
             return base.Remove(cfg, callStop);
         }
 
@@ -28,12 +60,12 @@ namespace SysBot.Pokemon
         {
             InitializeStart();
 
-            base.StartAll();
+            if (!Hub.Config.SkipConsoleBotCreation)
+                base.StartAll();
         }
 
         public override void InitializeStart()
         {
-            Hub.Counts.LoadCountsFromConfig(); // if user modified them prior to start
             if (RunOnce)
                 return;
 
@@ -48,29 +80,30 @@ namespace SysBot.Pokemon
 
             // bots currently don't de-register
             Thread.Sleep(100);
+            if (Hub.BotSync != null)
+            {
+                int count = Hub.BotSync.Barrier.ParticipantCount;
+                if (count != 0)
+                    Hub.BotSync.Barrier.RemoveParticipants(count);
+            }
         }
 
         public override void PauseAll()
         {
-            base.PauseAll();
+            if (!Hub.Config.SkipConsoleBotCreation)
+                base.PauseAll();
         }
 
         public override void ResumeAll()
         {
-            base.ResumeAll();
+            if (!Hub.Config.SkipConsoleBotCreation)
+                base.ResumeAll();
         }
 
-        public PokeRoutineExecutor CreateBotFromConfig(PokeBotState cfg) => cfg.NextRoutineType switch
-        {
-            PokeRoutineType.LGPE_OverworldScan => new OverworldBot(cfg, Hub),
-            PokeRoutineType.LGPE_EncounterBot => new Letsgo(cfg, Hub),
-            PokeRoutineType.SWSH_OverworldScan => new OverworldScan(cfg, Hub),
-            PokeRoutineType.SWSH_EggFetch => new EggBot(cfg, Hub),
-            PokeRoutineType.SWSH_FossilBot => new FossilBot(cfg, Hub),
-            PokeRoutineType.SWSH_DynamaxAdventure => new DynamaxAdventureBot(cfg, Hub),
-            PokeRoutineType.SWSH_EncounterBot => new EncounterBot(cfg, Hub),
-            PokeRoutineType.Idle => new Idle(cfg),
-            _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
-        };
+        public PokeRoutineExecutorBase CreateBotFromConfig(PokeBotState cfg) => Factory.CreateBot(Hub, cfg);
+        public BotSource<PokeBotState>? GetBot(PokeBotState state) => base.GetBot(state);
+        void IPokeBotRunner.Remove(IConsoleBotConfig state, bool callStop) => Remove(state, callStop);
+        public void Add(PokeRoutineExecutorBase newbot) => Add((RoutineExecutor<PokeBotState>)newbot);
+        public bool SupportsRoutine(PokeRoutineType t) => Factory.SupportsRoutine(t);
     }
 }

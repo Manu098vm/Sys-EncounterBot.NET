@@ -6,22 +6,22 @@
     <UseWindowsForms>true</UseWindowsForms>
     <PackageId>SysBot.Pokemon.WinForms</PackageId>
     <Company>Project Pokémon</Company>
-    <Authors>Kaphotics, Architdate, Lusamine, SkyLink98</Authors>
+    <Authors>SkyLink98, Kaphotics, Sibuna_Switch, Architdate</Authors>
     <Product>SysBot.Pokemon.WinForms</Product>
     <Description>Nintendo Switch Pokémon Bot Manager</Description>
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <StartupObject>SysBot.Pokemon.WinForms.Program</StartupObject>
-    <AssemblyName>Sys-EncounterBot</AssemblyName>
+    <AssemblyName>SysBot</AssemblyName>
     <LangVersion>9</LangVersion>
     <Version>01.00.00</Version>
     <Nullable>enable</Nullable>
-    <Platforms>x64;x86</Platforms>
+    <Platforms>x64</Platforms>
     <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="PKHeX.Core" Version="21.8.6" />
+    <PackageReference Include="PKHeX.Core" Version="21.11.27" />
     <PackageReference Include="System.Resources.Extensions" Version="5.0.0" />
   </ItemGroup>
 
@@ -32,11 +32,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4')) AND '$(Configuration)' == 'Release' ">
-    <PackageReference Include="Costura.Fody" Version="5.6.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; compile; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Fody" Version="6.5.3">
+    <PackageReference Include="Costura.Fody" Version="4.1.0" />
+    <PackageReference Include="Fody" Version="6.0.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -45,6 +42,9 @@
   <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="PKHeX.Drawing">
       <HintPath>deps\PKHeX.Drawing.dll</HintPath>
+    </Reference>
+    <Reference Include="PKHeX.Drawing.PokeSprite">
+      <HintPath>deps\PKHeX.Drawing.PokeSprite.dll</HintPath>
     </Reference>
   </ItemGroup>
 

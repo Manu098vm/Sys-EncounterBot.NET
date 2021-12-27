@@ -3,18 +3,19 @@ using Discord.Commands;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using PKHeX.Core;
 
 namespace SysBot.Pokemon.Discord
 {
-    public class BotModule : ModuleBase<SocketCommandContext>
+    public class BotModule<T> : ModuleBase<SocketCommandContext> where T : PKM, new()
     {
         [Command("botStatus")]
         [Summary("Gets the status of the bots.")]
         [RequireSudo]
         public async Task GetStatusAsync()
         {
-            var me = SysCordInstance.Runner;
-            var bots = me.Bots.Select(z => z.Bot).OfType<PokeRoutineExecutor>().ToArray();
+            var me = SysCord<T>.Runner;
+            var bots = me.Bots.Select(z => z.Bot).OfType<PokeRoutineExecutorBase>().ToArray();
             if (bots.Length == 0)
             {
                 await ReplyAsync("No bots configured.").ConfigureAwait(false);
@@ -26,7 +27,7 @@ namespace SysBot.Pokemon.Discord
             await ReplyAsync(Format.Code(lines)).ConfigureAwait(false);
         }
 
-        private static string GetDetailedSummary(PokeRoutineExecutor z)
+        private static string GetDetailedSummary(PokeRoutineExecutorBase z)
         {
             return $"- {z.Connection.Name} | {z.Connection.Label} - {z.Config.CurrentRoutineType} ~ {z.LastTime:hh:mm:ss} | {z.LastLogged}";
         }
@@ -36,7 +37,7 @@ namespace SysBot.Pokemon.Discord
         [RequireSudo]
         public async Task StartBotAsync(string ip)
         {
-            var bot = SysCordInstance.Runner.GetBot(ip);
+            var bot = SysCord<T>.Runner.GetBot(ip);
             if (bot == null)
             {
                 await ReplyAsync($"No bot has that IP address ({ip}).").ConfigureAwait(false);
@@ -52,7 +53,7 @@ namespace SysBot.Pokemon.Discord
         [RequireSudo]
         public async Task StopBotAsync(string ip)
         {
-            var bot = SysCordInstance.Runner.GetBot(ip);
+            var bot = SysCord<T>.Runner.GetBot(ip);
             if (bot == null)
             {
                 await ReplyAsync($"No bot has that IP address ({ip}).").ConfigureAwait(false);
@@ -63,12 +64,29 @@ namespace SysBot.Pokemon.Discord
             await Context.Channel.EchoAndReply($"The bot at {ip} ({bot.Bot.Connection.Label}) has been commanded to Stop.").ConfigureAwait(false);
         }
 
+        [Command("botIdle")]
+        [Alias("botPause")]
+        [Summary("Commands a bot to Idle by IP address/port.")]
+        [RequireSudo]
+        public async Task IdleBotAsync(string ip)
+        {
+            var bot = SysCord<T>.Runner.GetBot(ip);
+            if (bot == null)
+            {
+                await ReplyAsync($"No bot has that IP address ({ip}).").ConfigureAwait(false);
+                return;
+            }
+
+            bot.Pause();
+            await Context.Channel.EchoAndReply($"The bot at {ip} ({bot.Bot.Connection.Label}) has been commanded to Idle.").ConfigureAwait(false);
+        }
+
         [Command("botChange")]
         [Summary("Changes the routine of a bot (trades).")]
         [RequireSudo]
         public async Task ChangeTaskAsync(string ip, [Summary("Routine enum name")] PokeRoutineType task)
         {
-            var bot = SysCordInstance.Runner.GetBot(ip);
+            var bot = SysCord<T>.Runner.GetBot(ip);
             if (bot == null)
             {
                 await ReplyAsync($"No bot has that IP address ({ip}).").ConfigureAwait(false);
@@ -87,7 +105,7 @@ namespace SysBot.Pokemon.Discord
             var ips = ipAddressesCommaSeparated.Split(',');
             foreach (var ip in ips)
             {
-                var bot = SysCordInstance.Runner.GetBot(ip);
+                var bot = SysCord<T>.Runner.GetBot(ip);
                 if (bot == null)
                 {
                     await ReplyAsync($"No bot has that IP address ({ip}).").ConfigureAwait(false);

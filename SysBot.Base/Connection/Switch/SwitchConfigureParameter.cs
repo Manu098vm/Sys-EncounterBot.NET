@@ -19,5 +19,20 @@
         /// sys-botbase Echoes the command request back after processing the command if this is set.
         /// </summary>
         echoCommands,
+
+        /// <summary>
+        /// Amount of time (milliseconds) Hid polling rate for virtual functions
+        /// </summary>
+        pollRate,
+
+        /// <summary>
+        /// Amount of time (milliseconds) to sleep between Hid keypresses
+        /// </summary>
+        keySleepTime,
+
+        /// <summary>
+        /// Allows configuration of the controller to any HidDeviceType
+        /// </summary>
+        controllerType,
     }
 }
