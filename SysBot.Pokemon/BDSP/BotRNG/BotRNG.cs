@@ -47,7 +47,8 @@ namespace SysBot.Pokemon
             Calc = new RNG8b();
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
             string res_data = Properties.Resources.text_bdsp_00000_en;
-            locations = res_data.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            res_data = res_data.Replace("\r", String.Empty);
+            locations = res_data.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries).ToList();
         }
 
         // Cached offsets that stay the same per session.
@@ -405,7 +406,7 @@ namespace SysBot.Pokemon
                     if (ramS0 == tmpS0 && ramS1 == tmpS1 && ramS2 == tmpS2 && ramS3 == tmpS3)
 					{
                         old_target = target;
-                        target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false) - Hub.Config.BDSP_RNG.AutoRNGSettings.Delay - modifier;
+                        target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false) - Hub.Config.BDSP_RNG.AutoRNGSettings.Delay + modifier;
 
                         if (check && old_target < target)
                         {
@@ -562,6 +563,7 @@ namespace SysBot.Pokemon
 
 			do
 			{
+                //Log($"{advances}");
                 if (type is RNGType.Roamer)
                     pk = Calc.CalculateFromSeed(pk, Shiny.Random, type, rng.Next());
                 else

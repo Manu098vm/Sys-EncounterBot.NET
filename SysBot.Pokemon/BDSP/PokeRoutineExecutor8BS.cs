@@ -321,13 +321,13 @@ namespace SysBot.Pokemon
                         {
                             foreach (var specie in current_table.ground_mons)
                                 list.Add(specie.monsNo);
-                            if ((time is GameTime.Night || time is GameTime.DeepNight) && current_table.night != null)
+                            if ((time is GameTime.Night or GameTime.DeepNight) && current_table.night != null)
                                 foreach (var specie in current_table.night)
                                 {
                                     list[i] = specie.monsNo;
                                     i++;
                                 }
-                            else if ((time is GameTime.Day || time is GameTime.Sunset) && current_table.day != null)
+                            else if ((time is GameTime.Day or GameTime.Sunset) && current_table.day != null)
                                 foreach (var specie in current_table.day)
                                 {
                                     list[i] = specie.monsNo;
