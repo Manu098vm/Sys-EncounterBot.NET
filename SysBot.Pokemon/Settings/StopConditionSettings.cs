@@ -100,18 +100,6 @@ namespace SysBot.Pokemon
             max = ReadTargetIVs(hub.Config.StopConditions, false);
         }
 
-        public static void InitializeTargetIVs(PokeBotHub<PB7> hub, out int[] min, out int[] max)
-        {
-            min = ReadTargetIVs(hub.Config.StopConditions, true);
-            max = ReadTargetIVs(hub.Config.StopConditions, false);
-        }
-
-        public static void InitializeTargetIVs(PokeBotHub<PB8> hub, out int[] min, out int[] max)
-        {
-            min = ReadTargetIVs(hub.Config.StopConditions, true);
-            max = ReadTargetIVs(hub.Config.StopConditions, false);
-        }
-
         private static int[] ReadTargetIVs(StopConditionSettings settings, bool min)
         {
             int[] targetIVs = new int[6];

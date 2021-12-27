@@ -5,8 +5,10 @@ namespace SysBot.Pokemon
 {
     public sealed class BotFactory8 : BotFactory<PK8>
     {
-        public override PokeRoutineExecutorBase CreateBot(PokeBotHub<PK8> Hub, PokeBotState cfg) => cfg.NextRoutineType switch
+        public override PokeRoutineExecutorBase CreateBot(PokeBotHub<PK8> Hub, PokeBotState cfg ) => cfg.NextRoutineType switch
         {
+            PokeRoutineType.LGPE_EncounterBot => new EncounterBot7B(cfg, Hub),
+            PokeRoutineType.LGPE_OverworldScan => new BotOverworld7B(cfg, Hub),
             PokeRoutineType.BDSP_RNG => new BDSPBotRNG(cfg, Hub),
             PokeRoutineType.SWSH_EggBot => new EggBot(cfg, Hub),
             PokeRoutineType.SWSH_EncounterBot => Hub.Config.SWSH_Encounter.EncounteringType switch

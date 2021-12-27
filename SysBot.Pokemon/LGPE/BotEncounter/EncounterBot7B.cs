@@ -13,13 +13,13 @@ namespace SysBot.Pokemon
 {
     public class EncounterBot7B : PokeRoutineExecutor7B, IEncounterBot
     {
-        protected readonly PokeBotHub<PB7> Hub;
+        protected readonly PokeBotHub<PK8> Hub;
         private readonly IDumper DumpSetting;
         protected readonly Encounter7BSettings Settings;
         protected readonly int[] DesiredMinIVs;
         protected readonly int[] DesiredMaxIVs;
         public ICountSettings Counts => Settings;
-        protected EncounterBot7B(PokeBotState cfg, PokeBotHub<PB7> hub) : base(cfg)
+        public EncounterBot7B(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
             Settings = Hub.Config.LGPE_Encounter;

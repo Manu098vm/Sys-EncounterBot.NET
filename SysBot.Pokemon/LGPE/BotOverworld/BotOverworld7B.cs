@@ -13,10 +13,10 @@ namespace SysBot.Pokemon
 {
     public class BotOverworld7B : PokeRoutineExecutor7B, IEncounterBot
     {
-        protected readonly PokeBotHub<PB7> Hub;
+        protected readonly PokeBotHub<PK8> Hub;
         protected readonly Overworld7BSettings Settings;
         public ICountSettings Counts => Settings;
-        protected BotOverworld7B(PokeBotState cfg, PokeBotHub<PB7> hub) : base(cfg)
+        public BotOverworld7B(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
             Settings = Hub.Config.LGPE_OverworldScan;
@@ -152,12 +152,7 @@ namespace SysBot.Pokemon
                                 Settings.AddCompletedScans();
 
                                 var msg = $"New spawn ({encounterCount}): {newspawn} {SpeciesName.GetSpeciesName((int)newspawn, 4)}";
-                                EchoUtil.Echo(msg);
                                 Log(msg);
-
-                                IsWaiting = true;
-                                while (IsWaiting)
-                                    await Task.Delay(1_000, token).ConfigureAwait(false);
                             }
                             prev = newspawn;
                             if (!searchforshiny &&
@@ -214,12 +209,8 @@ namespace SysBot.Pokemon
                     var msg = $"Shiny Target {SpeciesName.GetSpeciesName((int)newspawn, 4)} found!";
                     if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
                         msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
-                    EchoUtil.Echo(msg);
                     Log(msg);
 
-                    IsWaiting = true;
-                    while (IsWaiting)
-                        await Task.Delay(1_000, token).ConfigureAwait(false);
                     return;
                 }
 

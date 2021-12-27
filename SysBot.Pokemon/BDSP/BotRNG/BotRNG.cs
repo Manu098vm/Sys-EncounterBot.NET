@@ -702,6 +702,14 @@ namespace SysBot.Pokemon
                 var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
                 GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
                 encounterslots = GetEncounterSlots(version, route, time, mode);
+                Log($"({version}) {GetLocation(route)} ({route}) [{time}]");
+                Log("Available mons:");
+                var i = 0;
+                foreach (var mon in encounterslots)
+                {
+                    Log($"[{i}] {(Species)mon}");
+                    i++;
+                }
             }
 
             var rng = new Xorshift(initial_s0f, initial_s1f, initial_s2f, initial_s3f);
