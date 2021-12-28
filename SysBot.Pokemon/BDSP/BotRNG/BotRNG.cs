@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using SysBot.Base;
-using System.Net.Sockets;
 using System.Linq;
 
 
@@ -285,16 +284,22 @@ namespace SysBot.Pokemon
                                 if (target > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil && can_act)
                                 {
                                     await Task.Delay(0_700).ConfigureAwait(false);
-                                    Log("Perfoming actions...");
-                                    await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
+                                    if (actions.Count > 1)
+                                    {
+                                        Log("Perfoming actions...");
+                                        await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
+                                    }
                                     can_act = false;
                                 }
                             }
                             else if(can_act)
                             {
                                 await Task.Delay(0_700).ConfigureAwait(false);
-                                Log("Perfoming actions...");
-                                await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
+                                if (actions.Count > 1)
+                                {
+                                    Log("Perfoming actions...");
+                                    await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
+                                }
                                 can_act = false;
                             }
                             else
@@ -351,7 +356,7 @@ namespace SysBot.Pokemon
             GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
             Log($"[{version}] - Route: {GetLocation(route)} ({route}) [{time}]");
 
-            Log($"Initial States: \n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}\nTarget in {target}.");
+            Log($"Initial States: \n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}.");
 
             while (!token.IsCancellationRequested)
             {
@@ -392,7 +397,7 @@ namespace SysBot.Pokemon
                                 force_check = true;
                         }
 
-                        if (target == 0 || force_check)
+                        if (target <= 0 || force_check)
                         {
                             if (in_dex)
                             {
@@ -403,37 +408,46 @@ namespace SysBot.Pokemon
                             await Click(actions.Last(), 0_100, token).ConfigureAwait(false);
                             System.Diagnostics.Stopwatch stopwatch = new();
                             stopwatch.Start();
-                            Log($"\n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}\nStarting encounter...");
-                            var offset = GetDestOffset(checkmode);
-                            pk = null;
-                            uint seed = 0;
-                            do
-                            {
-                                if (checkmode is CheckMode.Seed && type is RNGType.Roamer)
-                                {
-                                    var species = (int)Hub.Config.StopConditions.StopOnSpecies;
-                                    pk = new PB8
-                                    {
-                                        TID = sav.TID,
-                                        SID = sav.SID,
-                                        OT_Name = sav.OT,
-                                        Species = (species != 0) ? species : 482,
-                                    };
-                                    seed = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(await PointerAll(offset, token).ConfigureAwait(false), 4, token).ConfigureAwait(false), 0);
-                                    pk = Calc.CalculateFromSeed(pk, Shiny.Random, type, seed);
-                                }
-                                else
-                                {
-                                    seed = 1;
-                                    pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
-                                }
-                            } while ((pk is null || seed == 0) && stopwatch.ElapsedMilliseconds < 5_000);
-                            if (pk is null)
-                                return false;
+                            Log($"\n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}");
 
-                            Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
-                            Log("If target is missed, calculate a proper delay with DelayCalc mode and retry.");
-                            return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, null);
+                            if (actions.Last() is not SwitchButton.HOME)
+                            {
+                                Log("Starting encounter...");
+                                var offset = GetDestOffset(checkmode);
+                                pk = null;
+                                uint seed = 0;
+                                do
+                                {
+                                    if (checkmode is CheckMode.Seed && type is RNGType.Roamer)
+                                    {
+                                        var species = (int)Hub.Config.StopConditions.StopOnSpecies;
+                                        pk = new PB8
+                                        {
+                                            TID = sav.TID,
+                                            SID = sav.SID,
+                                            OT_Name = sav.OT,
+                                            Species = (species != 0) ? species : 482,
+                                        };
+                                        seed = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(await PointerAll(offset, token).ConfigureAwait(false), 4, token).ConfigureAwait(false), 0);
+                                        pk = Calc.CalculateFromSeed(pk, Shiny.Random, type, seed);
+                                    }
+                                    else
+                                    {
+                                        seed = 1;
+                                        pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
+                                    }
+                                } while ((pk is null || seed == 0) && stopwatch.ElapsedMilliseconds < 5_000);
+                                if (pk is null)
+                                    return false;
+
+                                Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
+                                Log("If target is missed, calculate a proper delay with DelayCalc mode and retry.");
+                                return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, null);
+                            } else
+							{
+                                Log("Game paused.");
+                                return true;
+							}
                         }
                         else if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIfFailed && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue)
                         {
@@ -473,8 +487,11 @@ namespace SysBot.Pokemon
                             if (target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue && can_act)
 							{
                                 await Task.Delay(0_700).ConfigureAwait(false);
-                                Log("Perfoming Actions");
-                                await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
+                                if (actions.Count > 1)
+                                {
+                                    Log("Perfoming Actions");
+                                    await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
+                                }
                                 can_act = false;
                             }
                         }
@@ -483,8 +500,11 @@ namespace SysBot.Pokemon
 							if (can_act)
 							{
                                 await Task.Delay(0_700).ConfigureAwait(false);
-                                Log("Perfoming Actions");
-                                await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
+                                if (actions.Count > 1)
+                                {
+                                    Log("Perfoming Actions");
+                                    await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
+                                }
                                 can_act = false;
                             }
                             print = true;
