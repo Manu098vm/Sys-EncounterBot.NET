@@ -2,6 +2,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using SysBot.Base;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
@@ -14,6 +15,7 @@ namespace SysBot.Pokemon
         private readonly IDumper DumpSetting;
         private readonly int[] DesiredMinIVs;
         private readonly int[] DesiredMaxIVs;
+        private readonly IReadOnlyList<string> WantedNatures;
         private const SwordShieldDaycare Location = SwordShieldDaycare.Route5;
         private readonly EggSettings Settings;
         public ICountSettings Counts => Settings;
@@ -24,6 +26,7 @@ namespace SysBot.Pokemon
             Settings = Hub.Config.SWSH_Eggs;
             DumpSetting = Hub.Config.Folder;
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
+            StopConditionSettings.ReadWantedNatures(Hub.Config.StopConditions, out WantedNatures);
         }
 
         private int encounterCount;
@@ -115,7 +118,7 @@ namespace SysBot.Pokemon
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                 DumpPokemon(DumpSetting.DumpFolder, "egg", pk);
 
-            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
+            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, null))
                 return true;
 
             // no need to take a video clip of us receiving an egg.

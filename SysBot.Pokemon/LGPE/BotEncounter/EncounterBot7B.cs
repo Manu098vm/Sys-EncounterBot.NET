@@ -18,6 +18,7 @@ namespace SysBot.Pokemon
         protected readonly Encounter7BSettings Settings;
         protected readonly int[] DesiredMinIVs;
         protected readonly int[] DesiredMaxIVs;
+        private readonly IReadOnlyList<string> WantedNatures;
         public ICountSettings Counts => Settings;
         public EncounterBot7B(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
@@ -25,6 +26,7 @@ namespace SysBot.Pokemon
             Settings = Hub.Config.LGPE_Encounter;
             DumpSetting = Hub.Config.Folder;
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
+            StopConditionSettings.ReadWantedNatures(Hub.Config.StopConditions, out WantedNatures);
         }
 
         protected int encounterCount;
@@ -211,7 +213,7 @@ namespace SysBot.Pokemon
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                 DumpPokemon(DumpSetting.DumpFolder, legendary ? "lgpe_legends" : "lgpe_encounters", pk);
 
-            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
+            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions,WantedNatures, null))
                 return false;
 
             if (Hub.Config.StopConditions.CaptureVideoClip)

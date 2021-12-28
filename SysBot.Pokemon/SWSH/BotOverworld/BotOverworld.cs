@@ -16,6 +16,7 @@ namespace SysBot.Pokemon
         private readonly int[] DesiredMinIVs;
         private readonly int[] DesiredMaxIVs;
         private readonly IReadOnlyList<string> UnwantedMarks;
+        private readonly IReadOnlyList<string> WantedNatures;
         private readonly OverworldScanSettings Settings;
         private readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
         public ICountSettings Counts => Settings;
@@ -27,6 +28,8 @@ namespace SysBot.Pokemon
             DumpSetting = Hub.Config.Folder;
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
             StopConditionSettings.ReadUnwantedMarks(Hub.Config.StopConditions, out UnwantedMarks);
+            StopConditionSettings.ReadWantedNatures(Hub.Config.StopConditions, out WantedNatures);
+
         }
 
         private int encounterCount;
@@ -280,7 +283,7 @@ namespace SysBot.Pokemon
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                 DumpPokemon(DumpSetting.DumpFolder, legendary ? "ow_legends" : "ow_encounters", pk);
 
-            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, UnwantedMarks))
+            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, UnwantedMarks))
                 return false;
 
             if (Hub.Config.StopConditions.CaptureVideoClip)

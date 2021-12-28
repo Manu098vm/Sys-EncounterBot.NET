@@ -17,8 +17,8 @@ namespace SysBot.Pokemon
         [Category(StopConditions), Description("Stops only on Pokémon with this FormID. No restrictions if left blank.")]
         public int? StopOnForm { get; set; }
 
-        [Category(StopConditions), Description("Stop only on Pokémon of the specified nature.")]
-        public Nature TargetNature { get; set; } = Nature.Random;
+        [Category(StopConditions), Description("Stop only on Pokémon with one of the following Natures, separated by commas. Ignored if empty.")]
+        public string TargetNatures { get; set; } = String.Empty;
 
         [Category(StopConditions), Description("Minimum accepted IVs in the format HP/Atk/Def/SpA/SpD/Spe. Use \"x\" for unchecked IVs and \"/\" as a separator.")]
         public string TargetMinIVs { get; set; } = "";
@@ -47,7 +47,7 @@ namespace SysBot.Pokemon
         [Category(StopConditions), Description("If not empty, the provided string will be prepended to the result found log message to Echo alerts for whomever you specify. For Discord, use <@userIDnumber> to mention.")]
         public string MatchFoundEchoMention { get; set; } = string.Empty;
 
-        public static bool EncounterFound<T>(T pk, int[] targetminIVs, int[] targetmaxIVs, StopConditionSettings settings, IReadOnlyList<string>? marklist) where T : PKM
+        public static bool EncounterFound<T>(T pk, int[] targetminIVs, int[] targetmaxIVs, StopConditionSettings settings, IReadOnlyList<string>? naturelist, IReadOnlyList<string>? marklist) where T : PKM
         {
             // Match Nature and Species if they were specified.
             if (settings.StopOnSpecies != Species.None && settings.StopOnSpecies != (Species)pk.Species)
@@ -56,8 +56,18 @@ namespace SysBot.Pokemon
             if (settings.StopOnForm.HasValue && settings.StopOnForm != pk.Form)
                 return false;
 
-            if (settings.TargetNature != Nature.Random && settings.TargetNature != (Nature)pk.Nature)
-                return false;
+            if(naturelist is not null)
+			{
+                var nat_check = false;
+                foreach (var nature in naturelist)
+				{
+                    Nature nat = (Nature)Enum.Parse(typeof(Nature), nature, true);
+                    if (nat == (Nature)pk.Nature)
+                        nat_check = true;
+                }
+                if(!nat_check)
+                    return false;
+			}
 
             // Return if it doesn't have a mark or it has an unwanted mark.
             var unmarked = pk is IRibbonIndex m && !HasMark(m);
@@ -147,6 +157,9 @@ namespace SysBot.Pokemon
 
         public static void ReadUnwantedMarks(StopConditionSettings settings, out IReadOnlyList<string> marks) =>
             marks = settings.UnwantedMarks.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+
+        public static void ReadWantedNatures(StopConditionSettings settings, out IReadOnlyList<string> natures) =>
+            natures = settings.TargetNatures.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
 
         public virtual bool IsUnwantedMark(string mark, IReadOnlyList<string> marklist) => marklist.Contains(mark);
 

@@ -221,7 +221,7 @@ namespace SysBot.Pokemon
                 Log("Back in the overworld!");
             }
             else
-                await Task.Delay(5_000 + timing.ExtraTimeLoadGame, token).ConfigureAwait(false);
+                await Task.Delay(2_000 + timing.ExtraTimeLoadGame, token).ConfigureAwait(false);
         }
 
         public async Task ResumeStart(PokeBotHubConfig config, CancellationToken token)

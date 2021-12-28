@@ -16,6 +16,7 @@ namespace SysBot.Pokemon
     {
         private readonly PokeBotHub<PK8> Hub;
         private readonly RNGSettings Settings;
+        private readonly IReadOnlyList<string> WantedNatures;
         private readonly RNG8b Calc;
         private readonly int[] DesiredMinIVs;
         private readonly int[] DesiredMaxIVs;
@@ -46,6 +47,7 @@ namespace SysBot.Pokemon
             DumpSetting = hub.Config.Folder;
             Calc = new RNG8b();
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
+            StopConditionSettings.ReadWantedNatures(Hub.Config.StopConditions, out WantedNatures);
             string res_data = Properties.Resources.text_bdsp_00000_en;
             res_data = res_data.Replace("\r", String.Empty);
             locations = res_data.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries).ToList();
@@ -68,7 +70,17 @@ namespace SysBot.Pokemon
                 await InitializeSessionOffsets(token).ConfigureAwait(false);
 
                 Log($"Starting main {nameof(BDSPBotRNG)} loop.");
-                await InnerLoop(sav, token).ConfigureAwait(false);
+                Config.IterateNextRoutine();
+                var task = Hub.Config.BDSP_RNG.Routine switch
+                {
+                    RNGRoutine.AutoRNG => AutoRNG(sav, token),
+                    RNGRoutine.Generator => Generator(sav, token, Hub.Config.BDSP_RNG.GeneratorSettings.GeneratorVerbose, Hub.Config.BDSP_RNG.GeneratorSettings.GeneratorMaxResults),
+                    RNGRoutine.DelayCalc => CalculateDelay(sav, token),
+                    RNGRoutine.LogAdvances => TrackAdvances(sav, token),
+                    RNGRoutine.TEST => Test(sav, token),
+                    _ => TrackAdvances(sav, token),
+                };
+                await task.ConfigureAwait(false);
             }
 #pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception e)
@@ -87,58 +99,13 @@ namespace SysBot.Pokemon
             await CleanExit(Settings, CancellationToken.None).ConfigureAwait(false);
         }
 
-        private async Task InnerLoop(SAV8BS sav, CancellationToken token)
-        {
-                Config.IterateNextRoutine();
-                var task  = Hub.Config.BDSP_RNG.Routine switch
-                {
-                    RNGRoutine.AutoRNG => AutoRNG(sav, token),
-                    RNGRoutine.Generator => Generator(sav, token, Hub.Config.BDSP_RNG.GeneratorSettings.GeneratorVerbose, Hub.Config.BDSP_RNG.GeneratorSettings.GeneratorMaxResults),
-                    RNGRoutine.DelayCalc => CalculateDelay(sav, token),
-                    RNGRoutine.LogAdvances => TrackAdvances(sav, token),
-                    RNGRoutine.TEST => Test(sav, token),
-                    _ => TrackAdvances(sav, token),
-                };
-                try
-                {
-                    await task.ConfigureAwait(false);
-                }
-                catch (SocketException e)
-                {
-                    Log(e.Message);
-                    Connection.Reset();
-                }
-        }
-
         private async Task Test(SAV8BS sav, CancellationToken token)
 		{
-            GameVersion version = 0;
-            var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false),0);
-            var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
-            var mode = Hub.Config.BDSP_RNG.WildMode;
-            if (Offsets is PokeDataOffsetsBS_BD)
-                version = GameVersion.BD;
-            else if (Offsets is PokeDataOffsetsBS_SP)
-                version = GameVersion.SP;
-
-            Log($"({version}) {GetLocation(route)} ({route}) [{time}]");
-
-            var mons = GetEncounterSlots(version, route, time, mode);
-            Log("Available mons:");
-            var i = 0;
-            foreach (var mon in mons)
-            {
-                Log($"[{i}] {(Species)mon}");
-                i++;
+            foreach(var nature in WantedNatures)
+			{
+                Nature nat = (Nature)Enum.Parse(typeof(Nature), nature, true);
+                Log($"{(Nature)nat}");
             }
-
-            Log("Actions:");
-            List<SwitchButton> actions = ParseActions(Hub.Config.BDSP_RNG.AutoRNGSettings.Actions);
-            foreach (var button in actions)
-                Log($"{button}");
-            Log("Performing actions...");
-            await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
-            await Click(actions.Last(), 0_050, token).ConfigureAwait(false);
         }
 
         private async Task AutoRNG(SAV8BS sav, CancellationToken token)
@@ -272,7 +239,7 @@ namespace SysBot.Pokemon
                                 if (pk is null)
                                     return false;
                                 Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
-                                return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null);
+                                return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, null);
                             }
                             else if (target != 0 && advances > target)
                             {
@@ -466,7 +433,7 @@ namespace SysBot.Pokemon
 
                             Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
                             Log("If target is missed, calculate a proper delay with DelayCalc mode and retry.");
-                            return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null);
+                            return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, null);
                         }
                         else if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIfFailed && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue)
                         {
@@ -769,7 +736,7 @@ namespace SysBot.Pokemon
             if (pk.Species == 0)
                 pk.Species = 1;
 
-            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
+            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, null))
                 return false;
 
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder) && dump)

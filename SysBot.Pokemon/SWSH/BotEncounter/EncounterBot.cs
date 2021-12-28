@@ -13,6 +13,7 @@ namespace SysBot.Pokemon
     {
         protected readonly PokeBotHub<PK8> Hub;
         public readonly IReadOnlyList<string> UnwantedMarks;
+        private readonly IReadOnlyList<string> WantedNatures;
         private readonly IDumper DumpSetting;
         protected readonly EncounterSettings Settings;
         protected readonly int[] DesiredMinIVs;
@@ -28,6 +29,7 @@ namespace SysBot.Pokemon
             DumpSetting = Hub.Config.Folder;
             StopConditionSettings.InitializeTargetIVs(Hub, out DesiredMinIVs, out DesiredMaxIVs);
             StopConditionSettings.ReadUnwantedMarks(Hub.Config.StopConditions, out UnwantedMarks);
+            StopConditionSettings.ReadWantedNatures(Hub.Config.StopConditions, out WantedNatures);
         }
 
         protected int encounterCount;
@@ -95,7 +97,7 @@ namespace SysBot.Pokemon
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                 DumpPokemon(DumpSetting.DumpFolder, legendary ? "legends" : "encounters", pk);
 
-            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, UnwantedMarks))
+            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, UnwantedMarks))
                 return false;
 
             if (Hub.Config.StopConditions.CaptureVideoClip)
