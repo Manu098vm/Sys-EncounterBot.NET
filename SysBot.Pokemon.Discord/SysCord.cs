@@ -209,11 +209,6 @@ namespace SysBot.Pokemon.Discord
 
             // Check Permission
             var mgr = Manager;
-            if (!mgr.CanUseCommandUser(msg.Author.Id))
-            {
-                await msg.Channel.SendMessageAsync("You are not permitted to use this command.").ConfigureAwait(false);
-                return true;
-            }
             if (!mgr.CanUseCommandChannel(msg.Channel.Id) && msg.Author.Id != mgr.Owner)
             {
                 if (Hub.Config.Discord.ReplyCannotUseCommandInChannel)

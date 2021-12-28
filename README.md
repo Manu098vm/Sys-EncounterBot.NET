@@ -27,7 +27,7 @@ Check the [Wiki](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki) for a d
 
 [Zaksabeast](https://github.com/zaksabeast) for his great researches on how Shinies are generated in the Let's Go games.
 
-
+[Zaksabeast](https://github.com/zaksabeast), [Real.96](https://github.com/Real96), [EzPzStreamz](https://github.com/SteveCookTU), [ShinySylveon](https://github.com/ShinySylveon04), [AdmiralFish](https://github.com/Admiral-Fish), [Lincoln-LM](https://github.com/Lincoln-LM), [Kaphotics](https://github.com/kwsch), [SciresM](https://github.com/SciresM) for great RNG researches.
 
 # License
 Refer to the `LICENSE` for details regarding licensing.
