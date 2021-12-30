@@ -100,25 +100,51 @@ namespace SysBot.Pokemon
 
         private async Task Test(SAV8BS sav, CancellationToken token)
 		{
-            foreach(var nature in WantedNatures)
-			{
-                Nature nat = (Nature)Enum.Parse(typeof(Nature), nature, true);
-                Log($"{(Nature)nat}");
+            GameVersion version = 0;
+            var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
+            var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
+            var mode = Hub.Config.BDSP_RNG.WildMode;
+            if (Offsets is PokeDataOffsetsBS_BD)
+                version = GameVersion.BD;
+            else if (Offsets is PokeDataOffsetsBS_SP)
+                version = GameVersion.SP;
+
+            Log($"({version}) {GetLocation(route)} ({route}) [{time}]");
+
+            var mons = GetEncounterSlots(version, route, time, mode);
+            if (mode is not WildMode.None)
+            {
+                Log("Available mons:");
+                var i = 0;
+                foreach (var mon in mons)
+                {
+                    Log($"[{i}] {(Species)mon}");
+                    i++;
+                }
             }
+            else
+                Log("No EncounterTable mode (WildMode) selected in the settings.");
+
+            Log("Actions:");
+            List<SwitchButton> actions = ParseActions(Hub.Config.BDSP_RNG.AutoRNGSettings.Actions);
+            foreach (var button in actions)
+                Log($"{button}");
+            Log("Performing actions...");
+            await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
+            await Click(actions.Last(), 0_050, token).ConfigureAwait(false);
         }
 
         private async Task AutoRNG(SAV8BS sav, CancellationToken token)
         {
+            bool found;
             if (Hub.Config.BDSP_RNG.AutoRNGSettings.AutoRNGMode is AutoRNGMode.AutoCalc)
             {
-                bool found;
                 if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIfFailed)
                 {
                     while (!await AutoCalc(sav, token).ConfigureAwait(false))
                     {
                         var target = int.MaxValue;
-                        var boot_pass = true;
-                        while ((Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue) || !boot_pass)
+                        while ((Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue))
                         {
                             await RestartGameBDSP(false, token).ConfigureAwait(false);
                             var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
@@ -128,21 +154,12 @@ namespace SysBot.Pokemon
                             var tmpS3 = BitConverter.ToUInt32(tmpRamState, 12);
                             var xoro = new Xorshift(tmpS0, tmpS1, tmpS2, tmpS3);
                             target = await CalculateTarget(xoro, sav, Hub.Config.BDSP_RNG.RNGType, Hub.Config.BDSP_RNG.WildMode, token).ConfigureAwait(false);
-                            if (tmpS1 == tmpS3)
-                            {
-                                Log("Boot failed. Retry...");
-                                boot_pass = false;
-                            }
+                            string msg = $"\n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}";
+                            if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue)
+                                msg = $"{msg}\nTarget above the limit settings. Rebooting.";
                             else
-                            {
-                                string msg = $"\n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}";
-                                if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue)
-                                    msg = $"{msg}\nTarget above the limit settings. Rebooting.";
-                                else
-                                    msg = $"{msg}\nTarget in: {target}";
-                                Log(msg);
-                                boot_pass = true;
-                            }
+                                msg = $"{msg}\nTarget in: {target}";
+                            Log(msg);
                         }
                         await ResumeStart(Hub.Config, token).ConfigureAwait(false);
                     }
@@ -150,20 +167,20 @@ namespace SysBot.Pokemon
                 }
                 else
                     found = await AutoCalc(sav, token).ConfigureAwait(false);
-
-                if (found)
-                {
-                    if (Hub.Config.StopConditions.CaptureVideoClip)
-                    {
-                        await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
-                        await PressAndHold(SwitchButton.CAPTURE, 2_000, 0, token).ConfigureAwait(false);
-                    }
-                    if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
-                        Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} result found.");
-                }
             }
             else
-                await TrackAdvances(sav, token, true).ConfigureAwait(false);
+                found = await TrackAdvances(sav, token, true).ConfigureAwait(false);
+
+            if (found)
+            {
+                if (Hub.Config.StopConditions.CaptureVideoClip)
+                {
+                    await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
+                    await PressAndHold(SwitchButton.CAPTURE, 2_000, 0, token).ConfigureAwait(false);
+                }
+                if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
+                    Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} result found.");
+            }
             return;
         }
 
@@ -351,6 +368,12 @@ namespace SysBot.Pokemon
                 return true;
             }
 
+            if(Hub.Config.StopConditions.StopOnSpecies <= 0)
+			{
+                Log("\nPlease set a valid Species in the Stop Conditions settings.");
+                return true;
+			}
+
             var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
             var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
             GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
@@ -379,6 +402,17 @@ namespace SysBot.Pokemon
 					{
                         old_target = target;
                         target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false) - Hub.Config.BDSP_RNG.AutoRNGSettings.Delay + modifier;
+
+                        if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIfFailed && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue)
+                        {
+                            Log($"Target above the limit settings. Rebooting...");
+                            return false;
+                        }
+                        if (print)
+                        {
+                            Log($"Target in {target} Advances.");
+                            //print = false;
+                        }
 
                         if (check && old_target < target)
                         {
@@ -441,18 +475,20 @@ namespace SysBot.Pokemon
                                     return false;
 
                                 Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
-                                Log("If target is missed, calculate a proper delay with DelayCalc mode and retry.");
-                                return StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, null);
+                                var success = StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, null);
+                                if (!success)
+                                {
+                                    Log("If target is missed, calculate a proper delay with DelayCalc mode and retry.");
+                                    var mismatch = await CalculateMismatch(new Xorshift(tmpS0, tmpS1, tmpS2, tmpS3), sav, type, mode, pk.EncryptionConstant, token).ConfigureAwait(false);
+                                    if(mismatch is not null && (target == 0 || force_check))
+                                        Log($"Calculated delay mismatch is {mismatch}.");
+                                }
+                                return success;
                             } else
 							{
                                 Log("Game paused.");
                                 return true;
 							}
-                        }
-                        else if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIfFailed && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue)
-                        {
-                            Log($"Target above the limit settings. Rebooting...");
-                            return false;
                         }
                         else if (Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil)
                         {
@@ -510,17 +546,58 @@ namespace SysBot.Pokemon
                             print = true;
                         }
 
-						if (print)
-						{
-                            Log($"Target in {target} Advances.");
-                            print = false;
-						}
-
                         check = true;
                     }
                 }
             }
             return false;
+        }
+
+        async Task<int?> CalculateMismatch(Xorshift xoro, SAV8BS sav, RNGType type, WildMode mode, uint hit_ec, CancellationToken token)
+		{
+            var delay = Hub.Config.BDSP_RNG.AutoRNGSettings.Delay * 2;
+            var range = delay > 100 ? delay : 100;
+            var states = xoro.GetU32State();
+            var species = (int)Hub.Config.StopConditions.StopOnSpecies;
+            var rng = new Xorshift(states[0], states[1], states[2], states[3]);
+            var target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false);
+            var advances = 0;
+            List<int>? slots = null;
+
+            if (mode is not WildMode.None)
+            {
+                var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
+                var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
+                GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
+                //Log($"Route: {GetLocation(route)} ({route}) [{time}]");
+                slots = GetEncounterSlots(version, route, time, mode);
+            }
+
+            var pk = new PB8
+            {
+                TID = sav.TID,
+                SID = sav.SID,
+                OT_Name = sav.OT,
+                Species = (species != 0) ? species : 482,
+            };
+
+            do
+            {
+                //Log($"{advances}");
+                if (type is RNGType.Roamer)
+                    pk = Calc.CalculateFromSeed(pk, Shiny.Random, type, rng.Next());
+                else
+                {
+                    states = rng.GetU32State();
+                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, slots);
+                    rng.Next();
+                }
+                advances++;
+            } while (pk.EncryptionConstant != hit_ec && advances <= range);
+
+            if (advances >= range)
+                return null;
+            return (advances - target);
         }
 
         async Task<int> CalculateTarget(Xorshift xoro, SAV8BS sav, RNGType type, WildMode mode, CancellationToken token)
@@ -578,7 +655,7 @@ namespace SysBot.Pokemon
             var calculatedlist = await Generator(sav, token, false, 500, xoro).ConfigureAwait(false);
             int used;
 
-            Log($"Initial State:\n[S0]: {tmpS0:X8}, [S1]: {tmpS1:X8}\n[S2]: {tmpS2:X8}, [S3]: {tmpS3:X8}\n");
+            //Log($"Initial State:\n[S0]: {tmpS0:X8}, [S1]: {tmpS1:X8}\n[S2]: {tmpS2:X8}, [S3]: {tmpS3:X8}\n");
 
             while (!token.IsCancellationRequested)
 			{
@@ -603,7 +680,7 @@ namespace SysBot.Pokemon
                         used = advances;
                         PB8? pk;
                         uint seed = 0;
-                        Log($"Waiting for pokemon...");
+                        //Log($"Waiting for pokemon...");
                         var offset = GetDestOffset(dest);
                         do
                         {
@@ -689,13 +766,16 @@ namespace SysBot.Pokemon
                 var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
                 GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
                 encounterslots = GetEncounterSlots(version, route, time, mode);
-                Log($"({version}) {GetLocation(route)} ({route}) [{time}]");
-                Log("Available mons:");
-                var i = 0;
-                foreach (var mon in encounterslots)
+                if (isroutine)
                 {
-                    Log($"[{i}] {(Species)mon}");
-                    i++;
+                    Log($"({version}) {GetLocation(route)} ({route}) [{time}]");
+                    Log("Available mons:");
+                    var i = 0;
+                    foreach (var mon in encounterslots)
+                    {
+                        Log($"[{i}] {(Species)mon}");
+                        i++;
+                    }
                 }
             }
 

@@ -56,7 +56,7 @@ namespace SysBot.Pokemon
             if (settings.StopOnForm.HasValue && settings.StopOnForm != pk.Form)
                 return false;
 
-            if(naturelist is not null)
+            if(naturelist is not null && naturelist.Count > 0)
 			{
                 var nat_check = false;
                 foreach (var nature in naturelist)

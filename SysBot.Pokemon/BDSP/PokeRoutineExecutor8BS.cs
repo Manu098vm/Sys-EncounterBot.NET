@@ -211,6 +211,20 @@ namespace SysBot.Pokemon
                     if (timer <= 0 && !timing.AvoidSystemUpdate)
                     {
                         Log("Still not in the game, initiating rescue protocol!");
+                        //Check if the game loading dropped an error
+                        var state = await SwitchConnection.PointerPeek(16, Offsets.MainRNGState, token).ConfigureAwait(false);
+                        var tmpS0 = BitConverter.ToUInt32(state, 0);
+                        var tmpS1 = BitConverter.ToUInt32(state, 4);
+                        var tmpS2 = BitConverter.ToUInt32(state, 8);
+                        var tmpS3 = BitConverter.ToUInt32(state, 12);
+                        Log($"Error check. [S2]{tmpS1}, [S3] {tmpS3}");
+                        if (tmpS1 == tmpS3)
+						{
+                            Log("Error message detected.");
+                            await Click(A, 1_000, token).ConfigureAwait(false);
+                            await StartGame(false, config, token).ConfigureAwait(false);
+						}
+                        //Click until overworld
                         while (!await IsSceneID(SceneID_Field, token).ConfigureAwait(false))
                             await Click(A, 6_000, token).ConfigureAwait(false);
                         break;
@@ -244,6 +258,20 @@ namespace SysBot.Pokemon
                 if (timer <= 0 && !timing.AvoidSystemUpdate)
                 {
                     Log("Still not in the game, initiating rescue protocol!");
+                    //Check if the game loading dropped an error
+                    var state = await SwitchConnection.PointerPeek(16, Offsets.MainRNGState, token).ConfigureAwait(false);
+                    var tmpS0 = BitConverter.ToUInt32(state, 0);
+                    var tmpS1 = BitConverter.ToUInt32(state, 4);
+                    var tmpS2 = BitConverter.ToUInt32(state, 8);
+                    var tmpS3 = BitConverter.ToUInt32(state, 12);
+                    Log($"Error check. [S2]{tmpS1}, [S3] {tmpS3}");
+                    if (tmpS1 == tmpS3)
+                    {
+                        Log("Error message detected.");
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+                        await StartGame(false, config, token).ConfigureAwait(false);
+                    }
+                    //Click A until overworld
                     while (!await IsSceneID(SceneID_Field, token).ConfigureAwait(false))
                         await Click(A, 6_000, token).ConfigureAwait(false);
                     break;
@@ -316,7 +344,6 @@ namespace SysBot.Pokemon
                     }
                     if (current_table != null)
                     {
-
                         if ((mode is WildMode.Grass || mode is WildMode.Swarm) && current_table.ground_mons != null)
                         {
                             foreach (var specie in current_table.ground_mons)
