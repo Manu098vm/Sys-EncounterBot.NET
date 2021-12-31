@@ -56,6 +56,7 @@ namespace SysBot.Pokemon
         private ulong RNGOffset;
         private ulong PlayerLocation;
         private ulong DayTime;
+        private GameTime GameTime;
 
         public override async Task MainLoop(CancellationToken token)
         {
@@ -141,6 +142,7 @@ namespace SysBot.Pokemon
             {
                 if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIfFailed)
                 {
+                    GameTime = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
                     while (!await AutoCalc(sav, token).ConfigureAwait(false))
                     {
                         var target = int.MaxValue;
@@ -246,7 +248,7 @@ namespace SysBot.Pokemon
                                 stopwatch.Start();
                                 await Click(actions.Last(), 0_100, token).ConfigureAwait(false);
                                 Log($"\n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}\nStarting encounter...");
-                                var offset = GetDestOffset(Hub.Config.BDSP_RNG.CheckMode);
+                                var offset = GetDestOffset(Hub.Config.BDSP_RNG.CheckMode, Hub.Config.BDSP_RNG.RNGType);
                                 PB8? pk;
                                 do
                                 {
@@ -375,9 +377,9 @@ namespace SysBot.Pokemon
 			}
 
             var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
-            var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
+            GameTime = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
             GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
-            Log($"[{version}] - Route: {GetLocation(route)} ({route}) [{time}]");
+            Log($"[{version}] - Route: {GetLocation(route)} ({route}) [{GameTime}]");
 
             Log($"Initial States: \n[S0] {tmpS0:X8}, [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}.");
 
@@ -447,7 +449,7 @@ namespace SysBot.Pokemon
                             if (actions.Last() is not SwitchButton.HOME)
                             {
                                 Log("Starting encounter...");
-                                var offset = GetDestOffset(checkmode);
+                                var offset = GetDestOffset(checkmode, type);
                                 pk = null;
                                 uint seed = 0;
                                 do
@@ -567,10 +569,10 @@ namespace SysBot.Pokemon
             if (mode is not WildMode.None)
             {
                 var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
-                var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
+                GameTime = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
                 GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
                 //Log($"Route: {GetLocation(route)} ({route}) [{time}]");
-                slots = GetEncounterSlots(version, route, time, mode);
+                slots = GetEncounterSlots(version, route, GameTime, mode);
             }
 
             var pk = new PB8
@@ -611,10 +613,12 @@ namespace SysBot.Pokemon
             if (mode is not WildMode.None)
             {
                 var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
-                var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
+                var tmp = (await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
+                if (tmp >= 0 && tmp <= 4)
+                    GameTime = (GameTime)tmp;
                 GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
                 //Log($"Route: {GetLocation(route)} ({route}) [{time}]");
-                slots = GetEncounterSlots(version, route, time, mode);
+                slots = GetEncounterSlots(version, route, GameTime, mode);
             }
 
             var pk = new PB8
@@ -645,6 +649,7 @@ namespace SysBot.Pokemon
 		{
             var action = Hub.Config.BDSP_RNG.DelayCalcSettings.Action;
             var dest = Hub.Config.BDSP_RNG.CheckMode;
+            var type = Hub.Config.BDSP_RNG.RNGType;
             var advances = 0;
             var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
             var tmpS0 = BitConverter.ToUInt32(tmpRamState, 0);
@@ -681,7 +686,7 @@ namespace SysBot.Pokemon
                         PB8? pk;
                         uint seed = 0;
                         //Log($"Waiting for pokemon...");
-                        var offset = GetDestOffset(dest);
+                        var offset = GetDestOffset(dest, type);
                         do
                         {
                             if (dest is CheckMode.Seed)
@@ -860,6 +865,7 @@ namespace SysBot.Pokemon
             //Click useless key to actually initialize simulated controller
             await Click(SwitchButton.L, 0_050, token).ConfigureAwait(false);
         }
+
         private async Task RestartGameBDSP(bool untiloverworld, CancellationToken token)
         {
             await ReOpenGame(untiloverworld, Hub.Config, token).ConfigureAwait(false);
@@ -873,16 +879,24 @@ namespace SysBot.Pokemon
             await SetStick(SwitchStick.LEFT, 0, 0, 0_500, token).ConfigureAwait(false); // reset
         }
 
-        private IReadOnlyList<long> GetDestOffset(CheckMode mode)
+        private IReadOnlyList<long> GetDestOffset(CheckMode mode, RNGType type = RNGType.Custom)
         {
             return mode switch
             {
                 CheckMode.Team => Offsets.PartyStartPokemonPointer,
                 CheckMode.Box => Offsets.BoxStartPokemonPointer,
                 CheckMode.Wild => Offsets.OpponentPokemonPointer,
-                CheckMode.Seed => Offsets.RoamerSeedPointer,
+                CheckMode.Seed => type is RNGType.Egg ? Offsets.EggSeedPointer : GetRoamerOffset(),
                 _ => Offsets.OpponentPokemonPointer,
             };
         }
+
+        private IReadOnlyList<long> GetRoamerOffset()
+		{
+            if ((int)Hub.Config.StopConditions.StopOnSpecies == 481)
+                return Offsets.R1_SeedPointer;
+            else
+                return Offsets.R2_SeedPointer;
+		}
     }
 }

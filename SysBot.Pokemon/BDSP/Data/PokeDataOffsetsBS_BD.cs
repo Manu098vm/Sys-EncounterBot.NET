@@ -5,7 +5,10 @@ namespace SysBot.Pokemon
     public class PokeDataOffsetsBS_BD : BasePokeDataOffsetsBS
     {
         public override IReadOnlyList<long> MainRNGState { get; } = new long[] { 0x4FB2050, 0x0 };
-        public override IReadOnlyList<long> RoamerSeedPointer { get; } = new long[] { 0x4E59E60, 0xB8, 0x10, 0x2A0, 0x24 };
+        public override IReadOnlyList<long> R1_SpeciesPointer { get; } = new long[] { 0x4E59E60, 0xB8, 0x10, 0x2A0, 0x2C };
+        public override IReadOnlyList<long> R2_SpeciesPointer { get; } = new long[] { 0x4E59E60, 0xB8, 0x10, 0x2A0, 0x4C };
+        public override IReadOnlyList<long> R1_SeedPointer { get; } = new long[] { 0x4E59E60, 0xB8, 0x10, 0x2A0, 0x24 };
+        public override IReadOnlyList<long> R2_SeedPointer { get; } = new long[] { 0x4E59E60, 0xB8, 0x10, 0x2A0, 0x44 };
         public override IReadOnlyList<long> EggSeedPointer { get; } = new long[] { 0x4E59E60, 0xB8, 0x10, 0x460 };
         public override IReadOnlyList<long> EggStepPointer { get; } = new long[] { 0x4E59E60, 0xB8, 0x10, 0x468 };
         public override IReadOnlyList<long> LocationPointer { get; } = new long[] { 0x4E59E60, 0xB8, 0x10, 0x40 };
