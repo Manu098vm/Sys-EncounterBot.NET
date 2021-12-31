@@ -186,7 +186,7 @@ namespace SysBot.Pokemon
             return;
         }
 
-        private async Task<bool> TrackAdvances(SAV8BS sav, CancellationToken token, bool auto = false)
+        private async Task<bool> TrackAdvances(SAV8BS sav, CancellationToken token, bool auto = false, int aux_target = 0)
 		{
             var advances = 0;
             var target = 0;
@@ -200,7 +200,7 @@ namespace SysBot.Pokemon
             var in_dex = false;
             var can_act = true;
 
-			if (auto)
+			if (auto && aux_target == 0)
 			{
                 if (actions.Count <= 0)
                 {
@@ -235,7 +235,7 @@ namespace SysBot.Pokemon
                     {
                         if (auto)
 						{
-							target = Hub.Config.BDSP_RNG.AutoRNGSettings.Target;
+							target = aux_target > 0 ? aux_target : Hub.Config.BDSP_RNG.AutoRNGSettings.Target;
 							if (target != 0 && advances >= target)
                             {
                                 if (in_dex)
@@ -243,6 +243,9 @@ namespace SysBot.Pokemon
                                     await ResetStick(token).ConfigureAwait(false);
                                     await CloseDex(token).ConfigureAwait(false);
                                 }
+
+                                if (aux_target > 0)
+                                    return true;
 
                                 System.Diagnostics.Stopwatch stopwatch = new();
                                 stopwatch.Start();
@@ -266,8 +269,11 @@ namespace SysBot.Pokemon
                                     await ResetStick(token).ConfigureAwait(false);
                                     await CloseDex(token).ConfigureAwait(false);
                                 }
-                                Log("Target frame missed. Probably a noisy area. New target calculation needed.");
-                                Hub.Config.BDSP_RNG.AutoRNGSettings.Target = 0;
+                                if (aux_target == 0)
+                                {
+                                    Log("Target frame missed. Probably a noisy area. New target calculation needed.");
+                                    Hub.Config.BDSP_RNG.AutoRNGSettings.Target = 0;
+                                }
                                 return false;
                             }
                             else if (Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil > 0 && target-advances > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil)
@@ -279,7 +285,7 @@ namespace SysBot.Pokemon
                                     in_dex = true;
                                 }
 
-                                if (target - advances - 400 > 7000)
+                                if (target - advances - 400 > 7000 || aux_target > 0)
                                 {
                                     await ResetStick(token).ConfigureAwait(false);
                                     await SetStick(SwitchStick.LEFT, 30_000, 0, 2_000, token).ConfigureAwait(false);
@@ -303,7 +309,7 @@ namespace SysBot.Pokemon
                                 if (target > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil && can_act)
                                 {
                                     await Task.Delay(0_700).ConfigureAwait(false);
-                                    if (actions.Count > 1)
+                                    if (actions.Count > 1 && aux_target == 0)
                                     {
                                         Log("Perfoming actions...");
                                         await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
@@ -314,7 +320,7 @@ namespace SysBot.Pokemon
                             else if(can_act)
                             {
                                 await Task.Delay(0_700).ConfigureAwait(false);
-                                if (actions.Count > 1)
+                                if (actions.Count > 1 && aux_target == 0)
                                 {
                                     Log("Perfoming actions...");
                                     await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
@@ -491,6 +497,12 @@ namespace SysBot.Pokemon
                                 Log("Game paused.");
                                 return true;
 							}
+                        }
+                        else if(target > 100000)
+						{
+                            Log("\n------------------------------------------\nStarting fast advancing routine until 100,000 advances left.\n------------------------------------------");
+                            await TrackAdvances(sav, token, true, target).ConfigureAwait(false);
+                            Log("------------------------------------------\nEnding fast advancing routine.\n------------------------------------------");
                         }
                         else if (Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil > 0 && target > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil)
                         {
