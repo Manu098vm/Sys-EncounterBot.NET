@@ -30,5 +30,8 @@ namespace SysBot.Pokemon
 
         [Category(AutoRNG), Description("Time to wait between each actions, expressed in milliseconds. Eg. 1000 is One Sec, 1500 is One Sec and Half.")]
         public int ActionTimings { get; set; } = 2_000;
+
+        [Category(AutoRNG), Description("Log the current advance at every cycle.")]
+        public bool LogAdvances { get; set; } = true;
     }
 }
