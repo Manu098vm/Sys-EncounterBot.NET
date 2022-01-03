@@ -1,5 +1,12 @@
 ﻿namespace SysBot.Pokemon
 {
+    public enum PokeEvents
+	{
+        None,
+        ManaphyEgg,
+        BirthDayHappiny,
+	}
+
     public enum RNGType
 	{
         Wild,

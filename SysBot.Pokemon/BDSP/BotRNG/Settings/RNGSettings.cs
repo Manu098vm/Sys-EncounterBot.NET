@@ -38,6 +38,9 @@ namespace SysBot.Pokemon
         [Category(RNG), Description("Select the wild encounter you want to calculate.")]
         public WildMode WildMode { get; set; } = WildMode.None;
 
+        [Category(RNG), Description("The event Pokémon you want to RNG. Select None if events are not your target.")]
+        public PokeEvents Event { get; set; } = PokeEvents.None;
+
         private int _completedRNGs;
 
         [Category(Counts), Description("Completed RNGs")]

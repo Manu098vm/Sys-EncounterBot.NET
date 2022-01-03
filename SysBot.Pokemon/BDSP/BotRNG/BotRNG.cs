@@ -199,7 +199,6 @@ namespace SysBot.Pokemon
             var tmpS2 = BitConverter.ToUInt32(tmpRamState, 8);
             var tmpS3 = BitConverter.ToUInt32(tmpRamState, 12);
             var xoro = new Xorshift(tmpS0, tmpS1, tmpS2, tmpS3);
-            var modifier = Hub.Config.BDSP_RNG.RNGType is RNGType.MysteryGift ? 1 : 0;
 
             if (type is RNGType.Egg)
             {
@@ -245,7 +244,7 @@ namespace SysBot.Pokemon
 
                     if (ramS0 == tmpS0 && ramS1 == tmpS1 && ramS2 == tmpS2 && ramS3 == tmpS3)
                     {
-                        var target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false) - Hub.Config.BDSP_RNG.AutoRNGSettings.Delay + modifier;
+                        var target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false) - Hub.Config.BDSP_RNG.AutoRNGSettings.Delay;
 
                         if (Hub.Config.BDSP_RNG.AutoRNGSettings.RebootIfFailed && target > Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue)
                         {
@@ -438,6 +437,7 @@ namespace SysBot.Pokemon
             var range = delay > 100 ? delay : 100;
             var states = xoro.GetU32State();
             var species = (int)Hub.Config.StopConditions.StopOnSpecies;
+            var events = Hub.Config.BDSP_RNG.Event;
             var rng = new Xorshift(states[0], states[1], states[2], states[3]);
             var target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false);
             var advances = 0;
@@ -468,7 +468,7 @@ namespace SysBot.Pokemon
                 else
                 {
                     states = rng.GetU32State();
-                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, slots);
+                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, slots, events);
                     rng.Next();
                 }
                 advances++;
@@ -486,6 +486,7 @@ namespace SysBot.Pokemon
             Xorshift rng = new(states[0], states[1], states[2], states[3]);
             List<int>? slots = null;
             int species = (int)Hub.Config.StopConditions.StopOnSpecies;
+            var events = Hub.Config.BDSP_RNG.Event;
 
             if (mode is not WildMode.None)
             {
@@ -514,7 +515,7 @@ namespace SysBot.Pokemon
                 else
                 {
                     states = rng.GetU32State();
-                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, slots);
+                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, slots, events);
                     rng.Next();
                 }
                 advances++;
@@ -616,6 +617,7 @@ namespace SysBot.Pokemon
 		{
             var type = Hub.Config.BDSP_RNG.RNGType;
             var mode = Hub.Config.BDSP_RNG.WildMode;
+            var events = Hub.Config.BDSP_RNG.Event;
             var isroutine = xoro == null;
             var result = new List<PB8>();
             List<int>? encounterslots = null;
@@ -633,6 +635,8 @@ namespace SysBot.Pokemon
                 initial_s1f = BitConverter.ToUInt32(tmpRamState, 4);
                 initial_s2f = BitConverter.ToUInt32(tmpRamState, 8);
                 initial_s3f = BitConverter.ToUInt32(tmpRamState, 12);
+
+                Log($"Initial states:\n[S0] {initial_s0f:X8}, [S1] {initial_s1f:X8}\n[S2] {initial_s2f:X8}, [S3] {initial_s3f:X8}\n");
             } 
             else
 			{
@@ -683,7 +687,7 @@ namespace SysBot.Pokemon
                     pk = Calc.CalculateFromSeed(pk, Shiny.Random, type, rng.Next());
                 else
                 {
-                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, encounterslots);
+                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, encounterslots, events);
                     rng.Next();
                 }
 

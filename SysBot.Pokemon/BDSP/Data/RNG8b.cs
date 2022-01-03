@@ -91,7 +91,7 @@ namespace SysBot.Pokemon
         {
             var xoro = new Xoroshiro128Plus8b(seed);
 
-            var flawless = GetFlawless(type);
+            var flawless = GetFlawless(type, PokeEvents.None);
 
             pk.EncryptionConstant = seed;
 
@@ -136,11 +136,11 @@ namespace SysBot.Pokemon
             return pk;
         }
 
-        public PB8 CalculateFromStates(PB8 pk, Shiny shiny, RNGType type, Xorshift seed, WildMode mode = WildMode.None, List<int>? slots = null)
+        public PB8 CalculateFromStates(PB8 pk, Shiny shiny, RNGType type, Xorshift seed, WildMode mode = WildMode.None, List<int>? slots = null, PokeEvents events = PokeEvents.None)
         {
             var xoro = new Xorshift(seed.GetU64State()[0], seed.GetU64State()[1]);
 
-            var flawless = GetFlawless(type);
+            var flawless = GetFlawless(type, events);
 
             if(type is RNGType.Wild && mode != WildMode.None && slots != null)
 			{
@@ -170,8 +170,13 @@ namespace SysBot.Pokemon
 
             if (type is not RNGType.MysteryGift)
                 pid = GetRevisedPID(fakeTID, pid, pk);
+            else
+            {
+                pk.TID = GetGiftFTID(events, pk)[0];
+                pk.SID = GetGiftFTID(events, pk)[1];
+            }
             
-            if (shiny == Shiny.Never)
+            if (shiny is Shiny.Never)
             {
                 if (GetIsShiny(pk.TID, pk.SID, pid))
                     pid ^= 0x1000_0000;
@@ -208,7 +213,8 @@ namespace SysBot.Pokemon
 
                 pk.SetAbilityIndex((int)(xoro.Next()&N_ABILITY));
 
-                //If unown Next()%28
+                if (pk.Species == 201)
+                    pk.Form = (int)xoro.Next()%28;
 
                 var genderRatio = PersonalTable.BDSP.GetFormEntry(pk.Species, pk.Form).Gender;
                 if (genderRatio == PersonalInfo.RatioMagicGenderless)
@@ -220,8 +226,15 @@ namespace SysBot.Pokemon
                 else
                     pk.Gender = (((int)(xoro.Next()%N_GENDER)) + 1 < genderRatio) ? 1 : 0;
             }
+            else
+			{
+                pk.Gender = (int)GetEventGender(events);
+			}
 
-            pk.Nature = (int)(Nature)(xoro.Next()%N_NATURE);
+            if (type is not RNGType.MysteryGift || AllowRandomNature(events))
+                pk.Nature = (int)(Nature)(xoro.Next() % N_NATURE);
+            else
+                pk.Nature = (int)GetEventNature(events);
 
             return pk;
         }
@@ -249,13 +262,56 @@ namespace SysBot.Pokemon
             _ => Shiny.Never,
         };
 
-        private static int GetFlawless(RNGType type)
+        private static int GetFlawless(RNGType type, PokeEvents events)
 		{
             return type switch
             {
-                RNGType.Legendary or RNGType.MysteryGift or RNGType.Roamer => 3,
+                RNGType.Legendary or RNGType.Roamer => 3,
+                RNGType.MysteryGift => events switch
+				{
+                    PokeEvents.ManaphyEgg => 3,
+                    PokeEvents.BirthDayHappiny => 0,
+                    _ => 0,
+				},
                 _ => 0,
             };  
+		}
+
+        private static int[] GetGiftFTID(PokeEvents events, ITrainerID tr)
+		{
+            int[] tidsid = events switch
+            {
+                PokeEvents.BirthDayHappiny => new int[2] { 61213, 2108 },
+                _ => new int[2] { tr.TID, tr.SID },
+            };
+            return tidsid;
+		}
+
+        private static Gender GetEventGender(PokeEvents events)
+		{
+            return events switch
+            {
+                PokeEvents.BirthDayHappiny => Gender.Female,
+                _ => Gender.Genderless,
+            };
+		}
+
+        private static Nature GetEventNature(PokeEvents events)
+		{
+            return events switch
+            {
+                PokeEvents.BirthDayHappiny => Nature.Hardy,
+                _ => Nature.Hardy,
+            };
+		}
+
+        private static bool AllowRandomNature(PokeEvents events)
+		{
+            return events switch
+            {
+                PokeEvents.BirthDayHappiny => false,
+                _ => true,
+            };
 		}
 
         private static bool GetIsShiny(int tid, int sid, uint pid)
