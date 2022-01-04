@@ -175,7 +175,7 @@ namespace SysBot.Pokemon
 
             if (found)
             {
-                if (Hub.Config.StopConditions.CaptureVideoClip)
+                if (Hub.Config.StopConditions.CaptureVideoClip && Hub.Config.BDSP_RNG.RNGType is not RNGType.Egg)
                 {
                     await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
                     await PressAndHold(SwitchButton.CAPTURE, 2_000, 0, token).ConfigureAwait(false);
@@ -219,6 +219,7 @@ namespace SysBot.Pokemon
             }
 
             var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
+            DayTime = await SwitchConnection.PointerAll(Offsets.DayTimePointer, token).ConfigureAwait(false);
             GameTime = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
             GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
             Log($"[{version}] - Route: {GetLocation(route)} ({route}) [{GameTime}]");
@@ -265,8 +266,11 @@ namespace SysBot.Pokemon
 		{
             var advances = 0;
             var target = 0;
+            var steps = 0;
             var print = Hub.Config.BDSP_RNG.AutoRNGSettings.LogAdvances;
             var actions = ParseActions(Hub.Config.BDSP_RNG.AutoRNGSettings.Actions);
+            var type = Hub.Config.BDSP_RNG.RNGType;
+            var EggStepOffset = await PointerAll(Offsets.EggStepPointer, token).ConfigureAwait(false);
             var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
             var tmpS0 = BitConverter.ToUInt32(tmpRamState, 0);
             var tmpS1 = BitConverter.ToUInt32(tmpRamState, 4);
@@ -312,8 +316,21 @@ namespace SysBot.Pokemon
                         if (auto)
 						{
 							target = aux_target > 0 ? aux_target : Hub.Config.BDSP_RNG.AutoRNGSettings.Target;
-                            if (print)
-                                Log($"Target in {target - advances} advances.");
+
+                            if (type is RNGType.Egg)
+                            {
+                                var step_tmp = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(EggStepOffset, 2, token).ConfigureAwait(false), 0);
+                                var step_until_generation = (0xB4 - step_tmp) == 0 ? 180 : (0xB4 - step_tmp);
+                                if(steps != step_until_generation || print)
+								{
+                                    Log($"Target in {target - advances} advances.\nSteps until possible egg generation: {step_until_generation}\n");
+								}
+                            }
+                            else
+                            {
+                                if (print)
+                                    Log($"Target in {target - advances} advances.");
+                            }
 
                             if (target != 0 && advances >= target)
                             {
@@ -328,8 +345,8 @@ namespace SysBot.Pokemon
                                 if (actions.Last() is not SwitchButton.HOME)
                                 {
                                     Log("Starting encounter...");
+                                   
                                     var mode = Hub.Config.BDSP_RNG.CheckMode;
-                                    var type = Hub.Config.BDSP_RNG.RNGType;
                                     var wild = Hub.Config.BDSP_RNG.WildMode;
                                     System.Diagnostics.Stopwatch stopwatch = new();
                                     stopwatch.Start();
@@ -339,8 +356,9 @@ namespace SysBot.Pokemon
                                     uint seed = 0;
                                     do
                                     {
-                                        if (mode is CheckMode.Seed && type is RNGType.Roamer)
+                                        if (mode is CheckMode.Seed)
                                         {
+                                            seed = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(await PointerAll(offset, token).ConfigureAwait(false), 4, token).ConfigureAwait(false), 0);
                                             var species = (int)Hub.Config.StopConditions.StopOnSpecies;
                                             pk = new PB8
                                             {
@@ -349,8 +367,18 @@ namespace SysBot.Pokemon
                                                 OT_Name = sav.OT,
                                                 Species = (species != 0) ? species : 482,
                                             };
-                                            seed = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(await PointerAll(offset, token).ConfigureAwait(false), 4, token).ConfigureAwait(false), 0);
-                                            pk = Calc.CalculateFromSeed(pk, Shiny.Random, type, seed);
+
+                                            if (type is RNGType.Roamer)
+                                                pk = Calc.CalculateFromSeed(pk, Shiny.Random, type, seed);
+                                            else if(type is RNGType.Egg)
+											{
+                                                if (seed > 0)
+                                                    Log($"Egg generated. Egg seed is {seed:8X}.");
+                                                else
+                                                    Log("Egg not generated, target frame probably missed.");
+
+                                                return true;
+											}
                                         }
                                         else
                                         {
@@ -363,7 +391,7 @@ namespace SysBot.Pokemon
                                         return false;
 
                                     Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
-                                    var success = StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, null);
+                                    var success = HandleTarget(pk, true);
                                     if (!success)
                                     {
                                         Log("If target is missed, calculate a proper delay with DelayCalc mode and retry.");
@@ -448,7 +476,7 @@ namespace SysBot.Pokemon
                 var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
                 GameTime = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
                 GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
-                //Log($"Route: {GetLocation(route)} ({route}) [{time}]");
+                //Log($"Route: {GetLocation(route)} ({route}) [{GameTime}]");
                 slots = GetEncounterSlots(version, route, GameTime, mode);
             }
 
@@ -495,7 +523,7 @@ namespace SysBot.Pokemon
                 if (tmp >= 0 && tmp <= 4)
                     GameTime = (GameTime)tmp;
                 GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
-                //Log($"Route: {GetLocation(route)} ({route}) [{time}]");
+                //Log($"Route: {GetLocation(route)} ({route}) [{GameTime}]");
                 slots = GetEncounterSlots(version, route, GameTime, mode);
             }
 

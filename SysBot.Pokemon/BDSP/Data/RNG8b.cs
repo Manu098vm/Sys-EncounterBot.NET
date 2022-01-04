@@ -266,7 +266,7 @@ namespace SysBot.Pokemon
 		{
             return type switch
             {
-                RNGType.Legendary or RNGType.Roamer => 3,
+                RNGType.Stationary_3IVs or RNGType.Roamer => 3,
                 RNGType.MysteryGift => events switch
 				{
                     PokeEvents.ManaphyEgg => 3,

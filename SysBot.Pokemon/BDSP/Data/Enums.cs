@@ -10,8 +10,8 @@
     public enum RNGType
 	{
         Wild,
-        Starter,
-        Legendary,
+        Stationary,
+        Stationary_3IVs,
         MysteryGift,
         Roamer,
         Egg,
