@@ -5,7 +5,7 @@ using SysBot.Base;
 
 namespace SysBot.Pokemon
 {
-    public class RNGSettings : IBotStateSettings, ICountSettings
+    public class RNGSettings : IBotStateSettings
     {
         private const string RNG = nameof(RNG);
         private const string Counts = nameof(Counts);
@@ -50,15 +50,10 @@ namespace SysBot.Pokemon
             set => _completedRNGs = value;
         }
 
-        [Category(Counts), Description("When enabled, the counts will be emitted when a status check is requested.")]
-        public bool EmitCountsOnStatusCheck { get; set; }
-
         public void AddCompletedRNGs() => Interlocked.Increment(ref _completedRNGs);
 
         public IEnumerable<string> GetNonZeroCounts()
         {
-            if (!EmitCountsOnStatusCheck)
-                yield break;
             if (CompletedRNGs != 0)
                 yield return $"Completed RNGs: {CompletedRNGs}";
         }

@@ -8,9 +8,14 @@
         LiveStatsChecking,
 
         /// <summary>
-        /// Bot will log any battle-based encounter
+        /// Bot will hunt for species in Max Lairs
         /// </summary>
         MaxLair,
+
+        /// <summary>
+        /// Bot will retrieve Eggs
+        /// </summary>
+        Eggs,
 
         /// <summary>
         /// Bot will soft reset Eternatus

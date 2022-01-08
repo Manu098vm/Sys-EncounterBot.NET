@@ -11,7 +11,7 @@ using System.Linq;
 namespace SysBot.Pokemon
 {
     // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
-    public class BDSPBotRNG : PokeRoutineExecutor8BS, ICountBot
+    public class BDSPBotRNG : PokeRoutineExecutor8BS
     {
         private readonly PokeBotHub<PK8> Hub;
         private readonly RNGSettings Settings;
@@ -20,8 +20,6 @@ namespace SysBot.Pokemon
         private readonly int[] DesiredMinIVs;
         private readonly int[] DesiredMaxIVs;
         private readonly List<string> locations;
-
-        public ICountSettings Counts => Settings;
 
         /// <summary>
         /// Folder to dump received trade data to.
@@ -101,6 +99,7 @@ namespace SysBot.Pokemon
 
         private async Task Test(SAV8BS sav, CancellationToken token)
 		{
+            var RngState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
             GameVersion version = 0;
             var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
             var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
@@ -111,7 +110,14 @@ namespace SysBot.Pokemon
                 version = GameVersion.SP;
 
             Log($"({version}) {GetLocation(route)} ({route}) [{time}]");
+            Log($"Current state:\n{BitConverter.ToString(RngState)}");
+            var tmpS0 = BitConverter.ToUInt32(RngState, 0);
+            var tmpS1 = BitConverter.ToUInt32(RngState, 4);
+            var tmpS2 = BitConverter.ToUInt32(RngState, 8);
+            var tmpS3 = BitConverter.ToUInt32(RngState, 12);
+            Log($"\n[S0] {tmpS0:X8} [S1] {tmpS1:X8}\n[S2] {tmpS2:X8}, [S3] {tmpS3:X8}");
 
+            Log("Checking available mons...");
             var mons = GetEncounterSlots(version, route, time, mode);
             if (mode is not WildMode.None)
             {
@@ -126,13 +132,27 @@ namespace SysBot.Pokemon
             else
                 Log("No EncounterTable mode (WildMode) selected in the settings.");
 
+            /*Log("Opening Dex");
+            //Log("Click X");
+            await Click(SwitchButton.X, 1_000, token).ConfigureAwait(false);
+            //Log("Click +");
+            await Click(SwitchButton.PLUS, 1_500, token).ConfigureAwait(false);
+            //Log("Click B");
+            await Click(SwitchButton.B, 1_150, token).ConfigureAwait(false);
+            //Log("Click DUP");
+            await Click(SwitchButton.DUP, 0_150, token).ConfigureAwait(false);
+            //Log("Click A");
+            await Click(SwitchButton.A, 1_500, token).ConfigureAwait(false);
+            //Log("Click R");
+            await Click(SwitchButton.R, 1_000, token).ConfigureAwait(false);
+
             Log("Actions:");
             List<SwitchButton> actions = ParseActions(Hub.Config.BDSP_RNG.AutoRNGSettings.Actions);
             foreach (var button in actions)
                 Log($"{button}");
             Log("Performing actions...");
             await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
-            await Click(actions.Last(), 0_050, token).ConfigureAwait(false);
+            await Click(actions.Last(), 0_050, token).ConfigureAwait(false);*/
         }
 
         private async Task AutoRNG(SAV8BS sav, CancellationToken token)
@@ -163,7 +183,9 @@ namespace SysBot.Pokemon
                                 msg = $"{msg}\nTarget in: {target}";
                             Log(msg);
                         }
-                        await ResumeStart(Hub.Config, token).ConfigureAwait(false);
+
+                        if (!await ResumeStart(Hub.Config, token).ConfigureAwait(false))
+                            await InitializeSessionOffsets(token).ConfigureAwait(false);
                     }
                     found = true;
                 }
@@ -173,9 +195,9 @@ namespace SysBot.Pokemon
             else
                 found = await TrackAdvances(sav, token, true).ConfigureAwait(false);
 
-            if (found)
+            if (found && Hub.Config.BDSP_RNG.RNGType is not RNGType.Egg)
             {
-                if (Hub.Config.StopConditions.CaptureVideoClip && Hub.Config.BDSP_RNG.RNGType is not RNGType.Egg)
+                if (Hub.Config.StopConditions.CaptureVideoClip)
                 {
                     await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
                     await PressAndHold(SwitchButton.CAPTURE, 2_000, 0, token).ConfigureAwait(false);
@@ -391,7 +413,7 @@ namespace SysBot.Pokemon
                                         return false;
 
                                     Log($"\n\nSpecies: {(Species)pk.Species}{GetString(pk)}");
-                                    var success = HandleTarget(pk, true);
+                                    var success = HandleTarget(pk, true, true);
                                     if (!success)
                                     {
                                         Log("If target is missed, calculate a proper delay with DelayCalc mode and retry.");
@@ -406,26 +428,26 @@ namespace SysBot.Pokemon
                                     return true;
                                 }
                             }
-                            else if (Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil > 0 && target-advances > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil)
+                            else if (Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil > 0 && target-advances > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil+50)
                             {
-                                if (!in_dex)
+                                if (!in_dex && target-advances > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil+1100)
                                 {
                                     await Task.Delay(2_000, token).ConfigureAwait(false);
                                     await OpenDex(token).ConfigureAwait(false);
                                     in_dex = true;
                                 }
 
-                                if (target - advances - 400 > 7000)
+                                if (in_dex && target - (advances + 400) > 7000)
                                 {
                                     await ResetStick(token).ConfigureAwait(false);
                                     await SetStick(SwitchStick.LEFT, 30_000, 0, 2_000, token).ConfigureAwait(false);
                                 }
-                                else if (target - advances - 400 > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil)
+                                else if (in_dex && target - (advances + 400) > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil)
                                 {
                                     await ResetStick(token).ConfigureAwait(false);
                                     await SetStick(SwitchStick.LEFT, 0, 30_000, 1_000, token).ConfigureAwait(false);
                                 }
-                                else
+                                else if(in_dex)
                                 {
                                     await ResetStick(token).ConfigureAwait(false);
                                     await Click(SwitchButton.DUP, 0_500, token).ConfigureAwait(false);
@@ -442,7 +464,7 @@ namespace SysBot.Pokemon
                                 if (can_act && actions.Count > 1)
                                 {
                                     await Task.Delay(0_700).ConfigureAwait(false);
-                                    if (actions.Count > 1 && aux_target == 0)
+                                    if (actions.Count > 1)
                                     {
                                         Log("Perfoming actions...");
                                         await DoActions(actions, Hub.Config.BDSP_RNG.AutoRNGSettings.ActionTimings, token).ConfigureAwait(false);
@@ -547,7 +569,7 @@ namespace SysBot.Pokemon
                     rng.Next();
                 }
                 advances++;
-            } while (!HandleTarget(pk, false) && (advances - Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue < Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue && Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue > 0));
+            } while (!HandleTarget(pk, false, false) && (advances - Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue < Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue && Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue > 0));
             return advances;
         }
 
@@ -728,7 +750,7 @@ namespace SysBot.Pokemon
                 if (verbose == true)
                     Log($"{Environment.NewLine}{msg}");
 
-                bool found = HandleTarget(pk, isroutine);
+                bool found = HandleTarget(pk, false, isroutine);
                 if (token.IsCancellationRequested || (found && isroutine))
                 {
 					if (found)
@@ -744,17 +766,25 @@ namespace SysBot.Pokemon
             return result;
         }
 
-        bool HandleTarget(PB8 pk, bool dump)
+        private bool HandleTarget(PB8 pk, bool encounter, bool dump)
         {
-            //Initialize random species
+            //Initialize a species
             if (pk.Species == 0)
                 pk.Species = 1;
 
             if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, null))
                 return false;
 
-            if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder) && dump)
-                DumpPokemon(DumpSetting.DumpFolder, "BDSP_Layout_PKM", pk);
+            if (dump)
+            {
+                if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder) && encounter)
+                    DumpPokemon(DumpSetting.DumpFolder, "BDSP_RNG_Encounters", pk);
+                else
+                    DumpPokemon(DumpSetting.DumpFolder, "BDSP_RNG_Layout", pk);
+            }
+
+            if (encounter)
+                Settings.AddCompletedRNGs();
 
             return true;
         }

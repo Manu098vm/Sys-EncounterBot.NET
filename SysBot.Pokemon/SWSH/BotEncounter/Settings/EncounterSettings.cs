@@ -5,7 +5,7 @@ using SysBot.Base;
 
 namespace SysBot.Pokemon
 {
-    public class EncounterSettings : IBotStateSettings, ICountSettings
+    public class EncounterSettings : IBotStateSettings
     {
         private const string Counts = nameof(Counts);
         private const string Encounter = nameof(Encounter);
@@ -42,16 +42,11 @@ namespace SysBot.Pokemon
             set => _completedLegend = value;
         }
 
-        [Category(Counts), Description("When enabled, the counts will be emitted when a status check is requested.")]
-        public bool EmitCountsOnStatusCheck { get; set; }
-
         public int AddCompletedEncounters() => Interlocked.Increment(ref _completedWild);
         public int AddCompletedLegends() => Interlocked.Increment(ref _completedLegend);
 
         public IEnumerable<string> GetNonZeroCounts()
         {
-            if (!EmitCountsOnStatusCheck)
-                yield break;
             if (CompletedEncounters != 0)
                 yield return $"Wild Encounters: {CompletedEncounters}";
             if (CompletedLegends != 0)

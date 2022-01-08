@@ -9,7 +9,7 @@ using static SysBot.Base.SwitchStick;
 
 namespace SysBot.Pokemon
 {
-    public class BotOverworld : PokeRoutineExecutor8, IEncounterBot
+    public class BotOverworld : PokeRoutineExecutor8
     {
         private readonly PokeBotHub<PK8> Hub;
         private readonly IDumper DumpSetting;
@@ -19,7 +19,6 @@ namespace SysBot.Pokemon
         private readonly IReadOnlyList<string> WantedNatures;
         private readonly OverworldScanSettings Settings;
         private readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
-        public ICountSettings Counts => Settings;
 
         public BotOverworld(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
@@ -167,6 +166,7 @@ namespace SysBot.Pokemon
 
             while (!token.IsCancellationRequested)
             {
+                var new_mons = 0;
                 KCoordinates = await ReadKCoordinates(token).ConfigureAwait(false);
 
                 PK8s = await ReadOwPokemonFromBlock(KCoordinates, sav, token).ConfigureAwait(false);
@@ -176,6 +176,7 @@ namespace SysBot.Pokemon
                     {
                         if (!CheckIfPresent(pkm, checked_pks))
                         {
+                            new_mons++;
                             checked_pks.Add(pkm);
 
                             //Keep the list small.
@@ -197,6 +198,8 @@ namespace SysBot.Pokemon
                             }
                         }
                     }
+                    if (new_mons == 0)
+                        Log("No new Pokémon has been found in KCoordinates!");
                 }
                 else
                     Log("Empty list, no overworld data in KCoordinates!");
@@ -267,14 +270,6 @@ namespace SysBot.Pokemon
             encounterCount++;
             var print = Hub.Config.StopConditions.GetPrintName(pk);
 
-            if (pk.IsShiny)
-            {
-                if (pk.ShinyXor == 0)
-                    print = print.Replace("Shiny: Yes", "Shiny: Square");
-                else
-                    print = print.Replace("Shiny: Yes", "Shiny: Star");
-            }
-
             Log($"Encounter: {encounterCount}{Environment.NewLine}{print}{Environment.NewLine}");
 
             Settings.AddCompletedScans();
@@ -296,16 +291,9 @@ namespace SysBot.Pokemon
 
             if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
                 msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
-            EchoUtil.Echo(msg);
             Log(msg);
 
-            IsWaiting = true;
-            while (IsWaiting)
-                await Task.Delay(1_000, token).ConfigureAwait(false);
-            return false;
+            return true;
         }
-
-        private bool IsWaiting;
-        public void Acknowledge() => IsWaiting = false;
     }
 }

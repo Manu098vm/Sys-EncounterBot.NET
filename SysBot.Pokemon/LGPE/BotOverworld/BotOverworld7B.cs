@@ -11,11 +11,10 @@ using static SysBot.Pokemon.PokeDataOffsets7B;
 
 namespace SysBot.Pokemon
 {
-    public class BotOverworld7B : PokeRoutineExecutor7B, IEncounterBot
+    public class BotOverworld7B : PokeRoutineExecutor7B
     {
         protected readonly PokeBotHub<PK8> Hub;
         protected readonly Overworld7BSettings Settings;
-        public ICountSettings Counts => Settings;
         public BotOverworld7B(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
@@ -166,12 +165,7 @@ namespace SysBot.Pokemon
                                 var msg = "Stop conditions met, restart the bot(s) to search again.";
                                 if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
                                     msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
-                                EchoUtil.Echo(msg);
                                 Log(msg);
-
-                                IsWaiting = true;
-                                while (IsWaiting)
-                                    await Task.Delay(1_000, token).ConfigureAwait(false);
 
                                 return;
                             }
@@ -299,9 +293,6 @@ namespace SysBot.Pokemon
             await ResetStick(CancellationToken.None).ConfigureAwait(false);
             await CleanExit(Settings, CancellationToken.None).ConfigureAwait(false);
         }
-
-        private bool IsWaiting;
-        public void Acknowledge() => IsWaiting = false;
 
         private async Task ResetStick(CancellationToken token)
         {

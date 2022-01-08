@@ -5,7 +5,7 @@ using SysBot.Base;
 
 namespace SysBot.Pokemon
 {
-    public class Overworld7BSettings : IBotStateSettings, ICountSettings
+    public class Overworld7BSettings : IBotStateSettings
     {
         private const string Counts = nameof(Counts);
         private const string OverworldScan = nameof(OverworldScan);
@@ -73,16 +73,11 @@ namespace SysBot.Pokemon
             set => _shinyspawn = value;
         }
 
-        [Category(Counts), Description("When enabled, the counts will be emitted when a status check is requested.")]
-        public bool EmitCountsOnStatusCheck { get; set; }
-
         public int AddCompletedScans() => Interlocked.Increment(ref _completedScans);
         public int AddCompletedShiny() => Interlocked.Increment(ref _shinyspawn);
 
         public IEnumerable<string> GetNonZeroCounts()
         {
-            if (!EmitCountsOnStatusCheck)
-                yield break;
             if (CompletedScans != 0)
                 yield return $"Total overworld scans: {CompletedScans}";
             if (ShinySpawn != 0)

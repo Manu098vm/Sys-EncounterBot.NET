@@ -9,17 +9,16 @@ using static SysBot.Base.SwitchStick;
 
 namespace SysBot.Pokemon
 {
-    public abstract class EncounterBot : PokeRoutineExecutor8, IEncounterBot
+    public abstract class EncounterBot : PokeRoutineExecutor8
     {
         protected readonly PokeBotHub<PK8> Hub;
         public readonly IReadOnlyList<string> UnwantedMarks;
         private readonly IReadOnlyList<string> WantedNatures;
-        private readonly IDumper DumpSetting;
+        public readonly IDumper DumpSetting;
         protected readonly EncounterSettings Settings;
         protected readonly int[] DesiredMinIVs;
         protected readonly int[] DesiredMaxIVs;
         protected readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
-        public ICountSettings Counts => Settings;
         protected PokeDataPointers Pointers { get; private set; } = new PokeDataPointers();
 
         protected EncounterBot(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
@@ -78,14 +77,6 @@ namespace SysBot.Pokemon
             encounterCount++;
             var print = Hub.Config.StopConditions.GetPrintName(pk);
 
-            if (pk.IsShiny)
-            {
-                if (pk.ShinyXor == 0)
-                    print = print.Replace("Shiny: Yes", "Shiny: Square");
-                else
-                    print = print.Replace("Shiny: Yes", "Shiny: Star");
-            }
-
             Log($"Encounter: {encounterCount}{Environment.NewLine}{print}{Environment.NewLine}");
 
             var legendary = Legal.Legends.Contains(pk.Species) || Legal.SubLegends.Contains(pk.Species);
@@ -110,17 +101,10 @@ namespace SysBot.Pokemon
 
             if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
                 msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
-            EchoUtil.Echo(msg);
             Log(msg);
 
-            IsWaiting = true;
-            while (IsWaiting)
-                await Task.Delay(1_000, token).ConfigureAwait(false);
-            return false;
+            return true;
         }
-
-        private bool IsWaiting;
-        public void Acknowledge() => IsWaiting = false;
 
         protected async Task ResetStick(CancellationToken token)
         {

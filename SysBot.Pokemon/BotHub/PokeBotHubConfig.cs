@@ -45,10 +45,6 @@ namespace SysBot.Pokemon
 
         [Category(Bots)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public EggSettings SWSH_Eggs { get; set; } = new();
-
-        [Category(Bots)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
         public EncounterSettings SWSH_Encounter { get; set; } = new();
 
         // Integration

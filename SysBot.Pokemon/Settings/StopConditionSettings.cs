@@ -150,8 +150,20 @@ namespace SysBot.Pokemon
         public string GetPrintName(PKM pk)
         {
             var set = ShowdownParsing.GetShowdownText(pk);
+
+            if (pk.IsShiny)
+            {
+                if (pk.ShinyXor == 0)
+                    set = set.Replace("Shiny: Yes", "Shiny: Square");
+                else
+                    set = set.Replace("Shiny: Yes", "Shiny: Star");
+            }
+
             if (pk is IRibbonIndex r)
-                set += GetMarkName(r);
+                for (var mark = RibbonIndex.MarkLunchtime; mark <= RibbonIndex.MarkSlump; mark++)
+                    if (r.GetRibbon((int)mark))
+                        set += $"{Environment.NewLine}{mark}";
+
             return set;
         }
 

@@ -175,7 +175,7 @@ namespace SysBot.Pokemon
 
                     if (found[0] > 0)
                     {
-                        var pk = await ReadLairResult(found[0], token).ConfigureAwait(false);
+                        var pk = await ReadLairResult(found[0]-1, token).ConfigureAwait(false);
 
                         await Task.Delay(1_500, token).ConfigureAwait(false);
                         for (int i = 1; i < found[0]; i++)
@@ -235,7 +235,9 @@ namespace SysBot.Pokemon
                 if (pkm != null)
                 {
                     if (i == 3)
+                    {
                         found[1] = 1;
+                    }
                     if(await HandleEncounter(pkm, token).ConfigureAwait(false))
 					{
                         found[0] = i + 1;

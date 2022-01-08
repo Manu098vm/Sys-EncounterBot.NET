@@ -11,7 +11,7 @@ using static SysBot.Pokemon.PokeDataOffsets7B;
 
 namespace SysBot.Pokemon
 {
-    public class EncounterBot7B : PokeRoutineExecutor7B, IEncounterBot
+    public class EncounterBot7B : PokeRoutineExecutor7B
     {
         protected readonly PokeBotHub<PK8> Hub;
         private readonly IDumper DumpSetting;
@@ -19,7 +19,6 @@ namespace SysBot.Pokemon
         protected readonly int[] DesiredMinIVs;
         protected readonly int[] DesiredMaxIVs;
         private readonly IReadOnlyList<string> WantedNatures;
-        public ICountSettings Counts => Settings;
         public EncounterBot7B(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
@@ -226,17 +225,10 @@ namespace SysBot.Pokemon
 
             if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
                 msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
-            EchoUtil.Echo(msg);
             Log(msg);
 
-            IsWaiting = true;
-            while (IsWaiting)
-                await Task.Delay(1_000, token).ConfigureAwait(false);
-            return false;
+            return true;
         }
-
-        private bool IsWaiting;
-        public void Acknowledge() => IsWaiting = false;
 
         protected async Task ResetStick(CancellationToken token)
         {

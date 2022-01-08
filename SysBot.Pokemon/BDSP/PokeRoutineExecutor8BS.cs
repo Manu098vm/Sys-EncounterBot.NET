@@ -171,8 +171,9 @@ namespace SysBot.Pokemon
             Log("Closed out of the game!");
         }
 
-        public async Task StartGame(bool untiloverworld, PokeBotHubConfig config, CancellationToken token)
+        public async Task<bool> StartGame(bool untiloverworld, PokeBotHubConfig config, CancellationToken token)
         {
+            var success = true;
             var timing = config.Timings;
             // Open game.
             await Click(A, 1_000 + timing.ExtraTimeLoadProfile, token).ConfigureAwait(false);
@@ -211,22 +212,14 @@ namespace SysBot.Pokemon
                     if (timer <= 0 && !timing.AvoidSystemUpdate)
                     {
                         Log("Still not in the game, initiating rescue protocol!");
-                        //Check if the game loading dropped an error
-                        var state = await SwitchConnection.PointerPeek(16, Offsets.MainRNGState, token).ConfigureAwait(false);
-                        var tmpS0 = BitConverter.ToUInt32(state, 0);
-                        var tmpS1 = BitConverter.ToUInt32(state, 4);
-                        var tmpS2 = BitConverter.ToUInt32(state, 8);
-                        var tmpS3 = BitConverter.ToUInt32(state, 12);
-                        Log($"Error check. [S2]{tmpS1}, [S3] {tmpS3}");
-                        if (tmpS1 == tmpS3)
-						{
-                            Log("Error message detected.");
-                            await Click(A, 1_000, token).ConfigureAwait(false);
-                            await StartGame(false, config, token).ConfigureAwait(false);
-						}
-                        //Click until overworld
-                        while (!await IsSceneID(SceneID_Field, token).ConfigureAwait(false))
-                            await Click(A, 6_000, token).ConfigureAwait(false);
+                        if (await CheckBootError(true, config, token).ConfigureAwait(false))
+                            success = false;
+                        else
+                        {
+                            //Click A until overworld
+                            while (!await IsSceneID(SceneID_Field, token).ConfigureAwait(false))
+                                await Click(A, 6_000, token).ConfigureAwait(false);
+                        }
                         break;
                     }
                 }
@@ -236,10 +229,13 @@ namespace SysBot.Pokemon
             }
             else
                 await Task.Delay(2_000 + timing.ExtraTimeLoadGame, token).ConfigureAwait(false);
+
+            return success;
         }
 
-        public async Task ResumeStart(PokeBotHubConfig config, CancellationToken token)
+        public async Task<bool> ResumeStart(PokeBotHubConfig config, CancellationToken token)
 		{
+            var success = true;
             var timing = config.Timings;
 
             // Switch Logo lag, skip cutscene, game load screen
@@ -259,27 +255,36 @@ namespace SysBot.Pokemon
                 {
                     Log("Still not in the game, initiating rescue protocol!");
                     //Check if the game loading dropped an error
-                    var state = await SwitchConnection.PointerPeek(16, Offsets.MainRNGState, token).ConfigureAwait(false);
-                    var tmpS0 = BitConverter.ToUInt32(state, 0);
-                    var tmpS1 = BitConverter.ToUInt32(state, 4);
-                    var tmpS2 = BitConverter.ToUInt32(state, 8);
-                    var tmpS3 = BitConverter.ToUInt32(state, 12);
-                    Log($"Error check. [S2]{tmpS1}, [S3] {tmpS3}");
-                    if (tmpS1 == tmpS3)
+                    if (await CheckBootError(true, config, token).ConfigureAwait(false))
+                        success = false;
                     {
-                        Log("Error message detected.");
-                        await Click(A, 1_000, token).ConfigureAwait(false);
-                        await StartGame(false, config, token).ConfigureAwait(false);
+                        //Click A until overworld
+                        while (!await IsSceneID(SceneID_Field, token).ConfigureAwait(false))
+                            await Click(A, 6_000, token).ConfigureAwait(false);
                     }
-                    //Click A until overworld
-                    while (!await IsSceneID(SceneID_Field, token).ConfigureAwait(false))
-                        await Click(A, 6_000, token).ConfigureAwait(false);
                     break;
                 }
             }
-
             await Task.Delay(5_000 + timing.ExtraTimeLoadOverworld, token).ConfigureAwait(false);
             Log("Back in the overworld!");
+
+            return success;
+        }
+
+        public async Task<bool> CheckBootError(bool untiloverworld, PokeBotHubConfig config, CancellationToken token)
+		{
+            //Check if the game loading dropped an error
+            var state = await SwitchConnection.PointerPeek(16, Offsets.MainRNGState, token).ConfigureAwait(false);
+            var S1 = BitConverter.ToUInt32(state, 4);
+            var S3 = BitConverter.ToUInt32(state, 12);
+            if (S1 == S3)
+            {
+                Log("Error message detected.");
+                await Click(SwitchButton.A, 1_000, token).ConfigureAwait(false);
+                await StartGame(untiloverworld, config, token).ConfigureAwait(false);
+                return true;
+            }
+            return false;
         }
 
         public async Task<uint> GetSceneID(CancellationToken token)
@@ -311,12 +316,18 @@ namespace SysBot.Pokemon
         public async Task OpenDex(CancellationToken token)
 		{
             Log("Opening Pokedex...");
-            await Click(SwitchButton.X, 0_900, token).ConfigureAwait(false);
-            await Click(SwitchButton.PLUS, 1_350, token).ConfigureAwait(false);
-            await Click(SwitchButton.B, 1_000, token).ConfigureAwait(false);
+            //Log("Click X");
+            await Click(SwitchButton.X, 1_000, token).ConfigureAwait(false);
+            //Log("Click +");
+            await Click(SwitchButton.PLUS, 1_750, token).ConfigureAwait(false);
+            //Log("Click B");
+            await Click(SwitchButton.B, 1_150, token).ConfigureAwait(false);
+            //Log("Click DUP");
             await Click(SwitchButton.DUP, 0_150, token).ConfigureAwait(false);
-            await Click(SwitchButton.A, 1_000, token).ConfigureAwait(false);
-            await Click(SwitchButton.R, 0_900, token).ConfigureAwait(false);
+            //Log("Click A");
+            await Click(SwitchButton.A, 1_500, token).ConfigureAwait(false);
+            //Log("Click R");
+            await Click(SwitchButton.R, 1_000, token).ConfigureAwait(false);
         }
 
         public async Task CloseDex(CancellationToken token)

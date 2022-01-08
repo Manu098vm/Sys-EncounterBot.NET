@@ -10,7 +10,6 @@ namespace SysBot.Pokemon
             PokeRoutineType.LGPE_EncounterBot => new EncounterBot7B(cfg, Hub),
             PokeRoutineType.LGPE_OverworldScan => new BotOverworld7B(cfg, Hub),
             PokeRoutineType.BDSP_RNG => new BDSPBotRNG(cfg, Hub),
-            PokeRoutineType.SWSH_EggBot => new EggBot(cfg, Hub),
             PokeRoutineType.SWSH_EncounterBot => Hub.Config.SWSH_Encounter.EncounteringType switch
 			{
                 EncounterMode.Dogs_or_Calyrex => new EncounterBotDog(cfg, Hub),
@@ -20,6 +19,7 @@ namespace SysBot.Pokemon
                 EncounterMode.Fossils => new EncounterBotFossil(cfg, Hub),
                 EncounterMode.MaxLair => new EncounterBotLair(cfg, Hub),
                 EncounterMode.LiveStatsChecking => new EncounterBotLive(cfg, Hub),
+                EncounterMode.Eggs => new EncounterBotEgg(cfg, Hub),
                 _ => new EncounterBotReset(cfg, Hub),
 			},
             PokeRoutineType.SWSH_OverworldScan => new BotOverworld(cfg, Hub),
@@ -32,7 +32,6 @@ namespace SysBot.Pokemon
             PokeRoutineType.LGPE_OverworldScan => true,
             PokeRoutineType.LGPE_EncounterBot => true,
             PokeRoutineType.SWSH_OverworldScan => true,
-            PokeRoutineType.SWSH_EggBot => true,
             PokeRoutineType.SWSH_EncounterBot => true,
             PokeRoutineType.BDSP_RNG => true,
             PokeRoutineType.RemoteControl => true,
