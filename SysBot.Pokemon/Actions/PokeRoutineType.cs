@@ -12,6 +12,5 @@
         SWSH_EncounterBot = 4,
         SWSH_EggBot = 5,
         BDSP_RNG = 6,
-        RemoteControl = 7,
     }
 }

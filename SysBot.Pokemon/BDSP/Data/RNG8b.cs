@@ -151,7 +151,7 @@ namespace SysBot.Pokemon
                 pk.Move1 = slot; 
                 xoro.Advance(84);
 
-                if(mode is not WildMode.Grass or WildMode.Swarm)
+                if(mode is not WildMode.Grass_or_Cave or WildMode.Swarm)
                     xoro.Next(); //Lvl Range(0,1000)
 			}
 

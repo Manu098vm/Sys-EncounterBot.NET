@@ -13,6 +13,7 @@ namespace SysBot.Pokemon
         public IReadOnlyList<long> EggStepPointer { get; }
         public IReadOnlyList<long> LocationPointer { get; }
         public IReadOnlyList<long> PartyStartPokemonPointer { get; }
+        public IReadOnlyList<long> PartySlot2PokemonPointer { get; }
         public IReadOnlyList<long> BoxStartPokemonPointer { get; }
         public IReadOnlyList<long> OpponentPokemonPointer { get; }
         public IReadOnlyList<long> SceneIDPointer { get; }

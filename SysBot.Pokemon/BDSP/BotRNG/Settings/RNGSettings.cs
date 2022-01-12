@@ -33,7 +33,7 @@ namespace SysBot.Pokemon
         public RNGType RNGType { get; set; } = 0;
 
         [Category(RNG), Description("Scenario of the target encounter.")]
-        public CheckMode CheckMode { get; set; } = CheckMode.Wild;
+        public CheckMode CheckMode { get; set; } = CheckMode.Encounter;
 
         [Category(RNG), Description("Select the wild encounter you want to calculate.")]
         public WildMode WildMode { get; set; } = WildMode.None;

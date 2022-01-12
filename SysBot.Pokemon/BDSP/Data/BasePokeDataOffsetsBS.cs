@@ -15,6 +15,7 @@ namespace SysBot.Pokemon
         public abstract IReadOnlyList<long> EggStepPointer { get; }
         public abstract IReadOnlyList<long> LocationPointer { get; }
         public abstract IReadOnlyList<long> PartyStartPokemonPointer { get; }
+        public abstract IReadOnlyList<long> PartySlot2PokemonPointer { get; }
         public abstract IReadOnlyList<long> BoxStartPokemonPointer { get; }
         public abstract IReadOnlyList<long> OpponentPokemonPointer { get; }
         public abstract IReadOnlyList<long> SceneIDPointer { get; }

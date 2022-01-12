@@ -76,9 +76,12 @@ namespace SysBot.Pokemon
             var sav = await GetFakeTrainerSAV(token).ConfigureAwait(false);
             InitSaveData(sav);
 
-            if (await GetTextSpeed(token).ConfigureAwait(false) != TextSpeedOption.Fast)
-                Log("Text speed should be set to FAST. Stop the bot and fix this if you encounter problems.");
 
+            if (!IsValidTrainerData())
+                throw new Exception("Trainer data is not valid. Refer to the SysBot.NET wiki for bad or no trainer data.");
+            if (await GetTextSpeed(token).ConfigureAwait(false) < TextSpeedOption.Fast)
+                throw new Exception("Text speed should be set to FAST. Fix this for correct operation.");
+            
             return sav;
         }
 
@@ -330,6 +333,14 @@ namespace SysBot.Pokemon
             await Click(SwitchButton.R, 1_000, token).ConfigureAwait(false);
         }
 
+        public async Task ReOpenDex(CancellationToken token)
+		{
+            Log("ReOpening dex for better advancement performance.");
+            await Click(B, 1_150, token).ConfigureAwait(false);
+            await Click(A, 1_500, token).ConfigureAwait(false);
+            await Click(R, 1_000, token).ConfigureAwait(false);
+        }
+
         public async Task CloseDex(CancellationToken token)
 		{
             for(int i = 0; i < 5; i++)
@@ -355,7 +366,7 @@ namespace SysBot.Pokemon
                     }
                     if (current_table != null)
                     {
-                        if ((mode is WildMode.Grass || mode is WildMode.Swarm) && current_table.ground_mons != null)
+                        if ((mode is WildMode.Grass_or_Cave || mode is WildMode.Swarm) && current_table.ground_mons != null)
                         {
                             foreach (var specie in current_table.ground_mons)
                                 list.Add(specie.monsNo);

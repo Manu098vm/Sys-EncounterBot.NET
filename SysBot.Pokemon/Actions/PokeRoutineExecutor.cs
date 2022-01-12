@@ -51,14 +51,14 @@ namespace SysBot.Pokemon
 
         public async Task<uint> GetAddressFromPointer(IReadOnlyList<long> jumps, CancellationToken token)
 		{
-            ulong absoluteaddress = await PointerAll(jumps, token).ConfigureAwait(false);
+            ulong absoluteaddress = await SwitchConnection.PointerAll(jumps, token).ConfigureAwait(false);
             ulong heapaddress = await SwitchConnection.GetHeapBaseAsync(token).ConfigureAwait(false);
             return (uint)(absoluteaddress - heapaddress);
         }
 
         protected async Task<(bool, ulong)> ValidatePointerAll(IEnumerable<long> jumps, CancellationToken token)
         {
-            var solved = await PointerAll(jumps, token).ConfigureAwait(false);
+            var solved = await SwitchConnection.PointerAll(jumps, token).ConfigureAwait(false);
             return (solved != 0, solved);
         }
 

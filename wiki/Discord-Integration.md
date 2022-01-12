@@ -1,0 +1,1 @@
+Refer to the official [SysBot.NET wiki](https://github.com/kwsch/SysBot.NET/wiki/Discord-Integration) to properly set a discord logging bot.

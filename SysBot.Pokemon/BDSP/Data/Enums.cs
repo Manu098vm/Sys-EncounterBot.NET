@@ -30,21 +30,22 @@
         LogAdvances,
         AutoRNG,
         Generator,
-        TEST,
+        CheckAvailablePKM,
 	}
 
     public enum CheckMode
 	{
-        Team,
-        Box,
-        Wild,
+        Encounter,
         Seed,
+        Box1Slot1,
+        TeamSlot1,
+        TeamSlot2,
 	}
 
     public enum WildMode
 	{
         None,
-        Grass,
+        Grass_or_Cave,
         Surf,
         Swarm,
         OldRod,

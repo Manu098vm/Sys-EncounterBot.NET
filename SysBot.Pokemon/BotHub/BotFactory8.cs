@@ -23,7 +23,6 @@ namespace SysBot.Pokemon
                 _ => new EncounterBotReset(cfg, Hub),
 			},
             PokeRoutineType.SWSH_OverworldScan => new BotOverworld(cfg, Hub),
-            PokeRoutineType.RemoteControl => new RemoteControlBot(cfg),
             _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
         };
 
@@ -34,7 +33,6 @@ namespace SysBot.Pokemon
             PokeRoutineType.SWSH_OverworldScan => true,
             PokeRoutineType.SWSH_EncounterBot => true,
             PokeRoutineType.BDSP_RNG => true,
-            PokeRoutineType.RemoteControl => true,
             _ => false,
         };
     }
