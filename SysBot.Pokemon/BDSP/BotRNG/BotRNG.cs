@@ -96,43 +96,6 @@ namespace SysBot.Pokemon
             await CleanExit(Settings, CancellationToken.None).ConfigureAwait(false);
         }
 
-        public async Task SkipFrames(SAV8BS sav, CancellationToken token)
-		{
-            int frames_to_skip = 608000000;
-
-            var tmpRamState = await SwitchConnection.ReadBytesAbsoluteAsync(RNGOffset, 16, token).ConfigureAwait(false);
-            var tmpS0 = BitConverter.ToUInt32(tmpRamState, 0);
-            var tmpS1 = BitConverter.ToUInt32(tmpRamState, 4);
-            var tmpS2 = BitConverter.ToUInt32(tmpRamState, 8);
-            var tmpS3 = BitConverter.ToUInt32(tmpRamState, 12);
-            var xoro = new Xorshift(tmpS0, tmpS1, tmpS2, tmpS3);
-
-            Log("Skippo...");
-            for (int i = 0; i < frames_to_skip; i++)
-                xoro.Next();
-
-            Log("Trovato!");
-
-            var tmp_states = xoro.GetU32State();
-            var S0 = BitConverter.GetBytes(tmp_states[0]);
-            var S1 = BitConverter.GetBytes(tmp_states[1]);
-            var S2 = BitConverter.GetBytes(tmp_states[2]);
-            var S3 = BitConverter.GetBytes(tmp_states[3]);
-            var slong0 = new byte[S0.Length + S1.Length];
-            var slong1 = new byte[S2.Length + S3.Length];
-            S0.CopyTo(slong0, 0);
-            S1.CopyTo(slong0, S0.Length);
-            S2.CopyTo(slong1, 0);
-            S3.CopyTo(slong1, S2.Length);
-            var state_to_inject = new byte[slong0.Length + slong1.Length];
-            slong0.CopyTo(state_to_inject, 0);
-            slong1.CopyTo(state_to_inject, slong0.Length);
-
-            await SwitchConnection.WriteBytesAbsoluteAsync(state_to_inject, RNGOffset, token).ConfigureAwait(false);
-            Log("Done.");
-            return;
-        }
-
         private async Task AutoRNG(SAV8BS sav, CancellationToken token)
         {
             bool found;
