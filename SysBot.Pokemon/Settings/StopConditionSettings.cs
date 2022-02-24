@@ -32,7 +32,7 @@ namespace SysBot.Pokemon
         [Category(StopConditions), Description("Stop only on Pokémon that have a mark.")]
         public bool MarkOnly { get; set; } = false;
 
-        [Category(StopConditions), Description("List of marks to ignore separated by commas. Use the full name, e.g. \"Uncommon Mark, Dawn Mark, Prideful Mark\".")]
+        [Category(StopConditions), Description("List of marks to ignore separated by commas. Use the code name, e.g. \"MarkUncommon, MarkDawn, MarkPrideful\".")]
         public string UnwantedMarks { get; set; } = "";
 
         [Category(StopConditions), Description("Holds Capture button to record a 30 second clip when a matching Pokémon is found by EncounterBot or Fossilbot.")]
@@ -173,16 +173,23 @@ namespace SysBot.Pokemon
         public static void ReadWantedNatures(StopConditionSettings settings, out IReadOnlyList<string> natures) =>
             natures = settings.TargetNatures.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
 
-        public virtual bool IsUnwantedMark(string mark, IReadOnlyList<string> marklist) => marklist.Contains(mark);
+        public virtual bool IsUnwantedMark(string mark, IReadOnlyList<string> marklist) { 
+            foreach(var el in marklist)
+                if (string.Equals(el, mark, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+            return false;
+        }
 
         public static string GetMarkName(IRibbonIndex pk)
         {
-            for (var mark = RibbonIndex.MarkLunchtime; mark <= RibbonIndex.MarkSlump; mark++)
-            {
-                if (pk.GetRibbon((int)mark))
-                    return $"\nPokémon found to have **{RibbonStrings.GetName($"Ribbon{mark}")}**!";
-            }
-            return "";
+            var str = "";
+            if (pk is IRibbonIndex r)
+                for (var mark = RibbonIndex.MarkLunchtime; mark <= RibbonIndex.MarkSlump; mark++)
+                    if (r.GetRibbon((int)mark))
+                        str = $"{mark}";
+
+            return str;
         }
     }
 

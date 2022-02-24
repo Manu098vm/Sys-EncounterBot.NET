@@ -95,6 +95,7 @@ namespace SysBot.Pokemon
             await ResetStick(CancellationToken.None).ConfigureAwait(false);
             await CleanExit(Settings, CancellationToken.None).ConfigureAwait(false);
         }
+
         private async Task AutoRNG(SAV8BS sav, CancellationToken token)
         {
             bool found;
@@ -374,7 +375,7 @@ namespace SysBot.Pokemon
                                             seed = 1;
                                             pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
                                         }
-                                    } while ((pk is null || seed == 0) && stopwatch.ElapsedMilliseconds < 5_000);
+                                    } while ((pk is null || seed == 0) && stopwatch.ElapsedMilliseconds < 10_000);
 
                                     if (pk is null)
                                         return false;
@@ -643,7 +644,7 @@ namespace SysBot.Pokemon
                                 break;
                             }
                         }
-                        //Log($"Result: {result}, used: {used}");
+                        //Log($"Result: {result}, used: {used}, difference: {result - used}");
                         var delay = (result-used) != -1 ? (result-used) : 0;
                         Log($"\nCalculated delay is {delay}.\n");
 

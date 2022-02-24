@@ -15,6 +15,7 @@
         MysteryGift,
         Roamer,
         Egg,
+        Underground,
         Custom,
 	}
 

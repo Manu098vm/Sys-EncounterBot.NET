@@ -148,12 +148,15 @@ namespace SysBot.Pokemon
                 var slot = CalcSlot(mode, calc);
                 pk.Species = slots[(int)slot];
                 //Save the slot in some available structure space
-                pk.Move1 = slot; 
-                xoro.Advance(84);
+                pk.Move1 = slot;
+                if (mode is WildMode.GoodRod or WildMode.GoodRod or WildMode.SuperRod)
+                    xoro.Advance(82);
+                else
+                    xoro.Advance(84);
 
                 if(mode is not WildMode.Grass_or_Cave or WildMode.Swarm)
                     xoro.Next(); //Lvl Range(0,1000)
-			}
+            }
 
             if (type is RNGType.MysteryGift)
                 xoro.Next();
