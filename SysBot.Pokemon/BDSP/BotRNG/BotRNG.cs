@@ -375,6 +375,10 @@ namespace SysBot.Pokemon
                                             seed = 1;
                                             pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
                                         }
+
+                                        if (type is RNGType.Gift or RNGType.Gift_3IV)
+                                            await Click(SwitchButton.B, 0_050, token).ConfigureAwait(false);
+
                                     } while ((pk is null || seed == 0) && stopwatch.ElapsedMilliseconds < 10_000);
 
                                     if (pk is null)
@@ -397,6 +401,8 @@ namespace SysBot.Pokemon
                                 }
                                 else
                                 {
+                                    await Click(SwitchButton.L, 0_100, token).ConfigureAwait(false);
+                                    await Click(actions.Last(), 0_100, token).ConfigureAwait(false);
                                     Log("Game paused.");
                                     return true;
                                 }
@@ -626,6 +632,9 @@ namespace SysBot.Pokemon
                                 seed = 1;
                                 pk = await ReadUntilPresentPointer(offset, 0_050, 0_050, 344, token).ConfigureAwait(false);
                             }
+
+                            if (type is RNGType.Gift or RNGType.Gift_3IV)
+                                await Click(SwitchButton.B, 0_050, token).ConfigureAwait(false);
                         } while (pk is null || seed == 0);
 
                         var hit = pk.EncryptionConstant;
