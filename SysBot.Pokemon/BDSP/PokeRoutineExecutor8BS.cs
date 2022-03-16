@@ -444,7 +444,7 @@ namespace SysBot.Pokemon
         {
 
             return $"\nEC: {pk.EncryptionConstant:X}\nPID: {pk.PID:X} {GetShinyType(pk)}\n" +
-                $"{(Nature)pk.Nature} nature\nAbility slot: {pk.AbilityNumber}\n" +
+                $"{(Nature)pk.Nature} nature\n" +
                 $"IVs: [{pk.IV_HP}, {pk.IV_ATK}, {pk.IV_DEF}, {pk.IV_SPA}, {pk.IV_SPD}, {pk.IV_SPE}]\n";
         }
 
