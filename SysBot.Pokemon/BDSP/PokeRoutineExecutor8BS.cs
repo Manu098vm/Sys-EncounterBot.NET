@@ -316,29 +316,29 @@ namespace SysBot.Pokemon
             return (TextSpeedOption)data[0];
         }
 
-        public async Task OpenDex(CancellationToken token)
+        public async Task OpenDex(int inputDelay, CancellationToken token)
 		{
             Log("Opening Pokedex...");
             //Log("Click X");
-            await Click(SwitchButton.X, 1_000, token).ConfigureAwait(false);
+            await Click(SwitchButton.X, 1_000+inputDelay, token).ConfigureAwait(false);
             //Log("Click +");
-            await Click(SwitchButton.PLUS, 1_750, token).ConfigureAwait(false);
+            await Click(SwitchButton.PLUS, 1_750+inputDelay, token).ConfigureAwait(false);
             //Log("Click B");
-            await Click(SwitchButton.B, 1_150, token).ConfigureAwait(false);
+            await Click(SwitchButton.B, 1_150+inputDelay, token).ConfigureAwait(false);
             //Log("Click DUP");
-            await Click(SwitchButton.DUP, 0_150, token).ConfigureAwait(false);
+            await Click(SwitchButton.DUP, 0_150+inputDelay, token).ConfigureAwait(false);
             //Log("Click A");
-            await Click(SwitchButton.A, 1_500, token).ConfigureAwait(false);
+            await Click(SwitchButton.A, 1_500+inputDelay, token).ConfigureAwait(false);
             //Log("Click R");
-            await Click(SwitchButton.R, 1_000, token).ConfigureAwait(false);
+            await Click(SwitchButton.R, 1_000+inputDelay, token).ConfigureAwait(false);
         }
 
-        public async Task ReOpenDex(CancellationToken token)
+        public async Task ReOpenDex(int inputDelay, CancellationToken token)
 		{
             Log("ReOpening dex for better advancement performance.");
-            await Click(B, 1_150, token).ConfigureAwait(false);
-            await Click(A, 1_500, token).ConfigureAwait(false);
-            await Click(R, 1_000, token).ConfigureAwait(false);
+            await Click(B, 1_150+inputDelay, token).ConfigureAwait(false);
+            await Click(A, 1_500+inputDelay, token).ConfigureAwait(false);
+            await Click(R, 1_000+inputDelay, token).ConfigureAwait(false);
         }
 
         public async Task CloseDex(CancellationToken token)

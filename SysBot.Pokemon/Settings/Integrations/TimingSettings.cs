@@ -32,7 +32,7 @@ namespace SysBot.Pokemon
         // Miscellaneous settings.
 
         [Category(Misc), Description("Time to wait after each keypress when navigating Switch menus.")]
-        public int KeypressTime { get; set; } = 200;
+        public int KeypressTime { get; set; } = 0;
 
         [Category(Misc), Description("Enable this to decline incoming system updates.")]
         public bool AvoidSystemUpdate { get; set; } = false;

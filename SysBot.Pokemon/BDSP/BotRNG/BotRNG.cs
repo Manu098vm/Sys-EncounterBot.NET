@@ -39,6 +39,7 @@ namespace SysBot.Pokemon
         public BDSPBotRNG(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
+
             Settings = hub.Config.BDSP_RNG;
             DumpSetting = hub.Config.Folder;
             Calc = new RNG8b();
@@ -95,7 +96,6 @@ namespace SysBot.Pokemon
             await ResetStick(CancellationToken.None).ConfigureAwait(false);
             await CleanExit(Settings, CancellationToken.None).ConfigureAwait(false);
         }
-
         private async Task AutoRNG(SAV8BS sav, CancellationToken token)
         {
             bool found;
@@ -413,7 +413,7 @@ namespace SysBot.Pokemon
                                 if (!in_dex && target-advances > Hub.Config.BDSP_RNG.AutoRNGSettings.ScrollDexUntil+1100)
                                 {
                                     await Task.Delay(2_000, token).ConfigureAwait(false);
-                                    await OpenDex(token).ConfigureAwait(false);
+                                    await OpenDex(Hub.Config.Timings.KeypressTime, token).ConfigureAwait(false);
                                     dex_time.Restart();
                                     in_dex = true;
                                 }
@@ -426,7 +426,7 @@ namespace SysBot.Pokemon
                                         if (dex_time.ElapsedMilliseconds > 185_000)
                                         {
                                             await ResetStick(token).ConfigureAwait(false);
-                                            await ReOpenDex(token).ConfigureAwait(false);
+                                            await ReOpenDex(Hub.Config.Timings.KeypressTime, token).ConfigureAwait(false);
                                             dex_time.Restart();
                                         }
                                         else
