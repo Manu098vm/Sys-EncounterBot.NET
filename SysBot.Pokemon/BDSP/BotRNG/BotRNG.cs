@@ -96,6 +96,7 @@ namespace SysBot.Pokemon
             await ResetStick(CancellationToken.None).ConfigureAwait(false);
             await CleanExit(Settings, CancellationToken.None).ConfigureAwait(false);
         }
+
         private async Task AutoRNG(SAV8BS sav, CancellationToken token)
         {
             bool found;

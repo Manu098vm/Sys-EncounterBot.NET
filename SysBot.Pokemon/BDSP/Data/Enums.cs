@@ -5,6 +5,7 @@
         None,
         ManaphyEgg,
         BirthDayHappiny,
+        GiftPiplup,
 	}
 
     public enum RNGType

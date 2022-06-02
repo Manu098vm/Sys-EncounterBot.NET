@@ -25,7 +25,7 @@ namespace SysBot.Pokemon
                 Log("Be sure to have the requested Pokémon in Box 1 Slot 1!");
 
             var sw = new Stopwatch();
-            var time = (long)0;
+            var time = (long)120_000;
             while (!token.IsCancellationRequested)
             {
                 if(!skiproutine)
@@ -38,7 +38,7 @@ namespace SysBot.Pokemon
                     {
                         await DoExtraCommands(token, type).ConfigureAwait(false);
 
-                        if (type is EncounterMode.Gifts) { 
+                        if (type is EncounterMode.Gifts) {
                             isgift = await IsGiftFound(token).ConfigureAwait(false);
                             if (isgift)
                                 monoffset = await GetResetOffset(type, token).ConfigureAwait(false); //Reload pointed address when gift is found
@@ -46,11 +46,12 @@ namespace SysBot.Pokemon
 
                         pk = await ReadUntilPresent(monoffset, 0_050, 0_050, BoxFormatSlotSize, token).ConfigureAwait(false);
 
-                        if (time == 0)
+                        if (pk is not null && time == 120_000)
                         {
                             time = sw.ElapsedMilliseconds + 10_000;
                             sw.Restart();
                         }
+
                     } while (pk is null && !isgift && sw.ElapsedMilliseconds < time);
 
                     //SearchUtil.HashByDetails(pkoriginal) == SearchUtil.HashByDetails(pknew)
