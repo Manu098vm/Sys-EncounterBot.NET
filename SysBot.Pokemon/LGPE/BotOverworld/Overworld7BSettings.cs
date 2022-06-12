@@ -32,6 +32,9 @@ namespace SysBot.Pokemon
         [Category(OverworldScan), Description("Set the fortune teller nature. All the wild and stationary Pokémon will have this nature. Ignored if random.")]
         public PKHeX.Core.Nature SetFortuneTellerNature { get; set; } = PKHeX.Core.Nature.Random;
 
+        [Category(OverworldScan), Description("Set the Lure type. The Lure will be reactivated once the effect ends. Ignored if None.")]
+        public Lure SetLure { get; set; } = Lure.None;
+
         [Category(OverworldScan), Description("Example: \"UP, RIGHT\". Every movement MUST be separated with a comma. Ignored if empty. Unexpected behaviour can occur if a shiny is detected while changing area. It his recommended to avoid that.")]
         public string MovementOrder { get; set; } = string.Empty;
 

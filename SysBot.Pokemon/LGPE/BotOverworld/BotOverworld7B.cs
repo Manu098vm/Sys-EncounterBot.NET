@@ -77,6 +77,10 @@ namespace SysBot.Pokemon
                     $"ATTENTION{Environment.NewLine}Unexpected behaviour can occur if a Pokémon is detected while changing area. It is higlhy recommended to avoid that.{Environment.NewLine}" +
                     $"-----------------------------------------{Environment.NewLine}");
 
+            //Check Text Speed. If not set to fast there might be timing problems when escaping from wild encounters.
+            if (await ReadTextSpeed(token).ConfigureAwait(false) != TextSpeed.Fast)
+                await EditTextSpeed(TextSpeed.Fast, token).ConfigureAwait(false);
+
             //Catch combo to increment spawn quality and shiny rate (Thanks to Lincoln-LM for the offsets)
             if ((int)Settings.ChainSpecies > 0)
             {
@@ -121,6 +125,16 @@ namespace SysBot.Pokemon
                             Log($"Fortune Teller enabled, Nature set to {await ReadWildNature(token).ConfigureAwait(false)}.");
                         }
 
+                        //Check Lure Type
+                        if (await ReadLureType(token).ConfigureAwait(false) != Hub.Config.LGPE_OverworldScan.SetLure)
+                            await EditLureType((uint)Hub.Config.LGPE_OverworldScan.SetLure, token).ConfigureAwait(false);
+
+                        //Check Lure Steps
+                        if (Hub.Config.LGPE_OverworldScan.SetLure != Lure.None && await ReadLureCounter(token).ConfigureAwait(false) < 20)
+                            await EditLureCounter(100, token).ConfigureAwait(false);
+
+
+
                         //PG Movements. The routine need to continue and check the overworld spawns, cannot be stuck at changing stick position.
                         if (movementslist.Count > 0)
                         {
@@ -137,23 +151,23 @@ namespace SysBot.Pokemon
                             }
                         }
 
-                        //Check is inside an unwanted encounter
+                        //Check if inside an unwanted encounter
                         if (await IsInCatchScreen(token).ConfigureAwait(false))
                             await FleeToOverworld(token).ConfigureAwait(false);
 
                         //Check new spawns
                         newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn, 2, token).ConfigureAwait(false), 0);
-                        if (newspawn != prev)
+                        if (newspawn != 0)
                         {
-                            if (newspawn != 0)
-                            {
-                                encounterCount++;
-                                Settings.AddCompletedScans();
+                            //Count and log the LastSpawn
+                            encounterCount++;
+                            Settings.AddCompletedScans();
+                            var msg = $"New spawn ({encounterCount}): {newspawn} {SpeciesName.GetSpeciesName((int)newspawn, 4)}";
+                            Log(msg);
 
-                                var msg = $"New spawn ({encounterCount}): {newspawn} {SpeciesName.GetSpeciesName((int)newspawn, 4)}";
-                                Log(msg);
-                            }
-                            prev = newspawn;
+                            //Set the LastSpawn to 0, so we can account multiple consecutive spawns of the same species. Thanks Anubis for the suggestion!
+                            await Connection.WriteBytesAsync(new byte[] { 0x0, 0x0 }, LastSpawn, token).ConfigureAwait(false);
+
                             if (!searchforshiny &&
                                 ((!birds && (int)newspawn == (int)Settings.StopOnSpecies) ||
                                 (!birds && (int)Settings.StopOnSpecies == 0) ||
@@ -162,7 +176,7 @@ namespace SysBot.Pokemon
                                 await Click(X, 1_000, token).ConfigureAwait(false);
                                 await Click(HOME, 1_000, token).ConfigureAwait(false);
 
-                                var msg = "Stop conditions met, restart the bot(s) to search again.";
+                                msg = "Stop conditions met, restart the bot(s) to search again.";
                                 if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
                                     msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
                                 Log(msg);
@@ -207,7 +221,6 @@ namespace SysBot.Pokemon
 
                     return;
                 }
-
             }
             await ResetStick(token).ConfigureAwait(false);
             if (searchforshiny)
@@ -253,7 +266,7 @@ namespace SysBot.Pokemon
                 Log($"FAILED: {BitConverter.ToString(data)} should be {BitConverter.ToString(compare)}.");
 
             Log("Testing generating function...");
-            data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PGeneratingFunction1 : EGeneratingFunction1, 4, token).ConfigureAwait(false);
+            data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PGeneratingFunction : EGeneratingFunction, 4, token).ConfigureAwait(false);
             compare = new byte[] { 0xE8, 0x03, 0x00, 0x2A };
             var zak = new byte[] { 0xE9, 0x03, 0x00, 0x2A };
             if (data.SequenceEqual(compare) || data.SequenceEqual(zak))

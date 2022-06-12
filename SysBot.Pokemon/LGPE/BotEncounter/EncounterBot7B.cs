@@ -104,6 +104,10 @@ namespace SysBot.Pokemon
             if (mode == LetsGoMode.Stationary)
                 Log("Ensure to have a powerful Pokémon in the first slot of your team, with a move that can knock out the enemy in a few turns as first move.");
 
+            //Check Text Speed
+            if (await ReadTextSpeed(token).ConfigureAwait(false) != TextSpeed.Fast)
+                await EditTextSpeed(TextSpeed.Fast, token).ConfigureAwait(false);
+
             while (!token.IsCancellationRequested)
             {
 

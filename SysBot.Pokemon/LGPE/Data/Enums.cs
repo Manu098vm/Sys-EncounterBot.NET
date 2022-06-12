@@ -39,6 +39,19 @@
         /// </summary>
         WildBirds,
     }
+    public enum Lure
+    {
+        None = 0,
+        Lure = 900,
+        SuperLure = 901,
+        MaxLure = 902,
+    }
+    public enum TextSpeed
+    {
+        Slow = 64,
+        Normal = 65,
+        Fast = 66,
+    }
     public enum LetsGoTest
     {
         Unfreeze,

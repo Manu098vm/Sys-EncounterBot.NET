@@ -94,6 +94,18 @@ namespace SysBot.Pokemon
 
         public async Task EditWildNature(Nature target, CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes((uint)target), WildNature, token).ConfigureAwait(false);
 
+        public async Task<Lure> ReadLureType(CancellationToken token) => (Lure)BitConverter.ToUInt16(await Connection.ReadBytesAsync(LureType, 2, token).ConfigureAwait(false), 0);
+
+        public async Task<uint> ReadLureCounter(CancellationToken token) => BitConverter.ToUInt16(await Connection.ReadBytesAsync(LureCounter, 2, token).ConfigureAwait(false), 0);
+
+        public async Task EditLureType(uint type, CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes(type), LureType, token).ConfigureAwait(false);
+
+        public async Task EditLureCounter(uint counter, CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes(counter), LureCounter, token).ConfigureAwait(false);
+
+        public async Task<TextSpeed> ReadTextSpeed(CancellationToken token) => (TextSpeed)(await Connection.ReadBytesAsync(TextSpeedOffset, 1, token).ConfigureAwait(false))[0];
+
+        public async Task EditTextSpeed(TextSpeed speed, CancellationToken token) => await Connection.WriteBytesAsync(new byte[] {(byte)speed}, TextSpeedOffset, token).ConfigureAwait(false);
+
         public async Task<uint> ReadSpeciesCombo(CancellationToken token) =>
             BitConverter.ToUInt16(await SwitchConnection.PointerPeek(2, Pointers.SpeciesComboPointer, token).ConfigureAwait(false), 0);
 
@@ -137,14 +149,14 @@ namespace SysBot.Pokemon
         //Let's Go useful cheats for testing purposes.
         public async Task Zaksabeast(CancellationToken token, GameVersion version)
         {
-            var offset = version == GameVersion.GP ? PGeneratingFunction1 : EGeneratingFunction1;
+            var offset = version == GameVersion.GP ? PGeneratingFunction : EGeneratingFunction;
             //This is basically the Zaksabeast code ported for the newest Let's game version. 
             var inject = new byte[] { 0xE9, 0x03, 0x00, 0x2A, 0x60, 0x12, 0x40, 0xB9, 0xE1, 0x03, 0x09, 0x2A, 0x69, 0x06, 0x00, 0xF9, 0xDC, 0xFD, 0xFF, 0x97, 0x40, 0x00, 0x00, 0x36, 0x00, 0x00, 0x00, 0x14 };
             await SwitchConnection.WriteBytesMainAsync(inject, offset, token).ConfigureAwait(false);
         }
         public async Task Unfreeze(CancellationToken token, GameVersion version)
         {
-            var offset = version == GameVersion.GP ? PGeneratingFunction7 : EGeneratingFunction7;
+            var offset = (version == GameVersion.GP ? PGeneratingFunction : EGeneratingFunction) + 0x18;
             var data = new byte[] { 0x0C, 0x00, 0x00, 0x14 };
             await SwitchConnection.WriteBytesMainAsync(data, offset, token).ConfigureAwait(false);
         }
