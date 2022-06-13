@@ -108,6 +108,19 @@ namespace SysBot.Pokemon
             {
                 await FlyToRerollSeed(token).ConfigureAwait(false);
                 var pkm = await ReadOwPokemon(dexn, offset, null, sav, token).ConfigureAwait(false);
+                if (pkm == null)
+                {
+                    var KCoordinates = await ReadKCoordinates(token).ConfigureAwait(false);
+                    var PK8s = await ReadOwPokemonFromBlock(KCoordinates, sav, token).ConfigureAwait(false);
+                    foreach(var pk8 in PK8s)
+                    {
+                        if((Species)pk8.Species == dexn)
+                        {
+                            pkm = pk8;
+                            break;
+                        }
+                    }
+                }
                 if (pkm != null && await LogPKMs(pkm, token).ConfigureAwait(false))
                 {
                     await Click(X, 2_000, token).ConfigureAwait(false);

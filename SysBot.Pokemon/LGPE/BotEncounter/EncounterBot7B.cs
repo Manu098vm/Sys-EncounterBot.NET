@@ -88,7 +88,7 @@ namespace SysBot.Pokemon
                     if (pk == null)
                         Log("Check error. Either a wrong offset is used, or the RAM is shifted.");
                     else
-                        await HandleEncounter(pk, token);
+                        await HandleEncounter(pk, token, false);
                 }
             }
         }
@@ -152,7 +152,7 @@ namespace SysBot.Pokemon
                     Log("Check error. Either a wrong offset is used, or the RAM is shifted.");
                 else
                 {
-                    if (await HandleEncounter(pk, token).ConfigureAwait(false))
+                    if (await HandleEncounter(pk, token, false).ConfigureAwait(false))
                     {
                         if (mode is LetsGoMode.Stationary)
                         {
@@ -187,7 +187,7 @@ namespace SysBot.Pokemon
         }
 
         // return true if breaking loop
-        private async Task<bool> HandleEncounter(PB7? pk, CancellationToken token)
+        private async Task<bool> HandleEncounter(PB7? pk, CancellationToken token, bool showEndRoutine = true)
         {
             if (pk == null)
                 return false;
@@ -223,7 +223,9 @@ namespace SysBot.Pokemon
                 await PressAndHold(CAPTURE, 2_000, 0, token).ConfigureAwait(false);
             }
 
-            var msg = $"Result found!\n{print}\nStopping routine execution; restart the bot to search again.";
+            var msg = "";
+            if(showEndRoutine)
+                msg = $"Result found!\n{print}\nStopping routine execution; restart the bot to search again.";
 
             if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
                 msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";

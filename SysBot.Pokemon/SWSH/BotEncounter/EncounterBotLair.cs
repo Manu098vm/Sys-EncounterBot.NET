@@ -225,6 +225,10 @@ namespace SysBot.Pokemon
 
         private async Task<int[]> IsAdventureHuntFound(CancellationToken token)
         {
+            //found[0] = Pokèmon to pick
+            //found[1] = 1 if legendary has been caught, 0 otherwise
+            //found[2] = StopConditions met
+
             int[] found = { 0, 0, 0 };
             bool enc_conditions = false;
             int i = 0;
@@ -238,12 +242,13 @@ namespace SysBot.Pokemon
                     {
                         found[1] = 1;
                     }
+
                     if(await HandleEncounter(pkm, token).ConfigureAwait(false))
 					{
                         found[0] = i + 1;
                         enc_conditions = true;
                     }
-                    else if (i < 4 && pkm.IsShiny && Hub.Config.SWSH_Encounter.MaxLairSettings.KeepShinies && !enc_conditions)
+                    else if (pkm.IsShiny && Hub.Config.SWSH_Encounter.MaxLairSettings.KeepShinies && !enc_conditions)
                         found[0] = i + 1;
                 }
                 i++;
@@ -254,7 +259,7 @@ namespace SysBot.Pokemon
 
         private async Task<PK8?> ReadLairResult(int slot, CancellationToken token)
         {
-            var pointer = new long[] { 0x28F4060, 0x1B0, 0x68, (0x58 + (0x08 * slot)), 0xD0 };
+            var pointer = new long[] { 0x28F4060, 0x1B0, 0x68, 0x58 + 0x08 * slot, 0x58, 0x0 };
             var pkm = await ReadUntilPresentPointer(pointer, 2_000, 0_200, BoxFormatSlotSize, token).ConfigureAwait(false);
             if (pkm is not null && pkm.Species == 0)
                 return null;
