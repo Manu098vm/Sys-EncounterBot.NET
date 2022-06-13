@@ -96,8 +96,6 @@ namespace SysBot.Pokemon
         private async Task DoRestartingEncounter(CancellationToken token)
         {
             var mode = Settings.EncounteringType;
-            var offset = mode is LetsGoMode.Stationary ? StationaryBattleData : PokeData;
-            var isheap = mode is LetsGoMode.Stationary;
             var stopwatch = new Stopwatch();
             var ms = (long)0;
 
@@ -144,15 +142,15 @@ namespace SysBot.Pokemon
 
                 //Ms taken from a single encounter + margin
                 if (ms == 0)
-                    ms = stopwatch.ElapsedMilliseconds + 2500;
+                    ms = stopwatch.ElapsedMilliseconds + 2500; 
 
-                var pk = new PB7();
-                if (isheap)
-                    pk = await ReadUntilPresentMain(offset, 2_000, 0_200, token).ConfigureAwait(false);
+                var pk = await ReadUntilPresent(StationaryBattleData, 2_000, 0_200, token).ConfigureAwait(false);
+                if (pk == null)
+                    await ReadUntilPresentMain(PokeData, 2_000, 0_200, token).ConfigureAwait(false);
+
+                if (pk == null)
+                    Log("Check error. Either a wrong offset is used, or the RAM is shifted.");
                 else
-                    pk = await ReadUntilPresent(offset, 2_000, 0_200, token).ConfigureAwait(false);
-
-                if (pk != null)
                 {
                     if (await HandleEncounter(pk, token).ConfigureAwait(false))
                     {

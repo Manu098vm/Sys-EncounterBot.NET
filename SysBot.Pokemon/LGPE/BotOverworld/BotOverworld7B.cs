@@ -61,7 +61,6 @@ namespace SysBot.Pokemon
             var movementslist = ParseMovements(Settings.MovementOrder, Settings.MoveUpMs, Settings.MoveRightMs, Settings.MoveDownMs, Settings.MoveLeftMs);
             var firstrun = movementslist.Count > 0;
             var stopwatch = new Stopwatch();
-            var prev = (uint)0;
             var i = 0;
             var freeze = false;
             var searchforshiny = Settings.OnlyShiny;
