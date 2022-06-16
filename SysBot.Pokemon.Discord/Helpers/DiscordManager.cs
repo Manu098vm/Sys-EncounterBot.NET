@@ -12,7 +12,6 @@ namespace SysBot.Pokemon.Discord
 
         public RemoteControlAccessList SudoDiscord => Config.GlobalSudoList;
         public RemoteControlAccessList SudoRoles => Config.RoleSudo;
-        public RemoteControlAccessList RolesRemoteControl => Config.RoleRemoteControl;
 
         public bool CanUseSudo(ulong uid) => SudoDiscord.Contains(uid);
         public bool CanUseSudo(IEnumerable<string> roles) => roles.Any(SudoRoles.Contains);
@@ -27,10 +26,6 @@ namespace SysBot.Pokemon.Discord
             return (set.AllowIfEmpty && set.List.Count == 0) || roles.Any(set.Contains);
         }
 
-        private RemoteControlAccessList GetSet(string type) => type switch
-        {
-            nameof(RolesRemoteControl) => RolesRemoteControl,
-            _ => throw new ArgumentOutOfRangeException(nameof(type)),
-        };
+        private RemoteControlAccessList GetSet(string type) => throw new ArgumentOutOfRangeException(nameof(type));
     }
 }

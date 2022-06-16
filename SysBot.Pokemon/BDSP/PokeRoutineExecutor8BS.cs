@@ -146,18 +146,6 @@ namespace SysBot.Pokemon
             await DetachController(token).ConfigureAwait(false);
         }
 
-        protected virtual async Task EnterLinkCode(int code, PokeBotHubConfig config, CancellationToken token)
-        {
-            // Default implementation to just press directional arrows. Can do via Hid keys, but users are slower than bots at even the default code entry.
-            var keys = TradeUtil.GetPresses(code);
-            foreach (var key in keys)
-            {
-                int delay = config.Timings.KeypressTime;
-                await Click(key, delay, token).ConfigureAwait(false);
-            }
-            // Confirm Code outside of this method (allow synchronization)
-        }
-
         public async Task ReOpenGame(bool untiloverworld, PokeBotHubConfig config, CancellationToken token)
         {
             await CloseGame(config, token).ConfigureAwait(false);

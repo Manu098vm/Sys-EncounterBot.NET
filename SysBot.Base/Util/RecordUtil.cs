@@ -29,7 +29,9 @@ namespace SysBot.Base
         }
 
         // ReSharper disable once StaticMemberInGenericType
+#pragma warning disable CS0618 // Type or member is obsolete
         private static readonly ILogger Logger = new LogFactory(GetConfig()).GetCurrentClassLogger();
+#pragma warning restore CS0618 // Type or member is obsolete
         public static void Record(string message) => Logger.Log(LogLevel.Info, message);
     }
 }

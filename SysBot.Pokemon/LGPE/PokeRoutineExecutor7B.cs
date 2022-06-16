@@ -16,7 +16,6 @@ namespace SysBot.Pokemon
     /// </summary>
     public abstract class PokeRoutineExecutor7B : PokeRoutineExecutor<PB7>
     {
-        private readonly PokeDataPointers7B Pointers = new();
         protected PokeRoutineExecutor7B(PokeBotState cfg) : base(cfg) { }
 
         public override async Task<PB7> ReadPokemon(ulong offset, CancellationToken token)
@@ -106,17 +105,13 @@ namespace SysBot.Pokemon
 
         public async Task EditTextSpeed(TextSpeed speed, CancellationToken token) => await Connection.WriteBytesAsync(new byte[] {(byte)speed}, TextSpeedOffset, token).ConfigureAwait(false);
 
-        public async Task<uint> ReadSpeciesCombo(CancellationToken token) =>
-            BitConverter.ToUInt16(await SwitchConnection.PointerPeek(2, Pointers.SpeciesComboPointer, token).ConfigureAwait(false), 0);
+        public async Task<uint> ReadSpeciesCombo(CancellationToken token) => BitConverter.ToUInt16(await Connection.ReadBytesAsync(SpeciesCombo, 2, token).ConfigureAwait(false), 0);
 
-        public async Task<uint> ReadComboCount(CancellationToken token) =>
-            BitConverter.ToUInt16(await SwitchConnection.PointerPeek(2, Pointers.CatchComboPointer, token).ConfigureAwait(false), 0);
+        public async Task<uint> ReadComboCount(CancellationToken token) => BitConverter.ToUInt16(await Connection.ReadBytesAsync(CatchCombo, 2, token).ConfigureAwait(false), 0);
 
-        public async Task EditSpeciesCombo(uint species, CancellationToken token) =>
-            await SwitchConnection.PointerPoke(BitConverter.GetBytes(species), Pointers.SpeciesComboPointer, token).ConfigureAwait(false);
+        public async Task EditSpeciesCombo(uint species, CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes(species), SpeciesCombo, token).ConfigureAwait(false);
 
-        public async Task EditComboCount(uint count, CancellationToken token) =>
-            await SwitchConnection.PointerPoke(BitConverter.GetBytes(count), Pointers.CatchComboPointer, token).ConfigureAwait(false);
+        public async Task EditComboCount(uint count, CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes(count), CatchCombo, token).ConfigureAwait(false);
 
         public async Task<long> CountMilliseconds(PokeBotHubConfig config, CancellationToken token)
         {

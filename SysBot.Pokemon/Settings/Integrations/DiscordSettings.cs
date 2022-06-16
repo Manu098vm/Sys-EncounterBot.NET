@@ -33,9 +33,6 @@ namespace SysBot.Pokemon
 
         // Whitelists
 
-        [Category(Roles), Description("Users with this role are allowed to remotely control the console (if running as Remote Control Bot.")]
-        public RemoteControlAccessList RoleRemoteControl { get; set; } = new() { AllowIfEmpty = false };
-
         [Category(Roles), Description("Users with this role are allowed to bypass command restrictions.")]
         public RemoteControlAccessList RoleSudo { get; set; } = new() { AllowIfEmpty = false };
 
