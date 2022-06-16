@@ -117,7 +117,7 @@ namespace SysBot.Pokemon
             if (length < 0 || length > maxCharCount)
                 length = maxCharCount;
 
-            return StringConverter.GetString7b(obj, ofs_chars, length * 2);
+            return StringConverter8.GetString(obj.AsSpan(ofs_chars, length * 2));
         }
 
         public async Task InitializeHardware(IBotStateSettings settings, CancellationToken token)

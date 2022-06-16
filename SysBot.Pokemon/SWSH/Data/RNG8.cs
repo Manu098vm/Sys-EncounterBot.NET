@@ -58,11 +58,6 @@ namespace Sysbot.Pokemon
             pk.IV_SPD = ivs[4];
             pk.IV_SPE = ivs[5];
 
-            // Size
-            var scale = (IScaledSize)pk;
-            scale.HeightScalar = (int)xoro.NextInt(0x81) + (int)xoro.NextInt(0x80);
-            scale.WeightScalar = (int)xoro.NextInt(0x81) + (int)xoro.NextInt(0x80);
-
             return pk;
         }
 

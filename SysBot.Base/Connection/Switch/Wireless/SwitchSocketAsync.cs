@@ -98,6 +98,7 @@ namespace SysBot.Base
         }
 
         /// <summary> Only call this if you are sending small commands. </summary>
+        /// <summary> Only call this if you are sending small commands. </summary>
         public async Task<int> SendAsync(byte[] buffer, CancellationToken token) => await Task.Run(() => Connection.Send(buffer), token).ConfigureAwait(false);
 
         private async Task<byte[]> ReadBytesFromCmdAsync(byte[] cmd, int length, CancellationToken token)

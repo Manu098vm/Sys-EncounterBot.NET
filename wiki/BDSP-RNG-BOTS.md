@@ -4,7 +4,7 @@ Since _Sys-EncounterBot 2.5_, the bot can handle some automated RNG routines.
 These routines are here mainly to assist the player in the RNG Abuse project, allowing more precise RNGs.
 In order to use the bots, you must already understand the RNG basics.
 
-If you want to know more about RNG Abuse in BDSP games, [this](https://github.com/zaksabeast/PokemonRNGGuides/tree/rough-drafts/guides/Brilland%20Diamond%20annd%20Shining%20Pearl) might be a good point to start.
+If you want to know more about RNG Abuse in BDSP games, [this](https://www.pokemonrng.com/rough-drafts/) might be a good point to start.
 
 
 If you want to do manual RNGs, the Bot could still be useful with the Delay Calculation and the Log Advances routines.

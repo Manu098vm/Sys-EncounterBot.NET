@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using SysBot.Base;
+using System.IO;
 using System.Linq;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
@@ -68,6 +69,7 @@ namespace SysBot.Pokemon
             uint catchcombo;
             uint speciescombo;
             bool found;
+            int lastSpawn;
 
             if (movementslist.Count > 0)
                 Log($"{Environment.NewLine}----------------------------------------{Environment.NewLine}" +
@@ -132,8 +134,6 @@ namespace SysBot.Pokemon
                         if (Hub.Config.LGPE_OverworldScan.SetLure != Lure.None && await ReadLureCounter(token).ConfigureAwait(false) < 20)
                             await EditLureCounter(100, token).ConfigureAwait(false);
 
-
-
                         //PG Movements. The routine need to continue and check the overworld spawns, cannot be stuck at changing stick position.
                         if (movementslist.Count > 0)
                         {
@@ -141,7 +141,6 @@ namespace SysBot.Pokemon
                             {
                                 if (firstrun)
                                     firstrun = false;
-                                await ResetStick(token).ConfigureAwait(false);
                                 await SetStick(RIGHT, (short)(movementslist.ElementAt(i)[0]), (short)(movementslist.ElementAt(i)[1]), 0_001, token).ConfigureAwait(false);
                                 i++;
                                 if (i == movementslist.Count)
@@ -161,16 +160,17 @@ namespace SysBot.Pokemon
                             //Count and log the LastSpawn
                             encounterCount++;
                             Settings.AddCompletedScans();
-                            var msg = $"New spawn ({encounterCount}): {newspawn} {SpeciesName.GetSpeciesName((int)newspawn, 4)}";
+                            lastSpawn = (int)newspawn;
+                            var msg = $"New spawn ({encounterCount}): {lastSpawn} {SpeciesName.GetSpeciesName((int)lastSpawn, 4)}";
                             Log(msg);
 
                             //Set the LastSpawn to 0, so we can account multiple consecutive spawns of the same species. Thanks Anubis for the suggestion!
                             await Connection.WriteBytesAsync(new byte[] { 0x0, 0x0 }, LastSpawn, token).ConfigureAwait(false);
 
                             if (!searchforshiny &&
-                                ((!birds && (int)newspawn == (int)Settings.StopOnSpecies) ||
+                                ((!birds && lastSpawn == (int)Settings.StopOnSpecies) ||
                                 (!birds && (int)Settings.StopOnSpecies == 0) ||
-                                (birds && ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146))))
+                                (birds && (lastSpawn == 144 || lastSpawn == 145 || lastSpawn == 146))))
                             {
                                 await Click(X, 1_000, token).ConfigureAwait(false);
                                 await Click(HOME, 1_000, token).ConfigureAwait(false);
@@ -190,6 +190,7 @@ namespace SysBot.Pokemon
 
                 await Unfreeze(token, version).ConfigureAwait(false);
                 freeze = false;
+                await Task.Delay(0_500, token).ConfigureAwait(false);
                 newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn, 2, token).ConfigureAwait(false), 0);
 
                 //Stop Conditions
@@ -309,7 +310,7 @@ namespace SysBot.Pokemon
         private async Task ResetStick(CancellationToken token)
         {
             // If aborting the sequence, we might have the stick set at some position. Clear it just in case.
-            await SetStick(LEFT, 0, 0, 0_500, token).ConfigureAwait(false); // reset
+            await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false); // reset
         }
 
         private async Task FleeToOverworld(CancellationToken token)

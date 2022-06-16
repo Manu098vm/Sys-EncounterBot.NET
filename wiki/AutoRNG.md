@@ -63,7 +63,7 @@ Scroll down to `Stop Conditions` and set them accordingly to your target.
 
 Go back to the Bots tab, select `BDSP_RNG`, click `Add` then `Start All`.
 
-If you're using `ExternalCalc` mode, you'll be shown the current states (S0, S1, S2, S3) and the routine will pause itself. You can use the states in [PokéFinder](https://github.com/Admiral-Fish/PokeFinder/releases) or [Chatot](https://chatot.pokemonrng.com/#/bdsp). PokéFinder only uses two states instead of four. You can unify S1 and S2 to obtain the first state asked by PokéFinder, while by unifying S2 and S3 you'll obtain the second state. More info about that [here](https://github.com/zaksabeast/PokemonRNGGuides/tree/rough-drafts/guides/Brilland%20Diamond%20annd%20Shining%20Pearl).
-Once you got your target, set the value in `Hub`->`BDSP_RNG`->`AutoRNGSettings`->`Target` and press the Enter key, the routine will be then automatically resumed.
+If you're using `ExternalCalc` mode, be sure to run the routine while you paused the game (press HOME). You'll then be shown the current states (S0, S1, S2, S3) and the routine will pause itself. You can use the states in [PokéFinder](https://github.com/Admiral-Fish/PokeFinder/releases) or [Chatot](https://chatot.pokemonrng.com/#/bdsp). PokéFinder only uses two states instead of four. You can unify S1 and S2 to obtain the first state asked by PokéFinder, while by unifying S2 and S3 you'll obtain the second state. More info about that [here](https://www.pokemonrng.com/rough-drafts/).
+Once you got your target, set the value in `Hub`->`BDSP_RNG`->`AutoRNGSettings`->`Target` and press the Enter key, the routine will be then automatically resumed. Reopen the game to start the process.
 
 **N.B: If you used CaptureSight, sysbot-base will be unable to attach to the game process.**
