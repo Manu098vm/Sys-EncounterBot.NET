@@ -5,7 +5,8 @@
         None,
         ManaphyEgg,
         BirthDayHappiny,
-        GiftPiplup,
+        KorDawnPiplup,
+        KorRegigigas,
 	}
 
     public enum RNGType

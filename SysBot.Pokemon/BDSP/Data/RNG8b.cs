@@ -274,6 +274,8 @@ namespace SysBot.Pokemon
 				{
                     PokeEvents.ManaphyEgg => 3,
                     PokeEvents.BirthDayHappiny => 0,
+                    PokeEvents.KorDawnPiplup => 0,
+                    PokeEvents.KorRegigigas => 3,
                     _ => 0,
 				},
                 _ => 0,
@@ -284,7 +286,10 @@ namespace SysBot.Pokemon
 		{
             int[] tidsid = events switch
             {
+                PokeEvents.ManaphyEgg => new int[2] { tr.TID, tr.SID },
                 PokeEvents.BirthDayHappiny => new int[2] { 61213, 2108 },
+                PokeEvents.KorDawnPiplup => new int[2] { 28217, 18344 },
+                PokeEvents.KorRegigigas => new int[2] { 11257, 18329 },
                 _ => new int[2] { tr.TID, tr.SID },
             };
             return tidsid;
@@ -295,6 +300,8 @@ namespace SysBot.Pokemon
             return events switch
             {
                 PokeEvents.BirthDayHappiny => Gender.Female,
+                PokeEvents.KorDawnPiplup => Gender.Male,
+                PokeEvents.KorRegigigas => Gender.Genderless,
                 _ => Gender.Genderless,
             };
 		}
@@ -304,6 +311,7 @@ namespace SysBot.Pokemon
             return events switch
             {
                 PokeEvents.BirthDayHappiny => Nature.Hardy,
+                PokeEvents.KorDawnPiplup => Nature.Hardy,
                 _ => Nature.Hardy,
             };
 		}
@@ -312,7 +320,10 @@ namespace SysBot.Pokemon
 		{
             return events switch
             {
+                PokeEvents.ManaphyEgg => true,
                 PokeEvents.BirthDayHappiny => false,
+                PokeEvents.KorDawnPiplup => false,
+                PokeEvents.KorRegigigas => true,
                 _ => true,
             };
 		}
