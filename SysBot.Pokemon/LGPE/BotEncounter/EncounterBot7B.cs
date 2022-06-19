@@ -33,7 +33,7 @@ namespace SysBot.Pokemon
         public override async Task MainLoop(CancellationToken token)
         {
             Log("Identifying trainer data of the host console.");
-            var sav = await IdentifyTrainer(token).ConfigureAwait(false);
+            await IdentifyTrainer(token).ConfigureAwait(false);
             await InitializeHardware(Settings, token).ConfigureAwait(false);
 
             try
@@ -65,12 +65,22 @@ namespace SysBot.Pokemon
         {
             while (!token.IsCancellationRequested)
             {
-                if (Settings.SetFortuneTellerNature is not Nature.Random && !await IsNatureTellerEnabled(token).ConfigureAwait(false))
+                //Force the Fortune Teller Nature value, value is reset at the end of the day
+                if (Settings.SetFortuneTellerNature != Nature.Random && 
+                    (!await IsNatureTellerEnabled(token).ConfigureAwait(false) || await ReadWildNature(token).ConfigureAwait(false) != Settings.SetFortuneTellerNature))
                 {
                     await EnableNatureTeller(token).ConfigureAwait(false);
                     await EditWildNature(Settings.SetFortuneTellerNature, token).ConfigureAwait(false);
                     Log($"Fortune Teller enabled, Nature set to {await ReadWildNature(token).ConfigureAwait(false)}.");
                 }
+
+                //Check Lure Type
+                if (await ReadLureType(token).ConfigureAwait(false) != Settings.SetLure)
+                    await EditLureType((uint)Settings.SetLure, token).ConfigureAwait(false);
+
+                //Check Lure Steps
+                if (Settings.SetLure != Lure.None && await ReadLureCounter(token).ConfigureAwait(false) < 20)
+                    await EditLureCounter(100, token).ConfigureAwait(false);
 
                 while (await IsInCatchScreen(token).ConfigureAwait(false) || await IsGiftFound(token).ConfigureAwait(false) || await IsInBattle(token).ConfigureAwait(false) || await IsInTrade(token).ConfigureAwait(false))
                     await Task.Delay(1_000, token).ConfigureAwait(false);

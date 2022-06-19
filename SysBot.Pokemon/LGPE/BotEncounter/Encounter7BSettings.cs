@@ -20,6 +20,10 @@ namespace SysBot.Pokemon
         [Category(Encounter), Description("Set the fortune teller nature. All the wild and stationary Pokémon will have this nature. Ignored if random.")]
         public PKHeX.Core.Nature SetFortuneTellerNature { get; set; } = PKHeX.Core.Nature.Random;
 
+        [Category(Encounter), Description("Set the Lure type. The Lure will be reactivated once the effect ends. Only useful for LiveStatsChecking. Ignored if None.")]
+        public Lure SetLure { get; set; } = Lure.None;
+
+
         private int _completedWild;
         private int _completedLegend;
 

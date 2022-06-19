@@ -100,7 +100,7 @@ namespace SysBot.Pokemon
                 await Task.Delay(2_000, token).ConfigureAwait(false);
 
                 //Select Solo Adventure
-                await Click(DDOWN, 0_800, token).ConfigureAwait(false);
+                await Click(DDOWN, 1_800, token).ConfigureAwait(false);
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
                 //MAIN LOOP

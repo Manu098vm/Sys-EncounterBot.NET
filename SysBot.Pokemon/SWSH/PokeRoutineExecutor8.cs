@@ -104,6 +104,7 @@ namespace SysBot.Pokemon
                 Log("Turning off screen.");
                 await SetScreen(ScreenState.Off, token).ConfigureAwait(false);
             }
+            await SetDeviceType(HidDeviceType.FullKey3, token).ConfigureAwait(false);
         }
 
         public async Task CleanExit(IBotStateSettings settings, CancellationToken token)

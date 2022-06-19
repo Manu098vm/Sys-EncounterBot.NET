@@ -118,7 +118,8 @@ namespace SysBot.Pokemon
                     if (await CountMilliseconds(Hub.Config, token).ConfigureAwait(false) > 0 || !searchforshiny)
                     {
                         //Force the Fortune Teller Nature value, value is reset at the end of the day
-                        if (Settings.SetFortuneTellerNature != Nature.Random && !await IsNatureTellerEnabled(token).ConfigureAwait(false))
+                        if (Settings.SetFortuneTellerNature != Nature.Random &&
+                            (!await IsNatureTellerEnabled(token).ConfigureAwait(false) || await ReadWildNature(token).ConfigureAwait(false) != Settings.SetFortuneTellerNature))
                         {
                             await EnableNatureTeller(token).ConfigureAwait(false);
                             await EditWildNature(Settings.SetFortuneTellerNature, token).ConfigureAwait(false);
@@ -126,11 +127,11 @@ namespace SysBot.Pokemon
                         }
 
                         //Check Lure Type
-                        if (await ReadLureType(token).ConfigureAwait(false) != Hub.Config.LGPE_OverworldScan.SetLure)
-                            await EditLureType((uint)Hub.Config.LGPE_OverworldScan.SetLure, token).ConfigureAwait(false);
+                        if (await ReadLureType(token).ConfigureAwait(false) != Settings.SetLure)
+                            await EditLureType((uint)Settings.SetLure, token).ConfigureAwait(false);
 
                         //Check Lure Steps
-                        if (Hub.Config.LGPE_OverworldScan.SetLure != Lure.None && await ReadLureCounter(token).ConfigureAwait(false) < 20)
+                        if (Settings.SetLure != Lure.None && await ReadLureCounter(token).ConfigureAwait(false) < 20)
                             await EditLureCounter(100, token).ConfigureAwait(false);
 
                         //PG Movements. The routine need to continue and check the overworld spawns, cannot be stuck at changing stick position.

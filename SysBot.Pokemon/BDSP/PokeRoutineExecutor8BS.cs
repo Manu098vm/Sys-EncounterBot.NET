@@ -130,6 +130,7 @@ namespace SysBot.Pokemon
                 await SetScreen(ScreenState.Off, token).ConfigureAwait(false);
             }
 
+            await SetDeviceType(HidDeviceType.FullKey3, token).ConfigureAwait(false);
             Log("Setting BDSP-specific hid waits.");
             await Connection.SendAsync(SwitchCommand.Configure(SwitchConfigureParameter.keySleepTime, 50), token).ConfigureAwait(false);
             await Connection.SendAsync(SwitchCommand.Configure(SwitchConfigureParameter.pollRate, 50), token).ConfigureAwait(false);
