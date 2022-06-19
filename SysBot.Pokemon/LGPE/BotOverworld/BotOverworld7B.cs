@@ -27,7 +27,7 @@ namespace SysBot.Pokemon
         public override async Task MainLoop(CancellationToken token)
         {
             Log("Identifying trainer data of the host console.");
-            var sav = await IdentifyTrainer(token).ConfigureAwait(false);
+            await IdentifyTrainer(token).ConfigureAwait(false);
             await InitializeHardware(Settings, token).ConfigureAwait(false);
 
             try
@@ -65,11 +65,10 @@ namespace SysBot.Pokemon
             var i = 0;
             var freeze = false;
             var searchforshiny = Settings.OnlyShiny;
-            uint newspawn;
+            int newspawn;
             uint catchcombo;
             uint speciescombo;
             bool found;
-            int lastSpawn;
 
             if (movementslist.Count > 0)
                 Log($"{Environment.NewLine}----------------------------------------{Environment.NewLine}" +
@@ -151,36 +150,40 @@ namespace SysBot.Pokemon
 
                         //Check if inside an unwanted encounter
                         if (await IsInCatchScreen(token).ConfigureAwait(false))
-                            await FleeToOverworld(token).ConfigureAwait(false);
-
-                        //Check new spawns
-                        newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn, 2, token).ConfigureAwait(false), 0);
-                        if (newspawn != 0)
                         {
-                            //Count and log the LastSpawn
-                            encounterCount++;
-                            Settings.AddCompletedScans();
-                            lastSpawn = (int)newspawn;
-                            var msg = $"New spawn ({encounterCount}): {lastSpawn} {SpeciesName.GetSpeciesName((int)lastSpawn, 4)}";
-                            Log(msg);
-
-                            //Set the LastSpawn to 0, so we can account multiple consecutive spawns of the same species. Thanks Anubis for the suggestion!
+                            await FleeToOverworld(token).ConfigureAwait(false);
+                            //The encounter changes the LastSpawn value.
                             await Connection.WriteBytesAsync(new byte[] { 0x0, 0x0 }, LastSpawn, token).ConfigureAwait(false);
-
-                            if (!searchforshiny &&
-                                ((!birds && lastSpawn == (int)Settings.StopOnSpecies) ||
-                                (!birds && (int)Settings.StopOnSpecies == 0) ||
-                                (birds && (lastSpawn == 144 || lastSpawn == 145 || lastSpawn == 146))))
+                        }
+                        else
+                        {
+                            //Check new spawns
+                            newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn, 2, token).ConfigureAwait(false), 0);
+                            if (newspawn != 0)
                             {
-                                await Click(X, 1_000, token).ConfigureAwait(false);
-                                await Click(HOME, 1_000, token).ConfigureAwait(false);
+                                //Count and log the LastSpawn
+                                encounterCount++;
+                                Settings.AddCompletedScans();
+                                Log($"New spawn ({encounterCount}): {newspawn} {SpeciesName.GetSpeciesName(newspawn, 4)}");
 
-                                msg = "Stop conditions met, restart the bot(s) to search again.";
-                                if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
-                                    msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
-                                Log(msg);
+                                //Set the LastSpawn to 0, so we can account multiple consecutive spawns of the same species. Thanks Anubis for the suggestion!
+                                await Connection.WriteBytesAsync(new byte[] { 0x0, 0x0 }, LastSpawn, token).ConfigureAwait(false);
 
-                                return;
+                                if (!searchforshiny &&
+                                    ((!birds && newspawn == (int)Settings.StopOnSpecies) ||
+                                    (!birds && (int)Settings.StopOnSpecies == 0) ||
+                                    (birds && (newspawn == 144 || newspawn == 145 || newspawn == 146))))
+                                {
+                                    await Click(X, 1_000, token).ConfigureAwait(false);
+                                    await Click(HOME, 1_000, token).ConfigureAwait(false);
+
+                                    var msg = "Stop conditions met, restart the bot(s) to search again.";
+                                    if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
+                                        msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
+                                    Log(msg);
+
+                                    return;
+                                }
                             }
                         }
                     }
@@ -190,13 +193,12 @@ namespace SysBot.Pokemon
 
                 await Unfreeze(token, version).ConfigureAwait(false);
                 freeze = false;
-                await Task.Delay(0_500, token).ConfigureAwait(false);
-                newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn, 2, token).ConfigureAwait(false), 0);
+                newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn_r, 2, token).ConfigureAwait(false), 0);
 
                 //Stop Conditions
-                if (birds && ((int)newspawn == 144 || (int)newspawn == 145 || (int)newspawn == 146) && !token.IsCancellationRequested)
+                if (birds && (newspawn == 144 || newspawn == 145 || newspawn == 146) && !token.IsCancellationRequested)
                     found = true;
-                else if ((!birds && (int)Settings.StopOnSpecies > 0 && (int)newspawn == (int)Settings.StopOnSpecies) ||
+                else if ((!birds && (int)Settings.StopOnSpecies > 0 && newspawn == (int)Settings.StopOnSpecies) ||
                         (!birds && (int)Settings.StopOnSpecies == 0))
                     found = true;
                 else
@@ -317,17 +319,10 @@ namespace SysBot.Pokemon
         {
             await ResetStick(token).ConfigureAwait(false);
             Log($"Unwanted encounter detected!");
-            int i = 0;
-            while (await IsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested)
-            {
-                i++;
-                await Task.Delay(8_000, token).ConfigureAwait(false);
-                if (i > 2)
-                    await Click(B, 1_200, token).ConfigureAwait(false);
+            while (!await IsInConfirmDialog(token).ConfigureAwait(false) && !token.IsCancellationRequested)
                 await Click(B, 1_200, token).ConfigureAwait(false);
-                await Click(A, 1_000, token).ConfigureAwait(false);
-                await Task.Delay(6_500, token).ConfigureAwait(false);
-            }
+            await Click(A, 1_000, token).ConfigureAwait(false);
+            while (await IsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested) { }
             Log($"Exited wild encounter.");
         }
     }

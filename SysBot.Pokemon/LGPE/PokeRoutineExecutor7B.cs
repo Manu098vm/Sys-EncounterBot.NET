@@ -79,6 +79,8 @@ namespace SysBot.Pokemon
 
         public async Task<bool> IsInCatchScreen(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInOverworld, 1, token).ConfigureAwait(false))[0] != 0;
 
+        public async Task<bool> IsInConfirmDialog(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInConfirmationDialog, 1, token).ConfigureAwait(false))[0] != 0;
+
         public async Task<bool> IsInTrade(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(PokeDataOffsets7B.IsInTrade, 1, token).ConfigureAwait(false))[0] != 0;
 
         public async Task<bool> IsGiftFound(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(PokeDataOffsets7B.IsGiftFound, 1, token).ConfigureAwait(false))[0] > 0;
