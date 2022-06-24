@@ -73,6 +73,28 @@ namespace SysBot.Pokemon
             return null;
         }
 
+        public async Task<PB7?> ReadMainPokeData(CancellationToken token) => await ReadUntilPresentMain(MainPokeData, 2_000, 0_200, token).ConfigureAwait(false);
+        public async Task<PB7?> ReadFossil(CancellationToken token) => await ReadUntilPresent(FossilPokeData, 2_000, 0_200, token).ConfigureAwait(false);
+        public async Task<PB7?> ReadGift(CancellationToken token) => await ReadUntilPresent(GiftPokeData, 2_000, 0_200, token).ConfigureAwait(false);
+        public async Task<PB7?> ReadTrade(CancellationToken token) => await ReadMainPokeData(token).ConfigureAwait(false);
+        public async Task<PB7?> ReadWild(CancellationToken token) => await ReadUntilPresent(WildPokeData, 2_000, 0_200, token).ConfigureAwait(false);
+        public async Task<PB7?> ReadGoEntity(CancellationToken token) => await ReadUntilPresent(GoPokeData, 2_000, 0_200, token).ConfigureAwait(false);
+        public async Task<PB7?> ReadStationary(CancellationToken token) => await ReadUntilPresent(StationaryPokeData, 2_000, 0_200, token).ConfigureAwait(false);
+        public async Task<PB7?> ReadGiftOrFossil(CancellationToken token)
+        {
+            var pk = await ReadGift(token).ConfigureAwait(false);
+            if (pk is null)
+                pk = await ReadFossil(token).ConfigureAwait(false);
+            return pk;
+        }
+        public async Task<PB7?> ReadWildOrGo(CancellationToken token)
+        {
+            var pk = await ReadWild(token).ConfigureAwait(false);
+            if (pk is null)
+                pk = await ReadGoEntity(token).ConfigureAwait(false);
+            return pk;
+        }
+
         public async Task<bool> IsInTitleScreen(CancellationToken token) => !((await SwitchConnection.ReadBytesMainAsync(PokeDataOffsets7B.IsInTitleScreen, 1, token).ConfigureAwait(false))[0] == 1);
 
         public async Task<bool> IsInBattle(CancellationToken token) => (await SwitchConnection.ReadBytesMainAsync(IsInBattleScenario, 1, token).ConfigureAwait(false))[0] > 0;
@@ -151,6 +173,7 @@ namespace SysBot.Pokemon
             var inject = new byte[] { 0xE9, 0x03, 0x00, 0x2A, 0x60, 0x12, 0x40, 0xB9, 0xE1, 0x03, 0x09, 0x2A, 0x69, 0x06, 0x00, 0xF9, 0xDC, 0xFD, 0xFF, 0x97, 0x40, 0x00, 0x00, 0x36, 0x00, 0x00, 0x00, 0x14 };
             await SwitchConnection.WriteBytesMainAsync(inject, offset, token).ConfigureAwait(false);
         }
+        
         public async Task Unfreeze(CancellationToken token, GameVersion version)
         {
             var offset = (version == GameVersion.GP ? PGeneratingFunction : EGeneratingFunction) + 0x18;
@@ -170,6 +193,15 @@ namespace SysBot.Pokemon
             //Standard shiny odds
             var inject = new byte[] { 0xE0, 0x02, 0x00, 0x54 };
             await SwitchConnection.WriteBytesMainAsync(inject, offset, token).ConfigureAwait(false);
+        }
+
+        public async Task FleeToOverworld(CancellationToken token)
+        {
+            while (!await IsInConfirmDialog(token).ConfigureAwait(false) && !token.IsCancellationRequested)
+                await Click(B, 1_200, token).ConfigureAwait(false);
+            await Click(A, 1_000, token).ConfigureAwait(false);
+            while (await IsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested) { }
+            Log($"Exited wild encounter.");
         }
 
         public async Task OpenGame(PokeBotHubConfig config, CancellationToken token)

@@ -8,6 +8,11 @@
         Stationary,
 
         /// <summary>
+        /// Bot will soft reset for Fossils
+        /// </summary>
+        Fossils,
+
+        /// <summary>
         /// Bot will soft reset for Gifts
         /// </summary>
         Gifts,
@@ -16,6 +21,11 @@
         /// Bot will soft reset trades
         /// </summary>
         Trades,
+
+        /// <summary>
+        /// Bot will soft reset for Go Park entities
+        /// </summary>
+        GoPark,
 
         /// <summary>
         /// Bot will scan for any mon

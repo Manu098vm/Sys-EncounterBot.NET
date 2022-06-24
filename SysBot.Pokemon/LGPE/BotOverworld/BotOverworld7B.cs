@@ -152,6 +152,8 @@ namespace SysBot.Pokemon
                         //Check if inside an unwanted encounter
                         if (await IsInCatchScreen(token).ConfigureAwait(false))
                         {
+                            Log($"Unwanted encounter detected!");
+                            await ResetStick(token).ConfigureAwait(false);
                             await FleeToOverworld(token).ConfigureAwait(false);
                             //The encounter changes the LastSpawn value.
                             await Connection.WriteBytesAsync(new byte[] { 0x0, 0x0 }, LastSpawn, token).ConfigureAwait(false);
@@ -314,17 +316,6 @@ namespace SysBot.Pokemon
         {
             // If aborting the sequence, we might have the stick set at some position. Clear it just in case.
             await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false); // reset
-        }
-
-        private async Task FleeToOverworld(CancellationToken token)
-        {
-            await ResetStick(token).ConfigureAwait(false);
-            Log($"Unwanted encounter detected!");
-            while (!await IsInConfirmDialog(token).ConfigureAwait(false) && !token.IsCancellationRequested)
-                await Click(B, 1_200, token).ConfigureAwait(false);
-            await Click(A, 1_000, token).ConfigureAwait(false);
-            while (await IsInCatchScreen(token).ConfigureAwait(false) && !token.IsCancellationRequested) { }
-            Log($"Exited wild encounter.");
         }
     }
 }

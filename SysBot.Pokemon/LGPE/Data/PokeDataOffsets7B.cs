@@ -11,10 +11,15 @@
         public const uint IsInTitleScreen = 0x160D4E0; //main
         public const uint IsInTrade = 0x1614F28; //main
         public const uint IsGiftFound = 0x1615928; //main
-        public const uint StationaryBattleData = 0x9A118D68; //heap
-        public const uint PokeData = 0x163EDC0; //main
+        public const uint StationaryPokeData = 0x9A118D68; //heap
+        public const uint FossilPokeData = 0xAD5DCF38; //heap
+        public const uint GiftPokeData = 0xAD5DCD90; //heap
+        public const uint WildPokeData = 0xAD5DC108; //heap
+        public const uint GoPokeData = 0xAD5DC910; //heap - Thanks Anubis!
+        public const uint MainPokeData = 0x163EDC0; //main
         public const uint LastSpawn = 0x5E12B148; //heap
         public const uint LastSpawn_r = 0x5E12C120; //heap
+        public const uint LastSpawnFlags = 0x419BB184; //heap - Thanks Anibus!
         public const uint EShinyValue = 0x7398C4; //main
         public const uint PShinyValue = 0x739864; //main
         public const uint PGeneratingFunction = 0x7398D0; //main
