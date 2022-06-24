@@ -137,63 +137,11 @@ namespace SysBot.Pokemon
 
         public async Task EditComboCount(uint count, CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes(count), CatchCombo, token).ConfigureAwait(false);
 
-        public async Task<long> CountMilliseconds(PokeBotHubConfig config, CancellationToken token)
-        {
-            var WaitMS = config.LGPE_OverworldScan.MaxMs;
-            var stuck = false;
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-            var data = await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false);
-            var comparison = data;
-            do
-            {
-                data = await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false);
-                if (stopwatch.ElapsedMilliseconds > WaitMS)
-                    stuck = true;
-            } while (data.SequenceEqual(comparison) && stuck == false && !token.IsCancellationRequested);
-            if (!stuck)
-            {
-                stopwatch.Restart();
-                comparison = data;
-                do
-                {
-                    data = await SwitchConnection.ReadBytesMainAsync(FreezedValue, 1, token).ConfigureAwait(false);
-                } while (data == comparison && !token.IsCancellationRequested);
-                return stopwatch.ElapsedMilliseconds;
-            }
-            else
-                return 0;
-        }
+        public async Task<int> ReadLastSpawn(CancellationToken token) => BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn, 2, token).ConfigureAwait(false), 0);
 
-        //Let's Go useful cheats for testing purposes.
-        public async Task Zaksabeast(CancellationToken token, GameVersion version)
-        {
-            var offset = version == GameVersion.GP ? PGeneratingFunction : EGeneratingFunction;
-            //This is basically the Zaksabeast code ported for the newest Let's game version. 
-            var inject = new byte[] { 0xE9, 0x03, 0x00, 0x2A, 0x60, 0x12, 0x40, 0xB9, 0xE1, 0x03, 0x09, 0x2A, 0x69, 0x06, 0x00, 0xF9, 0xDC, 0xFD, 0xFF, 0x97, 0x40, 0x00, 0x00, 0x36, 0x00, 0x00, 0x00, 0x14 };
-            await SwitchConnection.WriteBytesMainAsync(inject, offset, token).ConfigureAwait(false);
-        }
-        
-        public async Task Unfreeze(CancellationToken token, GameVersion version)
-        {
-            var offset = (version == GameVersion.GP ? PGeneratingFunction : EGeneratingFunction) + 0x18;
-            var data = new byte[] { 0x0C, 0x00, 0x00, 0x14 };
-            await SwitchConnection.WriteBytesMainAsync(data, offset, token).ConfigureAwait(false);
-        }
-        public async Task ForceShiny(CancellationToken token, GameVersion version)
-        {
-            var offset = version == GameVersion.GP ? PShinyValue : EShinyValue;
-            //100% Shiny Odds
-            var inject = new byte[] { 0x27, 0x00, 0x00, 0x14 };
-            await SwitchConnection.WriteBytesMainAsync(inject, offset, token).ConfigureAwait(false);
-        }
-        public async Task NormalShiny(CancellationToken token, GameVersion version)
-        {
-            var offset = version == GameVersion.GP ? PShinyValue : EShinyValue;
-            //Standard shiny odds
-            var inject = new byte[] { 0xE0, 0x02, 0x00, 0x54 };
-            await SwitchConnection.WriteBytesMainAsync(inject, offset, token).ConfigureAwait(false);
-        }
+        public async Task WipeLastSpawn(CancellationToken token) => await Connection.WriteBytesAsync(new byte[] { 0x0, 0x0 }, LastSpawn, token).ConfigureAwait(false);
+
+        public async Task<uint> ReadSpawnFlags(CancellationToken token) => BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawnFlags, 2, token).ConfigureAwait(false), 0);
 
         public async Task FleeToOverworld(CancellationToken token)
         {

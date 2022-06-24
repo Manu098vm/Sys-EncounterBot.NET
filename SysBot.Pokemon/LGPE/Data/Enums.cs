@@ -35,11 +35,6 @@
     public enum LGPEOverworldMode
     {
         /// <summary>
-        /// Bot will test the offsets
-        /// </summary>
-        TestRoutine,
-
-        /// <summary>
         /// Bot will scan for any mon
         /// </summary>
         OverworldSpawn,
@@ -62,12 +57,7 @@
         Normal = 65,
         Fast = 66,
     }
-    public enum LetsGoTest
-    {
-        Unfreeze,
-        TestOffsets,
-        EscapeFromBattle,
-    }
+
     public enum LGPESpecies : ushort
     {
         None,

@@ -18,8 +18,7 @@
         public const uint GoPokeData = 0xAD5DC910; //heap - Thanks Anubis!
         public const uint MainPokeData = 0x163EDC0; //main
         public const uint LastSpawn = 0x5E12B148; //heap
-        public const uint LastSpawn_r = 0x5E12C120; //heap
-        public const uint LastSpawnFlags = 0x419BB184; //heap - Thanks Anibus!
+        public const uint LastSpawnFlags = 0x419BB184; //heap - Thanks Anubis!
         public const uint EShinyValue = 0x7398C4; //main
         public const uint PShinyValue = 0x739864; //main
         public const uint PGeneratingFunction = 0x7398D0; //main

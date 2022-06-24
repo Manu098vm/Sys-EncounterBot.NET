@@ -50,15 +50,6 @@ namespace SysBot.Pokemon
         [Category(OverworldScan), Description("Indicates how long the character will move west during the scans.")]
         public int MoveLeftMs { get; set; } = 5000;
 
-        [Category(OverworldScan), Description("Set the test you want to attempt. Ignore unless the routine is set to \"TestRoutine\".")]
-        public LetsGoTest TestRoutine { get; set; } = LetsGoTest.Unfreeze;
-
-        [Category(OverworldScan), Description("Set how many attempt the bot will do to check the freezing values. Infinite checking if 0.")]
-        public int FreezingTestCount { get; set; } = 10;
-
-        [Category(OverworldScan), Description("Edit this value in case you have false report of a Shiny appearing in the overworld. You can find the correct value for your console through TestOffsets Method.")]
-        public long MaxMs { get; set; } = 2500;
-
         private int _completedScans;
         private int _shinyspawn;
 
@@ -78,6 +69,8 @@ namespace SysBot.Pokemon
 
         public int AddCompletedScans() => Interlocked.Increment(ref _completedScans);
         public int AddCompletedShiny() => Interlocked.Increment(ref _shinyspawn);
+
+        public int RemoveCompletedScans() => Interlocked.Decrement(ref _completedScans);
 
         public IEnumerable<string> GetNonZeroCounts()
         {

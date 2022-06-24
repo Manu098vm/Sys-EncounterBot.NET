@@ -37,13 +37,7 @@ namespace SysBot.Pokemon
 
                 // Clear out any residual stick weirdness.
                 await ResetStick(token).ConfigureAwait(false);
-                var task = Hub.Config.LGPE_OverworldScan.Routine switch
-                {
-                    LGPEOverworldMode.OverworldSpawn => Overworld(token),
-                    LGPEOverworldMode.WildBirds => Overworld(token, true),
-                    _ => Test(token),
-                };
-                await task.ConfigureAwait(false);
+                await Overworld(token).ConfigureAwait(false);
             }
 #pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception e)
@@ -56,35 +50,133 @@ namespace SysBot.Pokemon
             await HardStop().ConfigureAwait(false);
         }
 
-        private async Task Overworld(CancellationToken token, bool birds = false)
+        private async Task Overworld(CancellationToken token)
         {
-            var version = await CheckGameVersion(token).ConfigureAwait(false);
             var movementslist = ParseMovements(Settings.MovementOrder, Settings.MoveUpMs, Settings.MoveRightMs, Settings.MoveDownMs, Settings.MoveLeftMs);
             var firstrun = movementslist.Count > 0;
-            var stopwatch = new Stopwatch();
+            Stopwatch stopwatch = new();
             var i = 0;
-            var freeze = false;
-            var searchforshiny = Settings.OnlyShiny;
-            int newspawn;
-            uint catchcombo;
-            uint speciescombo;
-            bool found;
 
             if (movementslist.Count > 0)
                 Log($"{Environment.NewLine}----------------------------------------{Environment.NewLine}" +
-                    $"ATTENTION{Environment.NewLine}Any wild battles will broke the movement routine, resulting in the pg moving to unwanted areas!{Environment.NewLine}" +
+                    $"ATTENTION{Environment.NewLine}Wild battles may break the movement routine, resulting in the pg moving to unwanted areas!{Environment.NewLine}" +
                     $"----------------------------------------{Environment.NewLine}" +
                     $"ATTENTION{Environment.NewLine}Unexpected behaviour can occur if a Pokémon is detected while changing area. It is higlhy recommended to avoid that.{Environment.NewLine}" +
                     $"-----------------------------------------{Environment.NewLine}");
 
-            //Check Text Speed. If not set to fast there might be timing problems when escaping from wild encounters.
+            //Check Text Speed
             if (await ReadTextSpeed(token).ConfigureAwait(false) != TextSpeed.Fast)
                 await EditTextSpeed(TextSpeed.Fast, token).ConfigureAwait(false);
 
             //Catch combo to increment spawn quality and shiny rate (Thanks to Lincoln-LM for the offsets)
+            await ReadAndEditCatchCombo(token).ConfigureAwait(false);
+
+            //Main Loop
+            while (!token.IsCancellationRequested)
+            {
+                stopwatch.Start();
+                while (!token.IsCancellationRequested)
+                {
+                    //Force the Fortune Teller Nature value, value is reset at the end of the day
+                    if (Settings.SetFortuneTellerNature is not Nature.Random &&
+                        (!await IsNatureTellerEnabled(token).ConfigureAwait(false) || await ReadWildNature(token).ConfigureAwait(false) != Settings.SetFortuneTellerNature))
+                    {
+                        await EnableNatureTeller(token).ConfigureAwait(false);
+                        await EditWildNature(Settings.SetFortuneTellerNature, token).ConfigureAwait(false);
+                        Log($"Fortune Teller enabled, Nature set to {await ReadWildNature(token).ConfigureAwait(false)}.");
+                    }
+
+                    //Check Lure Type
+                    if (await ReadLureType(token).ConfigureAwait(false) != Settings.SetLure)
+                        await EditLureType((uint)Settings.SetLure, token).ConfigureAwait(false);
+
+                    //Check Lure Steps
+                    if (Settings.SetLure is not Lure.None && await ReadLureCounter(token).ConfigureAwait(false) < 20)
+                        await EditLureCounter(100, token).ConfigureAwait(false);
+
+                    //PG Movements. The routine need to continue and check the overworld spawns, cannot be stuck at changing stick position.
+                    if (movementslist.Count > 0)
+                    {
+                        if (stopwatch.ElapsedMilliseconds >= movementslist.ElementAt(i)[2] || firstrun)
+                        {
+                            if (firstrun)
+                                firstrun = false;
+                            await SetStick(RIGHT, (short)(movementslist.ElementAt(i)[0]), (short)(movementslist.ElementAt(i)[1]), 0_001, token).ConfigureAwait(false);
+                            i++;
+                            if (i == movementslist.Count)
+                                i = 0;
+                            stopwatch.Restart();
+                        }
+                    }
+
+                    //Check if inside an unwanted encounter
+                    if (await IsInCatchScreen(token).ConfigureAwait(false))
+                    {
+                        stopwatch.Stop();
+                        Log($"Unwanted encounter detected!");
+                        await FleeToOverworld(token).ConfigureAwait(false);
+                        //The encounter changes the LastSpawn value.
+                        await WipeLastSpawn(token).ConfigureAwait(false);
+                        encounterCount--;
+                        Settings.RemoveCompletedScans();
+                        stopwatch.Start();
+                    }
+
+                    //Check new spawns
+                    var spawn = await ReadLastSpawn(token).ConfigureAwait(false);
+                    if (spawn != 0)
+                    {
+                        var flag = await ReadSpawnFlags(token).ConfigureAwait(false);
+                        await WipeLastSpawn(token).ConfigureAwait(false);
+                        (var shiny, var gender) = HandleFlags(spawn, flag);
+
+                        if (HandleOverworldEncounter(spawn, shiny, gender))
+                        {
+                            await Click(X, 0_500, token).ConfigureAwait(false);
+                            await Click(HOME, 0_500, token).ConfigureAwait(false);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        private bool HandleOverworldEncounter(int species, bool shiny, Gender gender)
+        {
+            if (species == 0)
+                return false;
+
+            encounterCount++;
+            Settings.AddCompletedScans();
+            if (shiny)
+                Settings.AddCompletedShiny();
+
+            Log($"New spawn ({encounterCount}): {(shiny ? "Shiny" : "")} {(gender is not Gender.Genderless ? gender.ToString() : "")} {SpeciesName.GetSpeciesName(species, 2)}");
+
+            if (Settings.Routine is LGPEOverworldMode.WildBirds)
+                if (!(species >= 144 && species <= 146))
+                    return false;
+
+            if (Settings.Routine is LGPEOverworldMode.OverworldSpawn)
+                if (Settings.StopOnSpecies != 0 && (int)Settings.StopOnSpecies != species)
+                    return false;
+
+            if (Settings.OnlyShiny && !shiny)
+                return false;
+
+            var msg = $"Result found!{Environment.NewLine}Stopping routine execution; restart the bot to search again.";
+            if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
+                msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
+            Log(msg);
+
+            return true;
+        }
+
+        private async Task ReadAndEditCatchCombo(CancellationToken token)
+        {
             if ((int)Settings.ChainSpecies > 0)
             {
-                speciescombo = await ReadSpeciesCombo(token).ConfigureAwait(false);
+                var speciescombo = await ReadSpeciesCombo(token).ConfigureAwait(false);
                 if ((speciescombo != (uint)Settings.ChainSpecies) && (Settings.ChainSpecies != 0))
                 {
                     Log($"Current catch combo being on {(speciescombo == 0 ? "None" : SpeciesName.GetSpeciesName((int)speciescombo, 2))}, changing to {Settings.ChainSpecies}.");
@@ -96,7 +188,7 @@ namespace SysBot.Pokemon
 
             if (Settings.ChainCount > 0)
             {
-                catchcombo = await ReadComboCount(token).ConfigureAwait(false);
+                var catchcombo = await ReadComboCount(token).ConfigureAwait(false);
                 if (catchcombo < (uint)Settings.ChainCount)
                 {
                     Log($"Current catch combo being {catchcombo}, incrementing to {Settings.ChainCount}.");
@@ -105,205 +197,22 @@ namespace SysBot.Pokemon
                     Log($"Current catch combo being now {catchcombo}.");
                 }
             }
-
-            //Main Loop
-            while (!token.IsCancellationRequested)
-            {
-                if (searchforshiny)
-                    await Zaksabeast(token, version).ConfigureAwait(false);
-
-                //Main Loop
-                while (!freeze && !token.IsCancellationRequested)
-                {
-                    if (await CountMilliseconds(Hub.Config, token).ConfigureAwait(false) > 0 || !searchforshiny)
-                    {
-                        //Force the Fortune Teller Nature value, value is reset at the end of the day
-                        if (Settings.SetFortuneTellerNature != Nature.Random &&
-                            (!await IsNatureTellerEnabled(token).ConfigureAwait(false) || await ReadWildNature(token).ConfigureAwait(false) != Settings.SetFortuneTellerNature))
-                        {
-                            await EnableNatureTeller(token).ConfigureAwait(false);
-                            await EditWildNature(Settings.SetFortuneTellerNature, token).ConfigureAwait(false);
-                            Log($"Fortune Teller enabled, Nature set to {await ReadWildNature(token).ConfigureAwait(false)}.");
-                        }
-
-                        //Check Lure Type
-                        if (await ReadLureType(token).ConfigureAwait(false) != Settings.SetLure)
-                            await EditLureType((uint)Settings.SetLure, token).ConfigureAwait(false);
-
-                        //Check Lure Steps
-                        if (Settings.SetLure != Lure.None && await ReadLureCounter(token).ConfigureAwait(false) < 20)
-                            await EditLureCounter(100, token).ConfigureAwait(false);
-
-                        //PG Movements. The routine need to continue and check the overworld spawns, cannot be stuck at changing stick position.
-                        if (movementslist.Count > 0)
-                        {
-                            if (stopwatch.ElapsedMilliseconds >= movementslist.ElementAt(i)[2] || firstrun)
-                            {
-                                if (firstrun)
-                                    firstrun = false;
-                                await SetStick(RIGHT, (short)(movementslist.ElementAt(i)[0]), (short)(movementslist.ElementAt(i)[1]), 0_001, token).ConfigureAwait(false);
-                                i++;
-                                if (i == movementslist.Count)
-                                    i = 0;
-                                stopwatch.Restart();
-                            }
-                        }
-
-                        //Check if inside an unwanted encounter
-                        if (await IsInCatchScreen(token).ConfigureAwait(false))
-                        {
-                            Log($"Unwanted encounter detected!");
-                            await ResetStick(token).ConfigureAwait(false);
-                            await FleeToOverworld(token).ConfigureAwait(false);
-                            //The encounter changes the LastSpawn value.
-                            await Connection.WriteBytesAsync(new byte[] { 0x0, 0x0 }, LastSpawn, token).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            //Check new spawns
-                            newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn, 2, token).ConfigureAwait(false), 0);
-                            if (newspawn != 0)
-                            {
-                                //Count and log the LastSpawn
-                                encounterCount++;
-                                Settings.AddCompletedScans();
-                                Log($"New spawn ({encounterCount}): {newspawn} {SpeciesName.GetSpeciesName(newspawn, 4)}");
-
-                                //Set the LastSpawn to 0, so we can account multiple consecutive spawns of the same species. Thanks Anubis for the suggestion!
-                                await Connection.WriteBytesAsync(new byte[] { 0x0, 0x0 }, LastSpawn, token).ConfigureAwait(false);
-
-                                if (!searchforshiny &&
-                                    ((!birds && newspawn == (int)Settings.StopOnSpecies) ||
-                                    (!birds && (int)Settings.StopOnSpecies == 0) ||
-                                    (birds && (newspawn == 144 || newspawn == 145 || newspawn == 146))))
-                                {
-                                    await Click(X, 1_000, token).ConfigureAwait(false);
-                                    await Click(HOME, 1_000, token).ConfigureAwait(false);
-
-                                    var msg = "Stop conditions met, restart the bot(s) to search again.";
-                                    if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
-                                        msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
-                                    Log(msg);
-
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                    else if (searchforshiny)
-                        freeze = true;
-                }
-
-                await Unfreeze(token, version).ConfigureAwait(false);
-                freeze = false;
-                newspawn = BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawn_r, 2, token).ConfigureAwait(false), 0);
-
-                //Stop Conditions
-                if (birds && (newspawn == 144 || newspawn == 145 || newspawn == 146) && !token.IsCancellationRequested)
-                    found = true;
-                else if ((!birds && (int)Settings.StopOnSpecies > 0 && newspawn == (int)Settings.StopOnSpecies) ||
-                        (!birds && (int)Settings.StopOnSpecies == 0))
-                    found = true;
-                else
-                    found = false;
-
-                encounterCount++;
-                Settings.AddCompletedScans();
-                Settings.AddCompletedShiny();
-
-                if (!found && !token.IsCancellationRequested)
-                    Log($"New spawn ({encounterCount}): {newspawn} Shiny {SpeciesName.GetSpeciesName((int)newspawn, 4)}");
-                else if (found && !token.IsCancellationRequested)
-                {
-                    await ResetStick(token).ConfigureAwait(false);
-                    await Click(X, 1_000, token).ConfigureAwait(false);
-                    await Click(HOME, 1_000, token).ConfigureAwait(false);
-
-                    var msg = $"Shiny Target {SpeciesName.GetSpeciesName((int)newspawn, 4)} found!";
-                    if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
-                        msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
-                    Log(msg);
-
-                    return;
-                }
-            }
-            await ResetStick(token).ConfigureAwait(false);
-            if (searchforshiny)
-                await Unfreeze(token, version).ConfigureAwait(false);
         }
 
-        private async Task Test(CancellationToken token)
+        //Thanks Anubis!!!
+        private (bool shiny, Gender gender) HandleFlags(int species, uint flags)
         {
-            var task = Settings.TestRoutine switch
+            bool shiny = ((flags >> 1) & 1) == 1;
+
+            var gender_ratio = PersonalTable.LG[species].Gender;
+            Gender gender = gender_ratio switch
             {
-                LetsGoTest.Unfreeze => Unfreeze(token, await CheckGameVersion(token).ConfigureAwait(false)),
-                LetsGoTest.TestOffsets => TestOffsets(token),
-                LetsGoTest.EscapeFromBattle => TestEscape(token),
-                _ => TestOffsets(token),
+                PersonalInfo.RatioMagicGenderless => Gender.Genderless,
+                PersonalInfo.RatioMagicFemale => Gender.Female,
+                PersonalInfo.RatioMagicMale => Gender.Male,
+                _ => (flags & 1) == 0 ? Gender.Male : Gender.Female,
             };
-            await task.ConfigureAwait(false);
-            Log("Done.");
-            return;
-        }
-        private async Task TestOffsets(CancellationToken token)
-        {
-            var version = await CheckGameVersion(token).ConfigureAwait(false);
-            var i = 0;
-            var maxms = (long)0;
-            long waitms;
-            
-
-            Log("Testing Game Version...");
-            if (version is GameVersion.GP)
-                Log("OK: Let's Go Pikachu.");
-            else if (version is GameVersion.GE)
-                Log("OK: Let's Go Eevee.");
-            else
-                Log("FAILED: Incompatible game or update.");
-
-            Log("Testing Shiny Value...");
-            var data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PShinyValue : EShinyValue, 4, token).ConfigureAwait(false);
-            var compare = new byte[] { 0xE0, 0x02, 0x00, 0x54 };
-
-            if (data.SequenceEqual(compare))
-                Log($"OK: {BitConverter.ToString(data)}");
-            else
-                Log($"FAILED: {BitConverter.ToString(data)} should be {BitConverter.ToString(compare)}.");
-
-            Log("Testing generating function...");
-            data = await SwitchConnection.ReadBytesMainAsync(version == GameVersion.GP ? PGeneratingFunction : EGeneratingFunction, 4, token).ConfigureAwait(false);
-            compare = new byte[] { 0xE8, 0x03, 0x00, 0x2A };
-            var zak = new byte[] { 0xE9, 0x03, 0x00, 0x2A };
-            if (data.SequenceEqual(compare) || data.SequenceEqual(zak))
-                Log($"OK: {BitConverter.ToString(data)}");
-            else
-                Log($"FAILED: {BitConverter.ToString(data)} should be {BitConverter.ToString(compare)}.");
-
-            while (!token.IsCancellationRequested)
-            {
-                i++;
-                Log($"Checking freezing value, attempt n.{i}...");
-                waitms = await CountMilliseconds(Hub.Config, token).ConfigureAwait(false);
-                if (waitms > 0)
-                {
-                    if (waitms > maxms)
-                        maxms = waitms;
-                    Log($"OK: 0x1610EE0 changed after {waitms}ms");
-                }
-                else
-                    Log("FAILED: 0x1610EE0 not changed.");
-                if (i >= Settings.FreezingTestCount)
-                {
-                    Log($"Test completed. MaxMS value: {maxms}");
-                    return;
-                }
-            }
-        }
-        private async Task TestEscape(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-                if (await IsInCatchScreen(token).ConfigureAwait(false))
-                    await FleeToOverworld(token).ConfigureAwait(false);
+            return (shiny, gender);
         }
 
         public override async Task HardStop()
