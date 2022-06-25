@@ -132,6 +132,7 @@ namespace SysBot.Pokemon
 
                         if (HandleOverworldEncounter(spawn, shiny, gender))
                         {
+                            await ResetStick(token).ConfigureAwait(false);
                             await Click(X, 0_500, token).ConfigureAwait(false);
                             await Click(HOME, 0_500, token).ConfigureAwait(false);
                             return;

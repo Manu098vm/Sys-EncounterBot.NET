@@ -13,6 +13,7 @@
         public const uint IsGiftFound = 0x1615928; //main
         public const uint StationaryPokeData = 0x9A118D68; //heap
         public const uint FossilPokeData = 0xAD5DCF38; //heap
+        public const uint FossilPokeData2 = 0xAD5DBEC8; //heap
         public const uint GiftPokeData = 0xAD5DCD90; //heap
         public const uint WildPokeData = 0xAD5DC108; //heap
         public const uint GoPokeData = 0xAD5DC910; //heap - Thanks Anubis!
