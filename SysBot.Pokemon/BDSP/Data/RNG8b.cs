@@ -146,16 +146,17 @@ namespace SysBot.Pokemon
                 var calc = xoro.Range(0, 100);
                 var slot = CalcSlot(mode, calc);
                 pk.Species = slots[slot];
+
+                //Should implement auxiliary check for rooms with only ! and ? forms.
+                if (pk.Species == 201)
+                    pk.Form = xoro.Range(0, 20);
+
                 //Save the slot in some available structure space
                 pk.Move1 = slot;
                 if (mode is WildMode.GoodRod or WildMode.GoodRod or WildMode.SuperRod)
                     xoro.Advance(82);
                 else
                     xoro.Advance(84);
-
-                //Should implement auxiliary check for rooms with only ! and ? forms.
-                if (pk.Species == 201)
-                    pk.Form = xoro.Range(0, 20);
 
                 if (mode is not WildMode.Grass_or_Cave or WildMode.Swarm)
                     xoro.Next(); //Lvl Range(0,1000)
