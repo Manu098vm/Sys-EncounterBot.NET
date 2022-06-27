@@ -496,7 +496,6 @@ namespace SysBot.Pokemon
                 var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
                 GameTime = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
                 GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
-                //Log($"Route: {GetLocation(route)} ({route}) [{GameTime}]");
                 slots = GetEncounterSlots(version, route, GameTime, mode);
             }
 
@@ -510,7 +509,6 @@ namespace SysBot.Pokemon
 
             do
             {
-                //Log($"{advances}");
                 if (type is RNGType.Roamer)
                     pk = Calc.CalculateFromSeed(pk, Shiny.Random, type, rng.Next());
                 else
@@ -543,7 +541,6 @@ namespace SysBot.Pokemon
                 if (tmp >= 0 && tmp <= 4)
                     GameTime = (GameTime)tmp;
                 GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
-                //Log($"Route: {GetLocation(route)} ({route}) [{GameTime}]");
                 slots = GetEncounterSlots(version, route, GameTime, mode);
             }
 
@@ -557,7 +554,6 @@ namespace SysBot.Pokemon
 
             do
             {
-                //Log($"{advances}");
                 if (type is RNGType.Roamer)
                     pk = Calc.CalculateFromSeed(pk, Shiny.Random, type, rng.Next());
                 else

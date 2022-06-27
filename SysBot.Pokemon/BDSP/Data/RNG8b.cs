@@ -75,7 +75,6 @@ namespace SysBot.Pokemon
             var diff = (byte)(max - min);
 
             return (byte)((tmp % diff) + min);
-
         }
     }
     public class RNG8b
@@ -146,7 +145,7 @@ namespace SysBot.Pokemon
 			{
                 var calc = xoro.Range(0, 100);
                 var slot = CalcSlot(mode, calc);
-                pk.Species = slots[(int)slot];
+                pk.Species = slots[slot];
                 //Save the slot in some available structure space
                 pk.Move1 = slot;
                 if (mode is WildMode.GoodRod or WildMode.GoodRod or WildMode.SuperRod)
@@ -154,7 +153,11 @@ namespace SysBot.Pokemon
                 else
                     xoro.Advance(84);
 
-                if(mode is not WildMode.Grass_or_Cave or WildMode.Swarm)
+                //Should implement auxiliary check for rooms with only ! and ? forms.
+                if (pk.Species == 201)
+                    pk.Form = xoro.Range(0, 20);
+
+                if (mode is not WildMode.Grass_or_Cave or WildMode.Swarm)
                     xoro.Next(); //Lvl Range(0,1000)
             }
 
@@ -213,11 +216,7 @@ namespace SysBot.Pokemon
 
             if (type is not RNGType.MysteryGift)
             {
-
                 pk.SetAbilityIndex((int)(xoro.Next()&N_ABILITY));
-
-                if (pk.Species == 201)
-                    pk.Form = (int)xoro.Next()%28;
 
                 var genderRatio = PersonalTable.BDSP.GetFormEntry(pk.Species, pk.Form).Gender;
                 if (genderRatio == PersonalInfo.RatioMagicGenderless)
