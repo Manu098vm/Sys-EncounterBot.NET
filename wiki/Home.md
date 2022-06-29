@@ -22,10 +22,9 @@ PURPLE: The Bot you want to use. Check the guide index for detailed instructions
 
 ## Troubleshooting
 1. If you're experiencing lags/freeze during Sword/Shield/Diamond/Pearl gameplay, it means that the ldn-mitm sysmodule can't detect any reliable WiFi connection. Ensure to have your console plugged to your home Wi-Fi or uninstall ldn-mitm (remove the folder named `4200000000000010` from `SD` - `Atmosphere` - `contents`) and use [usb-botbase](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/Install-usb-botbase) instead.
-1. If you're experiencing freeze during Let's Go gameplay, follow the [unfreeze](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/LGPE-Overworld-Spawn#unfreeze) instructions.
 1. Check the [original SysBot.NET wiki page](https://github.com/kwsch/SysBot.NET/wiki/Troubleshooting) for common troubleshooting. If you still need help, feel free to join [my Discord server](https://discord.gg/WFbcUd6U8d). As this project is not maintened by the original SysBot.NET devs, please don't hassle them.
 1. If you're an EmuNand user please be aware that bots may or may not work properly. Please use SysNand CFW with a clean game, clean updates and (optional) clean DLCs.
-1. The games currently supported are Sword & Shield v1.3.2, Let's Go Pikachu & Eevee 1.0.2 and Brilliant Diamond & Shining Pearl 1.1.3. If you have older versions, please do a clean update of your game files.
+1. The games currently supported are Sword & Shield v1.3.2, Let's Go Pikachu & Eevee 1.0.2 and Brilliant Diamond & Shining Pearl 1.3.0. If you have older versions, please do a clean update of your game files.
 
 It is suggested to delete previous configurations files (config.json) before using a new release.
 

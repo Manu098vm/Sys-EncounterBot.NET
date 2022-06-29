@@ -25,8 +25,3 @@ You can also make the game to spawn only Pokémon with specified Natures, by for
 It is possible to personalize the routine with some automatic movements. Unexpected behaviour can occur if a pokemon is detected while changing area. Unwanted battles with wild encounters can potentially break the movement chain, resulting in the character going to unwanted areas. It is recommended to avoid automatic movements except for specific cases.
 
 Go back to the Bots tab, select `LGPE_OverworldScan`, click `Add` then `Start All`.
-
-## Unfreeze
-The Shiny Check routine works locally in your switch (thanks Zaksabeast!), if `OnlyShiny` is set to true. If the EncounterBot executable will crash, or if it will be closed unexpectedly, the routine will still run in the console background. This means that if a shiny is found, the game will freeze. 
-If this happens, select `TestRoutine` under `LGPE_OverworldScan` and select `Unfreeze` under `TestRoutine`. Go back to the Bots tab, select `LGPE_OverworldScan`, click `Add` then `Start All`. The game will unfreeze and you can catch the shiny appeared, if you wish to.
-Rebooting the game will also work to remove the ShinyCheck routine, but you will lose the shiny this way.

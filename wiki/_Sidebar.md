@@ -10,7 +10,6 @@
    * [Overworld Spawn & Wild Birds](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/LGPE-Overworld-Spawn)
    * [Live Stats Checking](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/LGPE-Live-Stats-Checking)
    * [Stationary, Gifts & Trades](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/LGPE-Stationary,-Trades-&-Gifts)
-   * [Unfreeze](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/LGPE-Overworld-Spawn#unfreeze)
 - [SWSH Overworld-Scan](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/Sword-Shield-Overoworld-Scan)
    * [Overworld Spawn & Fishing Spots](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/Overworld-Spawn-&-Fishing-Areas)
    * [Galarian Moltres & IoA Wailord](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/Galarian-Moltres-%26-IoA-Wailord)
