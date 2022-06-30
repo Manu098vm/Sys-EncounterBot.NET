@@ -77,7 +77,7 @@ namespace SysBot.Pokemon
                 await ReviveFossil(settings, counts, token).ConfigureAwait(false);
                 Log("Fossil revived. Checking details...");
 
-                var pk = await ReadUntilPresentPointer(Pointers.GiftPokemon, 2_000, 0_200, BoxFormatSlotSize, token).ConfigureAwait(false);
+                var pk = await ReadUntilPresentPointer(PokeDataPointers.GiftPokemon, 2_000, 0_200, BoxFormatSlotSize, token).ConfigureAwait(false);
 
                 if (pk == null || pk.Species == 0)
                     Log("RAM may be shifted, please restart the game and the bot.");

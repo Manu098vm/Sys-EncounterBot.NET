@@ -9,7 +9,7 @@
 - [LGPE Bots](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/LGPE-Bots)
    * [Overworld Spawn & Wild Birds](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/LGPE-Overworld-Spawn)
    * [Live Stats Checking](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/LGPE-Live-Stats-Checking)
-   * [Stationary, Gifts & Trades](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/LGPE-Stationary,-Trades-&-Gifts)
+   * [Stationary, Gifts, Trades, Fossils and Go transfers](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/LGPE-Stationary,-Trades,-Gifts,-Fossils-and-Go-transfers)
 - [SWSH Overworld-Scan](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/Sword-Shield-Overoworld-Scan)
    * [Overworld Spawn & Fishing Spots](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/Overworld-Spawn-&-Fishing-Areas)
    * [Galarian Moltres & IoA Wailord](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki/Galarian-Moltres-%26-IoA-Wailord)

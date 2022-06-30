@@ -19,8 +19,6 @@ namespace SysBot.Pokemon
         protected readonly int[] DesiredMinIVs;
         protected readonly int[] DesiredMaxIVs;
         protected readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
-        protected PokeDataPointers Pointers { get; private set; } = new PokeDataPointers();
-
         protected EncounterBot(PokeBotState cfg, PokeBotHub<PK8> hub) : base(cfg)
         {
             Hub = hub;

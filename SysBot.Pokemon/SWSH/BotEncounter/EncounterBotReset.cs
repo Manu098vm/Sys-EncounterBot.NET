@@ -102,7 +102,7 @@ namespace SysBot.Pokemon
         {
             return mode switch
             {
-                EncounterMode.Gifts => await GetAddressFromPointer(Pointers.GiftPokemon, token).ConfigureAwait(false),
+                EncounterMode.Gifts => await GetAddressFromPointer(PokeDataPointers.GiftPokemon, token).ConfigureAwait(false),
                 EncounterMode.Trades => BoxStartOffset,
                 EncounterMode.Regigigas or EncounterMode.Eternatus => RaidPokemonOffset,
                 EncounterMode.MotostokeGym => LegendaryPokemonOffset,

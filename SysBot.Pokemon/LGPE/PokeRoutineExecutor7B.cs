@@ -81,9 +81,9 @@ namespace SysBot.Pokemon
         public async Task<PB7?> ReadStationary(CancellationToken token) => await ReadUntilPresent(StationaryPokeData, 2_000, 0_200, token).ConfigureAwait(false);
         public async Task<PB7?> ReadFossil(CancellationToken token)
         {
-            var pk = await ReadUntilPresent(FossilPokeData, 1_000, 0_200, token).ConfigureAwait(false);
-            if (pk is null || (pk.Species != 138 && pk.Species != 140 && pk.Species != 142))
-                pk = await ReadUntilPresent(FossilPokeData2, 1_000, 0_200, token).ConfigureAwait(false);
+            var pk = await ReadUntilPresentPointer(PokeDataPointers7B.FossilPokeData, 1_000, 0_200, BoxFormatSlotSize, token).ConfigureAwait(false);
+            //if (pk is null || (pk.Species != 138 && pk.Species != 140 && pk.Species != 142))
+                //pk = await ReadUntilPresent(FossilPokeData2, 1_000, 0_200, token).ConfigureAwait(false);
             if (pk is not null && pk.Species != 138 && pk.Species != 140 && pk.Species != 142)
                 pk = null;
             return pk;

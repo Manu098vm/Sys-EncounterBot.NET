@@ -1,4 +1,4 @@
-# Quick Guide for Stationary, Gifts, Trades Hunting
+# Quick Guide for Stationary, Trades, Gifts, Fossils and Go transfers
 
 ## Game Setup
 Go in front of the Pokémon you want to hunt and save the game.
@@ -11,7 +11,7 @@ If you're hunting for stationaries, be sure to have a strong pokemon in the firs
 ## Bot Setup
 First, download the Sys-EncounterBot: https://github.com/Manu098vm/Sys-EncounterBot.NET/releases.
 
-Go in the Hub tab and select either `Stationary`, `Gifts` or `Trades` under `LGPE_Encounter` depending on what you want to hunt.
+Go in the Hub tab and select either `Stationary`, `Gifts`, `Trades`, `Fossils` or `GoPark` under `LGPE_Encounter` depending on what you want to hunt.
 You can make the game to spawn only Pokémon with specified Natures, by forcing the fortune teller activation in the `SetFortuneTeller` option.
 
 Scroll to `StopConditions` and set them according to what you're looking for. Marks settings are ignored for LGPE Encounters.
