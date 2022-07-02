@@ -154,10 +154,7 @@ namespace SysBot.Pokemon
                 var pk = await ReadResetEncounter(mode, token).ConfigureAwait(false);
 
                 if (pk is null)
-                {
                     Log("Can not read PKM data. Either a wrong offset has been used, or RAM is shifted.");
-                    return;
-                }
                 else
                 {
                     if (await HandleEncounter(pk, token, false).ConfigureAwait(false))
