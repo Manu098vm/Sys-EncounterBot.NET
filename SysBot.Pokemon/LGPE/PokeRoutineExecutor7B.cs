@@ -133,10 +133,6 @@ namespace SysBot.Pokemon
 
         public async Task EditLureCounter(uint counter, CancellationToken token) => await Connection.WriteBytesAsync(BitConverter.GetBytes(counter), LureCounter, token).ConfigureAwait(false);
 
-        public async Task<TextSpeed> ReadTextSpeed(CancellationToken token) => (TextSpeed)(await Connection.ReadBytesAsync(TextSpeedOffset, 1, token).ConfigureAwait(false))[0];
-
-        public async Task EditTextSpeed(TextSpeed speed, CancellationToken token) => await Connection.WriteBytesAsync(new byte[] {(byte)speed}, TextSpeedOffset, token).ConfigureAwait(false);
-
         public async Task<uint> ReadSpeciesCombo(CancellationToken token) => BitConverter.ToUInt16(await Connection.ReadBytesAsync(SpeciesCombo, 2, token).ConfigureAwait(false), 0);
 
         public async Task<uint> ReadComboCount(CancellationToken token) => BitConverter.ToUInt16(await Connection.ReadBytesAsync(CatchCombo, 2, token).ConfigureAwait(false), 0);
@@ -150,6 +146,19 @@ namespace SysBot.Pokemon
         public async Task WipeLastSpawn(CancellationToken token) => await Connection.WriteBytesAsync(new byte[] { 0x0, 0x0 }, LastSpawn, token).ConfigureAwait(false);
 
         public async Task<uint> ReadSpawnFlags(CancellationToken token) => BitConverter.ToUInt16(await Connection.ReadBytesAsync(LastSpawnFlags, 2, token).ConfigureAwait(false), 0);
+
+        public async Task<TextSpeed> ReadTextSpeed(CancellationToken token)
+        {
+            var data = await Connection.ReadBytesAsync(TextSpeedOffset, 1, token).ConfigureAwait(false);
+            return (TextSpeed)(data[0] & 3);
+        }
+
+        public async Task EditTextSpeed(TextSpeed speed, CancellationToken token)
+        {
+            var textSpeedByte = await Connection.ReadBytesAsync(TextSpeedOffset, 1, token).ConfigureAwait(false);
+            var data = new[] { (byte)((textSpeedByte[0] & 0xFC) | (int)speed) };
+            await Connection.WriteBytesAsync(data, TextSpeedOffset, token).ConfigureAwait(false);
+        }
 
         public async Task FleeToOverworld(CancellationToken token)
         {

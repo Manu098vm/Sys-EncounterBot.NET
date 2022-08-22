@@ -564,6 +564,8 @@ namespace SysBot.Pokemon
                 }
                 advances++;
             } while (!HandleTarget(pk, false, false) && (advances - Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue < Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue && Hub.Config.BDSP_RNG.AutoRNGSettings.RebootValue > 0));
+            if (Hub.Config.BDSP_RNG.RNGType is RNGType.MysteryGift && Hub.Config.BDSP_RNG.Event is PokeEvents.KorRegigigas)
+                advances--;
             return advances;
         }
 

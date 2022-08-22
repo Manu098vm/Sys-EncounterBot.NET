@@ -18,10 +18,6 @@
         public const uint MainPokeData = 0x163EDC0; //main
         public const uint LastSpawn = 0x5E12B148; //heap
         public const uint LastSpawnFlags = 0x419BB184; //heap - Thanks Anubis!
-        public const uint EShinyValue = 0x7398C4; //main
-        public const uint PShinyValue = 0x739864; //main
-        public const uint PGeneratingFunction = 0x7398D0; //main
-        public const uint EGeneratingFunction = 0x739930; //main
         public const uint TrainerData = 0x53582030; //heap
         public const uint BoxSlot1 = 0x533675B0; //heap
         public const uint Money = 0x53324108; //heap

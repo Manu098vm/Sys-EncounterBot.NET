@@ -53,9 +53,9 @@
     }
     public enum TextSpeed
     {
-        Slow = 64,
-        Normal = 65,
-        Fast = 66,
+        Slow,
+        Normal,
+        Fast,
     }
 
     public enum LGPESpecies : ushort
