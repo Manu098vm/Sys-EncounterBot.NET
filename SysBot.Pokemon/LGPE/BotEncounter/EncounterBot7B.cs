@@ -170,8 +170,12 @@ namespace SysBot.Pokemon
 
         private async Task SpamUntilEncounter(CancellationToken token)
         {
-            while (!(await IsInCatchScreen(token).ConfigureAwait(false) || await IsInBattle(token).ConfigureAwait(false) || await IsGiftFound(token).ConfigureAwait(false) || await IsInTrade(token).ConfigureAwait(false)))
-                await Click(A, 0_200, token).ConfigureAwait(false);
+            if(Settings.EncounteringType is LetsGoMode.Stationary)
+                while (!await IsInBattle(token).ConfigureAwait(false))
+                    await Click(A, 0_200, token).ConfigureAwait(false);
+            else
+                while (!(await IsInCatchScreen(token).ConfigureAwait(false) || await IsGiftFound(token).ConfigureAwait(false) || await IsInTrade(token).ConfigureAwait(false)))
+                    await Click(A, 0_200, token).ConfigureAwait(false);
         }
 
         private async Task<PB7?> ReadResetEncounter(LetsGoMode mode, CancellationToken token)
