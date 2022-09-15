@@ -398,7 +398,7 @@ namespace SysBot.Pokemon
                 if (data[14] == 1)
                     pk.HeldItem = data[16];
 
-                Shiny shinyness = (Shiny)(data[6] + 1);
+                SysBot.Pokemon.Shiny shinyness = (SysBot.Pokemon.Shiny)(data[6] + 1);
                 int ivs = data[18];
                 uint seed = BitConverter.ToUInt32(data.Slice(24, 4), 0);
 

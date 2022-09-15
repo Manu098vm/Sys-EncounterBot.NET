@@ -11,7 +11,7 @@ namespace Sysbot.Pokemon
     public static class RNG8
     {
         private const int UNSET = -1;
-        public static PK8 CalculateFromSeed(PK8 pk, Shiny shiny, int flawless, uint seed)
+        public static PK8 CalculateFromSeed(PK8 pk, SysBot.Pokemon.Shiny shiny, int flawless, uint seed)
         {
             var xoro = new Xoroshiro128Plus(seed);
 
@@ -20,12 +20,12 @@ namespace Sysbot.Pokemon
 
             // PID
             var pid = (uint)xoro.NextInt(uint.MaxValue);
-            if (shiny == Shiny.Never)
+            if (shiny == SysBot.Pokemon.Shiny.Never)
             {
                 if (GetIsShiny(pk.TID, pk.SID, pid))
                     pid ^= 0x1000_0000;
             }
-            else if (shiny != Shiny.Random)
+            else if (shiny != SysBot.Pokemon.Shiny.Random)
             {
                 if (!GetIsShiny(pk.TID, pk.SID, pid))
                     pid = GetShinyPID(pk.TID, pk.SID, pid, 0);
