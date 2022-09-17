@@ -171,7 +171,7 @@ namespace SysBot.Pokemon
         private async Task SpamUntilEncounter(CancellationToken token)
         {
             if(Settings.EncounteringType is LetsGoMode.Stationary)
-                while (!await IsInBattle(token).ConfigureAwait(false))
+                while (!(await IsInBattle(token).ConfigureAwait(false) || (await IsInCatchScreen(token).ConfigureAwait(false))))
                     await Click(A, 0_200, token).ConfigureAwait(false);
             else
                 while (!(await IsInCatchScreen(token).ConfigureAwait(false) || await IsGiftFound(token).ConfigureAwait(false) || await IsInTrade(token).ConfigureAwait(false)))
