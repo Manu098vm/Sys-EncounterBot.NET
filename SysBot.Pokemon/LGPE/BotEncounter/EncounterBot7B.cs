@@ -29,9 +29,11 @@ namespace SysBot.Pokemon
         }
 
         protected int encounterCount;
+        protected long millsec;
 
         public override async Task MainLoop(CancellationToken token)
         {
+            millsec = 0;
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
             await InitializeHardware(Settings, token).ConfigureAwait(false);
@@ -131,7 +133,6 @@ namespace SysBot.Pokemon
         private async Task DoRestartingEncounter(CancellationToken token)
         {
             var mode = Settings.EncounteringType;
-
             //Check Text Speed
             if (await ReadTextSpeed(token).ConfigureAwait(false) != TextSpeed.Fast)
                 await EditTextSpeed(TextSpeed.Fast, token).ConfigureAwait(false);
@@ -170,12 +171,18 @@ namespace SysBot.Pokemon
 
         private async Task SpamUntilEncounter(CancellationToken token)
         {
-            if(Settings.EncounteringType is LetsGoMode.Stationary)
-                while (!(await IsInBattle(token).ConfigureAwait(false) || (await IsInCatchScreen(token).ConfigureAwait(false))))
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
+
+            if (Settings.EncounteringType is LetsGoMode.Stationary)
+                while ((!(await IsInBattle(token).ConfigureAwait(false) || (await IsInCatchScreen(token).ConfigureAwait(false)))) || (millsec != 0 && stopwatch.ElapsedMilliseconds < millsec))
                     await Click(A, 0_200, token).ConfigureAwait(false);
             else
-                while (!(await IsInCatchScreen(token).ConfigureAwait(false) || await IsGiftFound(token).ConfigureAwait(false) || await IsInTrade(token).ConfigureAwait(false)))
+                while ((!(await IsInCatchScreen(token).ConfigureAwait(false) || await IsGiftFound(token).ConfigureAwait(false) || await IsInTrade(token).ConfigureAwait(false))) || (millsec != 0 && stopwatch.ElapsedMilliseconds < millsec))
                     await Click(A, 0_200, token).ConfigureAwait(false);
+
+            if (millsec == 0)
+                millsec = stopwatch.ElapsedMilliseconds;
         }
 
         private async Task<PB7?> ReadResetEncounter(LetsGoMode mode, CancellationToken token)
