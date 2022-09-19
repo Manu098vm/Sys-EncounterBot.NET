@@ -223,6 +223,11 @@ namespace SysBot.Pokemon
                     // Offsets are flickery so make sure we see it 3 times.
                     for (int i = 0; i < 3; i++)
                         await ReadUntilChanged(PokeDataOffsets.BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
+
+                    var pk_enc = await ReadUntilPresent(PokeDataOffsets.WildPokemonOffset, 2_000, 0_200, PokeDataOffsets.BoxFormatSlotSize, token).ConfigureAwait(false);
+                    if (await HandleEncounter(pk_enc, token).ConfigureAwait(false))
+                        return;
+
                     Log("Unwanted encounter started, running away...");
                     await FleeToOverworld(token).ConfigureAwait(false);
                     // Extra delay to be sure we're fully out of the battle.
@@ -250,6 +255,9 @@ namespace SysBot.Pokemon
                             await ResetStick(token).ConfigureAwait(false);
                             for (int i = 0; i < 3; i++)
                                 await ReadUntilChanged(PokeDataOffsets.BattleMenuOffset, BattleMenuReady, 5_000, 0_100, true, token).ConfigureAwait(false);
+                            var pk_enc = await ReadUntilPresent(PokeDataOffsets.WildPokemonOffset, 2_000, 0_200, PokeDataOffsets.BoxFormatSlotSize, token).ConfigureAwait(false);
+                            if (await HandleEncounter(pk_enc, token).ConfigureAwait(false))
+                                return;
                             Log("Unwanted encounter started, running away...");
                             await FleeToOverworld(token).ConfigureAwait(false);
                             await Task.Delay(0_250, token).ConfigureAwait(false);
@@ -290,6 +298,35 @@ namespace SysBot.Pokemon
             var legendary = Legal.Legends.Contains(pk.Species) || Legal.SubLegends.Contains(pk.Species);
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                 DumpPokemon(DumpSetting.DumpFolder, legendary ? "ow_legends" : "ow_encounters", pk);
+
+            if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, UnwantedMarks))
+                return false;
+
+            if (Hub.Config.StopConditions.CaptureVideoClip)
+            {
+                await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
+                await PressAndHold(CAPTURE, 2_000, 0, token).ConfigureAwait(false);
+            }
+
+            var msg = $"Result found!\n{print}\nStopping routine execution; restart the bot to search again.";
+
+            if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
+                msg = $"{Hub.Config.StopConditions.MatchFoundEchoMention} {msg}";
+            Log(msg);
+
+            return true;
+        }
+
+        protected async Task<bool> HandleEncounter(PK8? pk, CancellationToken token)
+        {
+            if (pk == null)
+                return false;
+
+            var print = (Species)pk.Species;
+            Log($"Battle Encounter: {Hub.Config.StopConditions.GetPrintName(pk)}");
+
+            if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
+                DumpPokemon(DumpSetting.DumpFolder, "encounters", pk);
 
             if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, UnwantedMarks))
                 return false;
