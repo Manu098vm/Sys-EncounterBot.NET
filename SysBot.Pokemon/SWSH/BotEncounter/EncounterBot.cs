@@ -67,7 +67,7 @@ namespace SysBot.Pokemon
         protected abstract Task EncounterLoop(SAV8SWSH sav, CancellationToken token);
 
         // return true if breaking loop
-        protected async Task<bool> HandleEncounter(PK8? pk, CancellationToken token)
+        protected async Task<bool> HandleEncounter(PK8? pk, CancellationToken token, bool isLair = false)
         {
             if (pk == null)
                 return false;
@@ -89,7 +89,7 @@ namespace SysBot.Pokemon
             if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, WantedNatures, UnwantedMarks))
                 return false;
 
-            if (Hub.Config.StopConditions.CaptureVideoClip)
+            if (Hub.Config.StopConditions.CaptureVideoClip && !isLair)
             {
                 await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo, token).ConfigureAwait(false);
                 await PressAndHold(CAPTURE, 2_000, 0, token).ConfigureAwait(false);

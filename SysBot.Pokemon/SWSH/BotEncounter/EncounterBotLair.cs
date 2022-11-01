@@ -45,7 +45,6 @@ namespace SysBot.Pokemon
         private async Task InnerLoop(CancellationToken token)
         {
             var target = Settings.MaxLairSettings.EditLairPath;
-            var wasVideoClipActive = Hub.Config.StopConditions.CaptureVideoClip;
             Stopwatch stopwatch = new();
             bool caneditspecies = true;
             uint pathoffset = LairSpeciesSelector;
@@ -89,10 +88,6 @@ namespace SysBot.Pokemon
 
             while (!token.IsCancellationRequested)
             {
-                //Capture video clip is menaged internally
-                if (wasVideoClipActive)
-                    Hub.Config.StopConditions.CaptureVideoClip = false;
-
                 //Talk to the Lady
                 while (!await IsInLairWait(token).ConfigureAwait(false))
                     await Click(A, 0_500, token).ConfigureAwait(false);
@@ -183,11 +178,8 @@ namespace SysBot.Pokemon
                         await Click(A, 0_900, token).ConfigureAwait(false);
                         await Click(DDOWN, 0_800, token).ConfigureAwait(false);
                         await Click(A, 2_300, token).ConfigureAwait(false);
-                        if (wasVideoClipActive == true)
-                        {
+                        if (Hub.Config.StopConditions.CaptureVideoClip == true)
                             await PressAndHold(CAPTURE, 2_000, 10_000, token).ConfigureAwait(false);
-                            Hub.Config.StopConditions.CaptureVideoClip = true;
-                        }
 
                         if (pk != null && found[2] == 1)
                         {
@@ -243,7 +235,7 @@ namespace SysBot.Pokemon
                         found[1] = 1;
                     }
 
-                    if(await HandleEncounter(pkm, token).ConfigureAwait(false))
+                    if(await HandleEncounter(pkm, token, true).ConfigureAwait(false))
 					{
                         found[0] = i + 1;
                         enc_conditions = true;
