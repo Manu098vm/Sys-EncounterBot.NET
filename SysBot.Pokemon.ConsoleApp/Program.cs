@@ -85,7 +85,7 @@ namespace SysBot.Pokemon.ConsoleApp
 
             LogUtil.Forwarders.Add((msg, ident) => Console.WriteLine($"{ident}: {msg}"));
             env.StartAll();
-            Console.WriteLine($"Started all bots (Count: {prog.Bots.Length}.");
+            Console.WriteLine($"Started all bots (Count: {prog.Bots.Length}).");
             Console.WriteLine("Press any key to stop execution and quit. Feel free to minimize this window!");
             Console.ReadKey();
             env.StopAll();
