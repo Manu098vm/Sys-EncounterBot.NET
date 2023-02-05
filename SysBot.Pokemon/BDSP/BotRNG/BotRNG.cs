@@ -158,7 +158,6 @@ namespace SysBot.Pokemon
         private async Task<bool> AutoCalc(SAV8BS sav, CancellationToken token)
         {
             var advances = 0;
-            var print = Hub.Config.BDSP_RNG.AutoRNGSettings.LogAdvances;
             var actions = ParseActions(Hub.Config.BDSP_RNG.AutoRNGSettings.Actions);
             var type = Hub.Config.BDSP_RNG.RNGType;
             var mode = Hub.Config.BDSP_RNG.WildMode;
@@ -227,8 +226,8 @@ namespace SysBot.Pokemon
                         }
                         if (target <= 0)
                             return false;
-                        if (print)
-                            Log($"Target in {target} Advances.");
+
+                        Log($"Target in {target} Advances.");
 
                         return await TrackAdvances(sav, token, true, target, xoro).ConfigureAwait(false);
                     }
