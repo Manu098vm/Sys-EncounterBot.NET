@@ -89,12 +89,14 @@ namespace SysBot.Pokemon
             while (!token.IsCancellationRequested)
             {
                 //Talk to the Lady
+                Log("Talking to lair lady...");
                 while (!await IsInLairWait(token).ConfigureAwait(false))
                     await Click(A, 0_500, token).ConfigureAwait(false);
 
                 await Task.Delay(2_000, token).ConfigureAwait(false);
 
                 //Select Solo Adventure
+                Log("Select Solo...");
                 await Click(DDOWN, 1_800, token).ConfigureAwait(false);
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
@@ -106,11 +108,13 @@ namespace SysBot.Pokemon
                 //Allows 1HKO
                 if (Settings.MaxLairSettings.InstantKill)
                 {
+                    Log("1HKO enabled.");
                     var demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
                     if (BitConverter.GetBytes(standardDemage).SequenceEqual(demageTemporalState))
                         await SwitchConnection.WriteBytesMainAsync(BitConverter.GetBytes(alteredDemage), demageOutputOffset, token).ConfigureAwait(false);
                 }
 
+                Log("Main loop started.");
                 while (!(await IsInLairEndList(token).ConfigureAwait(false) || lost || token.IsCancellationRequested))
                 {
                     await Click(A, 0_200, token).ConfigureAwait(false);
@@ -150,6 +154,7 @@ namespace SysBot.Pokemon
                 //Disable 1HKO
                 if (Settings.MaxLairSettings.InstantKill)
                 {
+                    Log("1HKO disabled.");
                     var demageTemporalState = await SwitchConnection.ReadBytesMainAsync(demageOutputOffset, 4, token).ConfigureAwait(false);
                     if (BitConverter.GetBytes(alteredDemage).SequenceEqual(demageTemporalState))
                         await SwitchConnection.WriteBytesMainAsync(BitConverter.GetBytes(standardDemage), demageOutputOffset, token).ConfigureAwait(false);
@@ -158,22 +163,22 @@ namespace SysBot.Pokemon
                 if (!lost)
                 {
                     //Check for shinies, check all the StopConditions for the Legendary
-                    int[] found = await IsAdventureHuntFound(token).ConfigureAwait(false);
+                    (var selection, var legendary_defeated, var stopConditions_match) = await IsAdventureHuntFound(token).ConfigureAwait(false);
 
                     completedAdventures++;
                     if (raidCount < 5)
                         Log($"Lost at battle n. {(raidCount - 1)}, adventure n. {completedAdventures}.");
-                    else if (found[1] == 0)
+                    else if (!legendary_defeated)
                         Log($"Lost at battle n. 4, adventure n. {completedAdventures}.");
                     else
                         Log($"Adventure n. {completedAdventures} completed.");
 
-                    if (found[0] > 0)
+                    if (selection > 0)
                     {
-                        var pk = await ReadLairResult(found[0]-1, token).ConfigureAwait(false);
+                        var pk = await ReadLairResult(selection-1, token).ConfigureAwait(false);
 
                         await Task.Delay(1_500, token).ConfigureAwait(false);
-                        for (int i = 1; i < found[0]; i++)
+                        for (int i = 1; i < selection; i++)
                             await Click(DDOWN, 1_000, token).ConfigureAwait(false);
                         await Click(A, 0_900, token).ConfigureAwait(false);
                         await Click(DDOWN, 0_800, token).ConfigureAwait(false);
@@ -181,48 +186,40 @@ namespace SysBot.Pokemon
                         if (Hub.Config.StopConditions.CaptureVideoClip == true)
                             await PressAndHold(CAPTURE, 2_000, 10_000, token).ConfigureAwait(false);
 
-                        if (pk != null && found[2] == 1)
+                        if (pk != null && stopConditions_match)
                         {
-                            Log($"Found match in result n. {found[0]}: {(Species)pk.Species}");
+                            Log($"Found match in result n. {selection}: {(Species)pk.Species}");
                             return;
                         }
                         else
                         {
                             if(pk != null)
-                                Log($"Found shiny in result n. {found[0]}: {(Species)pk.Species}");
+                                Log($"Found shiny in result n. {selection}: {(Species)pk.Species}");
 
                             await Task.Delay(1_500, token).ConfigureAwait(false);
                             await Click(B, 1_500, token).ConfigureAwait(false);
                             while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                            {
-                                await Click(A, 0_500, token).ConfigureAwait(false);
-                                await Task.Delay(2_000, token).ConfigureAwait(false);
-                            }
+                                await Click(A, 1_000, token).ConfigureAwait(false);
                         }
                     }
                     else
                     {
-                        Log("No result found, starting again");
+                        Log("No result found, starting again.");
                         await Task.Delay(1_500, token).ConfigureAwait(false);
                         await Click(B, 1_000, token).ConfigureAwait(false);
                         while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                        {
-                            await Click(A, 0_500, token).ConfigureAwait(false);
-                            await Task.Delay(2_000, token).ConfigureAwait(false);
-                        }
+                            await Click(A, 1_000, token).ConfigureAwait(false);
+                        Log("Back to overworld. Restarting the routine...");
                     }
                 }
             }
         }
 
-        private async Task<int[]> IsAdventureHuntFound(CancellationToken token)
+        private async Task<(int, bool, bool)> IsAdventureHuntFound(CancellationToken token)
         {
-            //found[0] = Pokèmon to pick
-            //found[1] = 1 if legendary has been caught, 0 otherwise
-            //found[2] = StopConditions met
-
-            int[] found = { 0, 0, 0 };
-            bool enc_conditions = false;
+            var selection = 0;
+            var legendary_defeated = false;
+            var stopConditions_match = false;
             int i = 0;
 
             while (i < 4)
@@ -231,22 +228,19 @@ namespace SysBot.Pokemon
                 if (pkm != null)
                 {
                     if (i == 3)
-                    {
-                        found[1] = 1;
-                    }
+                        legendary_defeated = true;
 
                     if(await HandleEncounter(pkm, token, true).ConfigureAwait(false))
 					{
-                        found[0] = i + 1;
-                        enc_conditions = true;
+                        selection = i + 1;
+                        stopConditions_match = true;
                     }
-                    else if (pkm.IsShiny && Hub.Config.SWSH_Encounter.MaxLairSettings.KeepShinies && !enc_conditions)
-                        found[0] = i + 1;
+                    else if (pkm.IsShiny && Hub.Config.SWSH_Encounter.MaxLairSettings.KeepShinies && !stopConditions_match)
+                        selection = i + 1;
                 }
                 i++;
             }
-            found[2] = enc_conditions ? 1 : 0;
-            return found;
+            return (selection, legendary_defeated, stopConditions_match);
         }
 
         private async Task<PK8?> ReadLairResult(int slot, CancellationToken token)

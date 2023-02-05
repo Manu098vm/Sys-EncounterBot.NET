@@ -77,6 +77,7 @@ namespace SysBot.Pokemon
             return (byte)((tmp % diff) + min);
         }
     }
+
     public class RNG8b
     {
         private const int UNSET = -1;
