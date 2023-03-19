@@ -21,6 +21,10 @@ Check the [Wiki](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki) for a d
 
 [kwsch](https://github.com/kwsch) for [PKHeX](https://github.com/kwsch/PKHeX)
 
+[Lusamine](https://github.com/Lusamine) for the very much improved LGPE Overworld Routine, flag checks, language editings!
+
+[Lincoln-LM](https://github.com/Lincoln-LM) for his Unown fix on the BDSP RNG routines, taken from PokéFinder.
+
 [architdate](https://github.com/architdate), [Lusamine](https://github.com/Lusamine), [kwsch](https://github.com/kwsch), all the ALM team and all the people involved in the developing/testing of [SysBot.NET](https://github.com/kwsch/SysBot.NET), thanks to which this project would never exist.
 
 [Lusamine](https://github.com/Lusamine), [PP-theSLAYER](https://github.com/PP-theSLAYER), [Zyro670](https://github.com/zyro670), [Lincoln-LM](https://github.com/Lincoln-LM), [Koi-3088](https://github.com/Koi-3088) and KD#0001 for suggestions and explainations on how some game structures work and help in implementations.
