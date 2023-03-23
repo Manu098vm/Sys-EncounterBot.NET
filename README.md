@@ -4,7 +4,7 @@
 ## Disclaimer:
 I am doing this project for personal use and, above all, as a learning tool. Some bots are a proof of concept and they may work for me but not for you. If you run into any problems or have any suggestions, feel free to contact me, but please note that I may not be able to offer the support you are looking for. This is by no means a polished product.
 ## Support:
-For support on setting up your own instance of Sys-EncounterBot.NET, feel free to [join my Discord](https://discord.gg/WFbcUd6U8d)!
+For support on setting up your own instance of Sys-EncounterBot.NET, feel free to [join my Discord](https://discord.gg/F9nMfvw9sS)!
 This fork is not maintained by the PKHeX Dev server.
 
 Refer to the [Release section](https://github.com/Manu098vm/Sys-EncounterBot.NET/releases) to download the latest release.
@@ -20,6 +20,10 @@ Check the [Wiki](https://github.com/Manu098vm/Sys-EncounterBot.NET/wiki) for a d
 [fishguy6564](https://github.com/fishguy6564) and [Koi-3088](https://github.com/Koi-3088) for [usb-botbase](https://github.com/fishguy6564/USB-Botbase)
 
 [kwsch](https://github.com/kwsch) for [PKHeX](https://github.com/kwsch/PKHeX)
+
+[Lusamine](https://github.com/Lusamine) for the very much improved LGPE Overworld Routine, flag checks, language editings!
+
+[Lincoln-LM](https://github.com/Lincoln-LM) for his Unown fix on the BDSP RNG routines, taken from PokéFinder.
 
 [architdate](https://github.com/architdate), [Lusamine](https://github.com/Lusamine), [kwsch](https://github.com/kwsch), all the ALM team and all the people involved in the developing/testing of [SysBot.NET](https://github.com/kwsch/SysBot.NET), thanks to which this project would never exist.
 
