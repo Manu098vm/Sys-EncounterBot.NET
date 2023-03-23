@@ -9,8 +9,8 @@ namespace SysBot.Pokemon
         public override IReadOnlyList<long> R2_SpeciesPointer { get; } = new long[] { 0x4C64DC0, 0xB8, 0x10, 0x2A0, 0x4C };
         public override IReadOnlyList<long> R1_SeedPointer { get; } = new long[] { 0x4C64DC0, 0xB8, 0x10, 0x2A0, 0x24 };
         public override IReadOnlyList<long> R2_SeedPointer { get; } = new long[] { 0x4C64DC0, 0xB8, 0x10, 0x2A0, 0x44 };
-        public override IReadOnlyList<long> EggSeedPointer { get; } = new long[] { 0x4C64DC0, 0xB8, 0x10, 0x450 };
-        public override IReadOnlyList<long> EggStepPointer { get; } = new long[] { 0x4C64DC0, 0xB8, 0x10, 0x458 };
+        public override IReadOnlyList<long> EggSeedPointer { get; } = new long[] { 0x4C64DC0, 0xB8, 0x10, 0x460 };
+        public override IReadOnlyList<long> EggStepPointer { get; } = new long[] { 0x4C64DC0, 0xB8, 0x10, 0x468 };
         public override IReadOnlyList<long> LocationPointer { get; } = new long[] { 0x4C64DC0, 0xB8, 0x10, 0x40 };
         public override IReadOnlyList<long> PartyStartPokemonPointer { get; } = new long[] { 0x4C64DC0, 0xB8, 0x10, 0x808, 0x10, 0x20, 0x20, 0x18, 0x20 };
         public override IReadOnlyList<long> PartySlot2PokemonPointer { get; } = new long[] { 0x4C64DC0, 0xB8, 0x10, 0x808, 0x10, 0x28, 0x20, 0x18, 0x20 };
