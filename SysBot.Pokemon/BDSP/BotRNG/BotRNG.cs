@@ -487,6 +487,7 @@ namespace SysBot.Pokemon
             var events = Hub.Config.BDSP_RNG.Event;
             var rng = new Xorshift(states[0], states[1], states[2], states[3]);
             var target = await CalculateTarget(xoro, sav, type, mode, token).ConfigureAwait(false);
+            int[]? unownForms = null;
             var advances = 0;
             List<int>? slots = null;
 
@@ -496,6 +497,9 @@ namespace SysBot.Pokemon
                 GameTime = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
                 GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
                 slots = GetEncounterSlots(version, route, GameTime, mode);
+                
+                if (GetLocation(route).Contains("Solaceon Ruins"))
+                    unownForms = GetUnownForms(route);
             }
 
             var pk = new PB8
@@ -513,7 +517,7 @@ namespace SysBot.Pokemon
                 else
                 {
                     states = rng.GetU32State();
-                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, slots, events);
+                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, slots, events, unownForms);
                     rng.Next();
                 }
                 advances++;
@@ -530,6 +534,7 @@ namespace SysBot.Pokemon
             uint[] states = xoro.GetU32State();
             Xorshift rng = new(states[0], states[1], states[2], states[3]);
             List<int>? slots = null;
+            int[]? unownForms = null;
             int species = (int)Hub.Config.StopConditions.StopOnSpecies;
             var events = Hub.Config.BDSP_RNG.Event;
 
@@ -541,6 +546,9 @@ namespace SysBot.Pokemon
                     GameTime = (GameTime)tmp;
                 GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
                 slots = GetEncounterSlots(version, route, GameTime, mode);
+
+                if (GetLocation(route).Contains("Solaceon Ruins"))
+                    unownForms = GetUnownForms(route);
             }
 
             var pk = new PB8
@@ -558,7 +566,7 @@ namespace SysBot.Pokemon
                 else
                 {
                     states = rng.GetU32State();
-                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, slots, events);
+                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, slots, events, unownForms);
                     rng.Next();
                 }
                 advances++;
@@ -669,6 +677,7 @@ namespace SysBot.Pokemon
             var isroutine = xoro == null;
             var result = new List<PB8>();
             List<int>? encounterslots = null;
+            int[]? unownForms = null;
             int advance;
             uint initial_s0f;
             uint initial_s1f;
@@ -700,15 +709,35 @@ namespace SysBot.Pokemon
                 var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
                 GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
                 encounterslots = GetEncounterSlots(version, route, time, mode);
+
+                if (GetLocation(route).Contains("Solaceon Ruins"))
+                    unownForms = GetUnownForms(route);
+
                 if (isroutine)
                 {
                     Log($"({version}) {GetLocation(route)} ({route}) [{time}]");
                     Log("Available mons:");
-                    var i = 0;
-                    foreach (var mon in encounterslots)
+                    if (encounterslots.Count > 0)
                     {
-                        Log($"[{i}] {(Species)mon}");
-                        i++;
+                        var i = 0;
+                        foreach (var mon in encounterslots)
+                        {
+                            if (unownForms is null || unownForms.Length == 0)
+                                Log($"[{i}] {(Species)mon}");
+                            else
+                            {
+                                var formstr = " ";
+                                foreach (var form in unownForms!)
+                                    formstr = $"{formstr}{form} ";
+                                Log($"[{i}] {(Species)mon}-[{formstr}]");
+                            }
+
+                            i++;
+                        }
+                    }
+                    else
+                    {
+                        Log("None");
                     }
                 }
             }
@@ -735,7 +764,7 @@ namespace SysBot.Pokemon
                     pk = Calc.CalculateFromSeed(pk, Shiny.Random, type, rng.Next());
                 else
                 {
-                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, encounterslots, events);
+                    pk = Calc.CalculateFromStates(pk, (type is not RNGType.MysteryGift) ? Shiny.Random : Shiny.Never, type, new Xorshift(states[0], states[1], states[2], states[3]), mode, encounterslots, events, unownForms);
                     rng.Next();
                 }
 
@@ -743,7 +772,7 @@ namespace SysBot.Pokemon
 
                 var msg = $"\nAdvances: {advance}\n[S0] {states[0]:X8}, [S1] {states[1]:X8}\n[S2] {states[2]:X8}, [S3] {states[3]:X8}";
                 if (Hub.Config.BDSP_RNG.WildMode is not WildMode.None)
-                    msg = $"{msg}\nSpecies: {(Species)pk.Species} (EncounterSlot: {pk.Move1})";
+                    msg = $"{msg}\nSpecies: {(Species)pk.Species}-{(pk.PersonalInfo.FormCount > 0 ? $"[{pk.Form}]" : "")} (EncounterSlot: {pk.Move1})";
                 msg = $"{msg}\n{GetString(pk)}";
                 if (verbose == true)
                     Log($"{Environment.NewLine}{msg}");
@@ -765,7 +794,7 @@ namespace SysBot.Pokemon
         }
 
         private async Task CheckAvailablePKM(SAV8BS sav, CancellationToken token)
-		{
+        {
             var route = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(PlayerLocation, 2, token).ConfigureAwait(false), 0);
             var time = (GameTime)(await SwitchConnection.ReadBytesAbsoluteAsync(DayTime, 1, token).ConfigureAwait(false))[0];
             GameVersion version = (Offsets is PokeDataOffsetsBS_BD) ? GameVersion.BD : GameVersion.SP;
@@ -773,14 +802,30 @@ namespace SysBot.Pokemon
             var mode = Hub.Config.BDSP_RNG.WildMode == WildMode.None ? WildMode.Grass_or_Cave : Hub.Config.BDSP_RNG.WildMode;
 
             var slots = GetEncounterSlots(version, route, time, mode);
+            var unownForms = GetLocation(route).Contains("Solaceon Ruins") ? GetUnownForms(route) : null;
 
             Log($"({version}) {GetLocation(route)} ({route}) [{time}]");
             Log($"Available mons for {mode} encounters:");
-            var i = 0;
-            foreach (var slot in slots)
+            if (slots.Count > 0)
             {
-                Log($"[{i}] {(Species)slot}");
-                i++;
+                var i = 0;
+                foreach (var slot in slots)
+                {
+                    if (unownForms is null || unownForms.Length == 0)
+                        Log($"[{i}] {(Species)slot}");
+                    else
+                    {
+                        var formstr = " ";
+                        foreach (var form in unownForms!)
+                            formstr = $"{formstr}{form} ";
+                        Log($"[{i}] {(Species)slot}-[{formstr}]");
+                    }
+                    i++;
+                }
+            }
+            else
+            {
+                Log("None");
             }
 
             return;

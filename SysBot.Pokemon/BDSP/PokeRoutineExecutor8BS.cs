@@ -399,6 +399,20 @@ namespace SysBot.Pokemon
             return list;
         }
 
+        public int[] GetUnownForms(int location)
+        {
+            return location switch {
+                229 => new int[] { 5 },
+                231 => new int[] { 17 },
+                237 => new int[] { 8 },
+                238 => new int[] { 13 },
+                239 => new int[] { 4 },
+                240 => new int[] { 3 },
+                225 => new int[] { 26, 27 },
+                _ => new int[] { 0, 1, 2, 6, 7, 9, 10, 11, 12, 14, 15, 16, 18, 19, 20, 21, 22, 23, 24, 25 },
+            };
+        }
+
         public List<SwitchButton> ParseActions(string config_actions)
         {
             var action = new List<SwitchButton>();

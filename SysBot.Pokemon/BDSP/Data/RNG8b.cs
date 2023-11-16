@@ -136,7 +136,7 @@ namespace SysBot.Pokemon
             return pk;
         }
 
-        public PB8 CalculateFromStates(PB8 pk, Shiny shiny, RNGType type, Xorshift seed, WildMode mode = WildMode.None, List<int>? slots = null, PokeEvents events = PokeEvents.None)
+        public PB8 CalculateFromStates(PB8 pk, Shiny shiny, RNGType type, Xorshift seed, WildMode mode = WildMode.None, List<int>? slots = null, PokeEvents events = PokeEvents.None, int[]? unownForms = null)
         {
             var xoro = new Xorshift(seed.GetU64State()[0], seed.GetU64State()[1]);
 
@@ -148,9 +148,8 @@ namespace SysBot.Pokemon
                 var slot = CalcSlot(mode, calc);
                 pk.Species = slots[slot];
 
-                //Should implement auxiliary check for rooms with only ! and ? forms.
-                if (pk.Species == 201)
-                    pk.Form = xoro.Range(0, 20);
+                if (unownForms != null && unownForms.Length > 0)
+                    pk.Form = unownForms[xoro.Range(0, (byte)unownForms.Length)];
 
                 //Save the slot in some available structure space
                 pk.Move1 = slot;
