@@ -190,8 +190,8 @@ namespace SysBot.Pokemon
             var pk = mode switch
             {
                 LetsGoMode.Stationary => await ReadStationary(token).ConfigureAwait(false),
-                LetsGoMode.Fossils => await ReadFossil(token).ConfigureAwait(false),
-                LetsGoMode.Gifts => await ReadGift(token).ConfigureAwait(false),
+                LetsGoMode.Fossils => await ReadGiftOrFossil(token).ConfigureAwait(false),
+                LetsGoMode.Gifts => await ReadGiftOrFossil(token).ConfigureAwait(false),
                 LetsGoMode.Trades => await ReadTrade(token).ConfigureAwait(false),
                 LetsGoMode.GoPark => await ReadGoEntity(token).ConfigureAwait(false),
                 _ => throw new NotImplementedException(),

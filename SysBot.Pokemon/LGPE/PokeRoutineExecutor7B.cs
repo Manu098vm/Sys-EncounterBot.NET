@@ -79,27 +79,19 @@ namespace SysBot.Pokemon
         public async Task<PB7?> ReadWild(CancellationToken token) => await ReadUntilPresent(WildPokeData, 2_000, 0_200, token).ConfigureAwait(false);
         public async Task<PB7?> ReadGoEntity(CancellationToken token) => await ReadUntilPresent(GoPokeData, 2_000, 0_200, token).ConfigureAwait(false);
         public async Task<PB7?> ReadStationary(CancellationToken token) => await ReadUntilPresent(StationaryPokeData, 2_000, 0_200, token).ConfigureAwait(false);
-        public async Task<PB7?> ReadFossil(CancellationToken token)
-        {
-            var pk = await ReadUntilPresentPointer(PokeDataPointers7B.FossilPokeData, 1_000, 0_200, BoxFormatSlotSize, token).ConfigureAwait(false);
-            //if (pk is null || (pk.Species != 138 && pk.Species != 140 && pk.Species != 142))
-                //pk = await ReadUntilPresent(FossilPokeData2, 1_000, 0_200, token).ConfigureAwait(false);
-            if (pk is not null && pk.Species != 138 && pk.Species != 140 && pk.Species != 142)
-                pk = null;
-            return pk;
-        }
+        public async Task<PB7?> ReadFossil(CancellationToken token) => await ReadUntilPresentPointer(PokeDataPointers7B.FossilPokeData, 1_000, 0_200, BoxFormatSlotSize, token).ConfigureAwait(false);
+
         public async Task<PB7?> ReadGiftOrFossil(CancellationToken token)
         {
             var pk = await ReadGift(token).ConfigureAwait(false);
-            if (pk is null)
-                pk = await ReadFossil(token).ConfigureAwait(false);
+            pk ??= await ReadFossil(token).ConfigureAwait(false);
             return pk;
         }
+
         public async Task<PB7?> ReadWildOrGo(CancellationToken token)
         {
             var pk = await ReadWild(token).ConfigureAwait(false);
-            if (pk is null)
-                pk = await ReadGoEntity(token).ConfigureAwait(false);
+            pk ??= await ReadGoEntity(token).ConfigureAwait(false);
             return pk;
         }
 
