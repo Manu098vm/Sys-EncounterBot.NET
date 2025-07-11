@@ -164,14 +164,13 @@ namespace SysBot.Pokemon
         public async Task OpenGame(PokeBotHubConfig config, CancellationToken token)
         {
             // Open game.
-            await Click(A, 1_000 + config.Timings.ExtraTimeLoadProfile, token).ConfigureAwait(false);
+            await Click(A, 1_500 + config.Timings.ExtraTimeLoadProfile, token).ConfigureAwait(false);
 
             //  The user can optionally turn on the setting if they know of a breaking system update incoming.
             if (config.Timings.AvoidSystemUpdate)
-            {
                 await Click(DUP, 0_600, token).ConfigureAwait(false);
-                await Click(A, 1_000 + config.Timings.ExtraTimeLoadProfile, token).ConfigureAwait(false);
-            }
+
+            await Click(A, 2_000 + config.Timings.ExtraTimeLoadProfile, token).ConfigureAwait(false);
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
