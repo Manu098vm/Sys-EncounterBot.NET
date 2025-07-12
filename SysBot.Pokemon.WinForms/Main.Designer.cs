@@ -221,7 +221,7 @@ namespace SysBot.Pokemon.WinForms
             this.Icon = global::SysBot.Pokemon.WinForms.Properties.Resources.icon;
             this.Name = "Main";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Sys-EncounterBot 2.7";
+            this.Text = "Sys-EncounterBot 2.7.1";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Main_FormClosing);
             this.TC_Main.ResumeLayout(false);
             this.Tab_Bots.ResumeLayout(false);
