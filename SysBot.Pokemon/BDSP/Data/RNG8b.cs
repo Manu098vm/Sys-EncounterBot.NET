@@ -140,8 +140,6 @@ namespace SysBot.Pokemon
         {
             var xoro = new Xorshift(seed.GetU64State()[0], seed.GetU64State()[1]);
 
-            var flawless = GetFlawless(type, events);
-
             if(type is RNGType.Wild && mode != WildMode.None && slots != null)
 			{
                 var calc = xoro.Range(0, 100);
@@ -191,21 +189,29 @@ namespace SysBot.Pokemon
             pk.PID = pid;
 
             int[] ivs = { UNSET, UNSET, UNSET, UNSET, UNSET, UNSET };
-            
-            var determined = 0;
-            while (determined < flawless)
-            {
-                var idx = xoro.Next()%N_IV;
-                if (ivs[idx] != UNSET)
-                    continue;
-                ivs[idx] = MAX;
-                determined++;
-            }
 
-            for (var i = 0; i < ivs.Length; i++)
+            if (!IsFixedIV(type, events))
             {
-                if (ivs[i] == UNSET)
-                    ivs[i] = (int)(xoro.Next()&MAX);
+                var determined = 0;
+                var flawless = GetFlawless(type, events);
+                while (determined < flawless)
+                {
+                    var idx = xoro.Next() % N_IV;
+                    if (ivs[idx] != UNSET)
+                        continue;
+                    ivs[idx] = MAX;
+                    determined++;
+                }
+
+                for (var i = 0; i < ivs.Length; i++)
+                {
+                    if (ivs[i] == UNSET)
+                        ivs[i] = (int)(xoro.Next() & MAX);
+                }
+            }
+            else
+            {
+                 ivs = GetFixedIVs(events);
             }
 
             pk.IV_HP = ivs[0];
@@ -241,6 +247,7 @@ namespace SysBot.Pokemon
 
             return pk;
         }
+
         private static uint GetRevisedPID(uint fakeTID, uint pid, ITrainerID tr)
         {
             var xor = GetShinyXor(pid, fakeTID);
@@ -265,75 +272,80 @@ namespace SysBot.Pokemon
             _ => Shiny.Never,
         };
 
-        private static int GetFlawless(RNGType type, PokeEvents events)
-		{
-            return type switch
-            {
-                RNGType.Stationary_3IVs or RNGType.Roamer or RNGType.Gift_3IV => 3,
-                RNGType.MysteryGift => events switch
-				{
-                    PokeEvents.ManaphyEgg => 3,
-                    PokeEvents.BirthDayHappiny => 0,
-                    PokeEvents.KorDawnPiplup => 0,
-                    PokeEvents.KorRegigigas => 3,
-                    _ => 0,
-				},
-                _ => 0,
-            };  
-		}
-
-        private static int[] GetGiftFTID(PokeEvents events, ITrainerID tr)
-		{
-            int[] tidsid = events switch
-            {
-                PokeEvents.ManaphyEgg => new int[2] { tr.TID, tr.SID },
-                PokeEvents.BirthDayHappiny => new int[2] { 61213, 2108 },
-                PokeEvents.KorDawnPiplup => new int[2] { 28217, 18344 },
-                PokeEvents.KorRegigigas => new int[2] { 11257, 18329 },
-                _ => new int[2] { tr.TID, tr.SID },
-            };
-            return tidsid;
-		}
-
-        private static Gender GetEventGender(PokeEvents events)
-		{
-            return events switch
-            {
-                PokeEvents.BirthDayHappiny => Gender.Female,
-                PokeEvents.KorDawnPiplup => Gender.Male,
-                PokeEvents.KorRegigigas => Gender.Genderless,
-                _ => Gender.Genderless,
-            };
-		}
-
-        private static Nature GetEventNature(PokeEvents events)
-		{
-            return events switch
-            {
-                PokeEvents.BirthDayHappiny => Nature.Hardy,
-                PokeEvents.KorDawnPiplup => Nature.Hardy,
-                _ => Nature.Hardy,
-            };
-		}
-
-        private static bool AllowRandomNature(PokeEvents events)
-		{
-            return events switch
-            {
-                PokeEvents.ManaphyEgg => true,
-                PokeEvents.BirthDayHappiny => false,
-                PokeEvents.KorDawnPiplup => false,
-                PokeEvents.KorRegigigas => true,
-                _ => true,
-            };
-		}
-
-        private static bool GetIsShiny(int tid, int sid, uint pid)
+        private static bool IsFixedIV(RNGType type, PokeEvents events) => type is RNGType.MysteryGift && events switch
         {
-            return GetIsShiny(pid, (uint)((sid << 16) | tid));
-        }
+            PokeEvents.PokeCenterPiplup => true,
+            _ => false,
+        };
 
-        private static bool GetIsShiny(uint pid, uint oid) => GetShinyXor(pid, oid) < 16;
+        private static int GetFlawless(RNGType type, PokeEvents events) => type switch
+        {
+            RNGType.Stationary_3IVs or RNGType.Roamer or RNGType.Gift_3IV => 3,
+            RNGType.MysteryGift => events switch
+			{
+                PokeEvents.ManaphyEgg => 3,
+                PokeEvents.BirthDayHappiny => 0,
+                PokeEvents.PokeCenterPiplup => 0,
+                PokeEvents.KorDawnPiplup => 0,
+                PokeEvents.KorRegigigas => 3,
+                PokeEvents.OtsukimiClefairy => 0,
+                _ => 0,
+			},
+            _ => 0,
+        };  
+
+        private static int[] GetFixedIVs(PokeEvents events) => events switch
+        { 
+            PokeEvents.PokeCenterPiplup => new int[6] { 20, 20, 20, 20, 28, 20 },
+          _ => throw new System.ArgumentException("No fixed IVs for this event."),
+        };
+
+        private static int[] GetGiftFTID(PokeEvents events, ITrainerID tr) => events switch
+        {
+            PokeEvents.ManaphyEgg => new int[2] { tr.TID, tr.SID },
+            PokeEvents.BirthDayHappiny => new int[2] { 61213, 2108 },
+            PokeEvents.PokeCenterPiplup => new int[2] { 58605, 03100 },
+            PokeEvents.KorDawnPiplup => new int[2] { 28217, 18344 },
+            PokeEvents.KorRegigigas => new int[2] { 11257, 18329 },
+            PokeEvents.OtsukimiClefairy => new int[2] { 29358, 02307 },
+            _ => new int[2] { tr.TID, tr.SID },
+        };
+
+        private static Gender GetEventGender(PokeEvents events) => events switch
+        {
+            PokeEvents.BirthDayHappiny => Gender.Female,
+            PokeEvents.PokeCenterPiplup => Gender.Male,
+            PokeEvents.KorDawnPiplup => Gender.Male,
+            PokeEvents.KorRegigigas => Gender.Genderless,
+            PokeEvents.OtsukimiClefairy => Gender.Male,
+            _ => Gender.Genderless,
+        };
+
+        private static Nature GetEventNature(PokeEvents events) => events switch
+        {
+            PokeEvents.BirthDayHappiny => Nature.Hardy,
+            PokeEvents.PokeCenterPiplup => Nature.Hardy,
+            PokeEvents.KorDawnPiplup => Nature.Hardy,
+            PokeEvents.OtsukimiClefairy => Nature.Modest,
+            _ => Nature.Hardy,
+        };
+
+        private static bool AllowRandomNature(PokeEvents events) => events switch
+        {
+            PokeEvents.ManaphyEgg => true,
+            PokeEvents.BirthDayHappiny => false,
+            PokeEvents.PokeCenterPiplup => false,
+            PokeEvents.KorDawnPiplup => false,
+            PokeEvents.KorRegigigas => true,
+            PokeEvents.OtsukimiClefairy => false,
+            _ => true,
+        };
+
+        private static bool GetIsShiny(int tid, int sid, uint pid) => 
+            GetIsShiny(pid, (uint)((sid << 16) | tid));
+
+        private static bool GetIsShiny(uint pid, uint oid) => 
+            GetShinyXor(pid, oid) < 16;
 
         private static uint GetShinyXor(uint pid, uint oid)
         {
