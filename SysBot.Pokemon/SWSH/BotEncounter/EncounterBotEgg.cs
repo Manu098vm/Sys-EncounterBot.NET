@@ -42,7 +42,7 @@ namespace SysBot.Pokemon
 
                 Log("Egg received. Checking details.");
                 var pk = await ReadBoxPokemon(InjectBox, InjectSlot, token).ConfigureAwait(false);
-                if (await HandleEncounter(pk, token).ConfigureAwait(false))
+                if (pk.Species != 0 && await HandleEncounter(pk, token).ConfigureAwait(false))
                     return;
             }
         }
